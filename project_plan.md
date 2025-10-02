@@ -62,12 +62,14 @@ Maintaining this plan independently ensures we can reconcile the roadmap and arc
   - **AD-02 Operations suites** *(Planned)* – Inventory, budgeting, vendor registry and CRM inbox with associated backend services.
   - **AD-03 Finance & reporting** *(Planned)* – Payroll integrations, forecasting, export pipelines and observability dashboards.
 
+
 ## 4. Marketing and growth automation
 - **Objectives** – Operationalise marketing campaigns, promoter collaborations and social/email automations outlined in the product vision.【F:README.md†L8-L13】【F:README.md†L56-L88】
 - **Frontend modules** – Campaign builder UI, promoter collaboration workspaces, analytics dashboards with cohort filters, reusable components for content scheduling and experimentation controls.【F:README.md†L56-L88】
 - **Backend modules** – Campaign orchestration microservice, integration connectors (email, SMS, social APIs), promoter attribution tracking, analytics storage schema and experiment/AB testing framework with feature flag rollout.【F:README.md†L56-L88】
 - **Dependencies** – Marketing data warehouse, consent management, promoter CRM sync, attribution measurement standards and observability dashboards referenced in the architecture roadmap.【F:README.md†L56-L88】
 - **Verification** – Frontend smoke for campaign creation/editing, analytics filter snapshots and experimentation toggle tests; backend integration tests for channel connectors, attribution accuracy and experiment guardrails (feature flag rules + rollout metrics).【F:README.md†L56-L88】
+
 - **Milestones** –
   - **MG-01 Campaign planner** *(Planned)* – Campaign brief templates, promoter collaboration notes and scheduling UI.
   - **MG-02 Automation engine** *(Planned)* – Multi-channel orchestration service, analytics dashboards and attribution insights.
@@ -84,6 +86,7 @@ Maintaining this plan independently ensures we can reconcile the roadmap and arc
   - **OPS-02 Observability** *(Planned)* – OpenTelemetry pipelines, alert routing, on-call dashboards, SLO definitions.
   - **OPS-03 Resilience drills** *(Planned)* – Chaos engineering, load/perf testing automation, incident response runbooks.
 
+
 ## 6. AI personalisation and guest engagement
 - **Objectives** – Implement AI-driven recommendations, concierge chatbots and personalised outreach once core flows stabilise.【F:README.md†L226-L231】
 - **Frontend modules** – Personalised carousel components, chat assistant widget, feedback capture modals tied to analytics, explainability UI and user controls for AI decisions.【F:README.md†L226-L231】
@@ -97,6 +100,7 @@ Maintaining this plan independently ensures we can reconcile the roadmap and arc
 
 ## 7. Data lifecycle, compliance and resilience
 - **Objectives** – Satisfy retention, backup, migration and recovery expectations while safeguarding guest, promoter and location data.【F:README.md†L106-L113】
+
 - **Frontend modules** – Admin consoles for data export requests, retention policy configuration, audit logs visualisation and compliance status reporting.【F:README.md†L106-L113】
 - **Backend modules** – Automated backups, point-in-time recovery pipelines, migration tooling, archival storage tiers, privacy request automation and compliance reporting feeds.【F:README.md†L106-L113】
 - **Dependencies** – Cloud storage policies, legal/compliance review cycles, data cataloguing, encryption key management and disaster recovery runbooks referenced in the architecture roadmap.【F:README.md†L106-L113】
@@ -105,7 +109,6 @@ Maintaining this plan independently ensures we can reconcile the roadmap and arc
   - **DL-01 Data inventory** *(Planned)* – Retention policy mapping, classification matrix, legal review alignment.
   - **DL-02 Automation** *(Planned)* – Backup orchestration, privacy request automation, compliance dashboard MVP.
   - **DL-03 Resilience** *(Planned)* – Regional failover rehearsal, migration tooling hardening, audit-ready reporting.
-
 ---
 
 Review and update this plan in tandem with changes to `README.md` (product objectives) and `architecture_roadmap.md` (system design). Documenting feature-level impacts separately lets us track misalignment quickly and keeps delivery accountability transparent.
