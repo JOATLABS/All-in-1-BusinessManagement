@@ -106,7 +106,6 @@ Maintaining this plan independently ensures we can reconcile the roadmap and arc
   - **DL-01 Data inventory** *(Planned)* – Retention policy mapping, classification matrix, legal review alignment.
   - **DL-02 Automation** *(Planned)* – Backup orchestration, privacy request automation, compliance dashboard MVP.
   - **DL-03 Resilience** *(Planned)* – Regional failover rehearsal, migration tooling hardening, audit-ready reporting.
-
 ---
 
 Review and update this plan in tandem with changes to `README.md` (product objectives) and `architecture_roadmap.md` (system design). Documenting feature-level impacts separately lets us track misalignment quickly and keeps delivery accountability transparent.
