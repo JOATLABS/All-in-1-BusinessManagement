@@ -76,6 +76,7 @@ export function GalleryPreview() {
                 fill
                 className="object-cover object-center"
                 sizes="(min-width: 1280px) 360px, (min-width: 1024px) 320px"
+                loading="lazy"
               />
               <figcaption className="sr-only">{items[previousIndex].title}</figcaption>
             </figure>
@@ -92,6 +93,8 @@ export function GalleryPreview() {
                       index === activeIndex ? "opacity-100 scale-100" : "opacity-0 scale-95"
                     }`}
                     sizes="(min-width: 1280px) 420px, (min-width: 1024px) 360px, 88vw"
+                    priority={index === 0}
+                    loading={index === 0 ? "eager" : "lazy"}
                   />
                 ))}
                 <figcaption className="sr-only">{items[activeIndex].title}</figcaption>
@@ -160,6 +163,7 @@ export function GalleryPreview() {
                 fill
                 className="object-cover object-center"
                 sizes="(min-width: 1280px) 360px, (min-width: 1024px) 320px"
+                loading="lazy"
               />
               <figcaption className="sr-only">{items[nextIndex].title}</figcaption>
             </figure>

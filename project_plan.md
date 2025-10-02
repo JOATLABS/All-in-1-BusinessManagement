@@ -13,7 +13,7 @@ Maintaining this plan independently ensures we can reconcile the roadmap and arc
 
 | Workstream | Latest milestone | Status | Verification | Upcoming focus |
 | --- | --- | --- | --- | --- |
-| Customer experience platform | Landing shell + immersive gallery + events filtering explorer | In progress – guest shell, reservations intake form, floating gallery spotlight, events API + filtering UI merged. | Vitest component + route handler tests, lint/build automation in CI (`npm run lint`, `npm run test`, `CI=1 npm run build`).【F:platform/src/components/events/EventsExplorer.tsx†L1-L179】【F:platform/src/app/api/events/route.test.ts†L1-L48】 | Wire section reservations to live pricing, expand shout-out funnel, optimise media delivery + Lighthouse budgets. |
+| Customer experience platform | Tiered reservations pricing + immersive gallery flows | In progress – guest shell, floating gallery, events API/filters, and package-aware deposit quoting are live for lounge guests. | Vitest component + route handler tests, lint/build automation in CI (`npm run lint`, `npm run test`, `CI=1 npm run build`).【F:platform/src/components/forms/ReservationForm.tsx†L1-L220】【F:platform/src/app/api/reservations/quote/route.test.ts†L1-L45】 | Expand DJ shout-out funnel, integrate Stripe deposits, and tune media delivery + Lighthouse budgets. |
 | Promoter and vendor workspace | Planning baseline | Not started – design + auth scaffolding pending. | N/A | Define role-aware navigation + contract lifecycle flows aligned with roadmap. |
 | Administrative backoffice | Planning baseline | Not started – service decomposition + data model design required. | N/A | Prioritise inventory + finance modules, connect to observability plan. |
 | Marketing and growth automation | Planning baseline | Not started – dependencies on promoter/admin analytics. | N/A | Establish campaign orchestration MVP with analytics pipelines. |
@@ -28,6 +28,7 @@ Maintaining this plan independently ensures we can reconcile the roadmap and arc
 | Date | Scope | Alignment notes | Tests executed |
 | --- | --- | --- | --- |
 | 2025-10-02 | Customer experience platform – CX-01 foundation | Landing hero, floating gallery spotlight, reservations intake, and events explorer satisfy README guest objectives and architecture priorities for galleries, shout-outs, and reservations.【F:README.md†L6-L55】【F:architecture_roadmap.md†L14-L24】【F:platform/src/components/hero/Hero.tsx†L1-L152】【F:platform/src/components/sections/GalleryPreview.tsx†L1-L216】【F:platform/src/components/forms/ReservationForm.tsx†L1-L169】【F:platform/src/components/events/EventsExplorer.tsx†L1-L179】 | `npm run lint`, `npm run test`, `CI=1 npm run build` |
+| 2025-10-03 | Customer experience platform – CX-02 pricing foundation | Reservation flow now references curated packages, surge/discount multipliers, and accessible package selection while the gallery follows responsive image loading guidance from [web.dev](https://web.dev/articles/responsive-images) to keep imagery rich yet performant.【F:platform/src/lib/data/reservationPricing.ts†L1-L134】【F:platform/src/components/forms/ReservationForm.tsx†L1-L220】【F:platform/src/components/sections/GalleryPreview.tsx†L1-L210】【F:platform/src/lib/data/reservationPricing.test.ts†L1-L33】【F:project_plan.md†L7-L20】 | `npm run lint`, `npm run test`, `CI=1 npm run build` |
 
 ## 1. Customer experience platform
 - **Objectives** – Launch the guest-facing site with galleries, playlists, shout-outs, reservations and ticketing emphasising low-latency, mobile-first browsing and accessibility.【F:README.md†L6-L55】【F:README.md†L136-L157】
@@ -62,14 +63,12 @@ Maintaining this plan independently ensures we can reconcile the roadmap and arc
   - **AD-02 Operations suites** *(Planned)* – Inventory, budgeting, vendor registry and CRM inbox with associated backend services.
   - **AD-03 Finance & reporting** *(Planned)* – Payroll integrations, forecasting, export pipelines and observability dashboards.
 
-
 ## 4. Marketing and growth automation
 - **Objectives** – Operationalise marketing campaigns, promoter collaborations and social/email automations outlined in the product vision.【F:README.md†L8-L13】【F:README.md†L56-L88】
 - **Frontend modules** – Campaign builder UI, promoter collaboration workspaces, analytics dashboards with cohort filters, reusable components for content scheduling and experimentation controls.【F:README.md†L56-L88】
 - **Backend modules** – Campaign orchestration microservice, integration connectors (email, SMS, social APIs), promoter attribution tracking, analytics storage schema and experiment/AB testing framework with feature flag rollout.【F:README.md†L56-L88】
 - **Dependencies** – Marketing data warehouse, consent management, promoter CRM sync, attribution measurement standards and observability dashboards referenced in the architecture roadmap.【F:README.md†L56-L88】
 - **Verification** – Frontend smoke for campaign creation/editing, analytics filter snapshots and experimentation toggle tests; backend integration tests for channel connectors, attribution accuracy and experiment guardrails (feature flag rules + rollout metrics).【F:README.md†L56-L88】
-
 - **Milestones** –
   - **MG-01 Campaign planner** *(Planned)* – Campaign brief templates, promoter collaboration notes and scheduling UI.
   - **MG-02 Automation engine** *(Planned)* – Multi-channel orchestration service, analytics dashboards and attribution insights.
@@ -86,7 +85,6 @@ Maintaining this plan independently ensures we can reconcile the roadmap and arc
   - **OPS-02 Observability** *(Planned)* – OpenTelemetry pipelines, alert routing, on-call dashboards, SLO definitions.
   - **OPS-03 Resilience drills** *(Planned)* – Chaos engineering, load/perf testing automation, incident response runbooks.
 
-
 ## 6. AI personalisation and guest engagement
 - **Objectives** – Implement AI-driven recommendations, concierge chatbots and personalised outreach once core flows stabilise.【F:README.md†L226-L231】
 - **Frontend modules** – Personalised carousel components, chat assistant widget, feedback capture modals tied to analytics, explainability UI and user controls for AI decisions.【F:README.md†L226-L231】
@@ -100,7 +98,6 @@ Maintaining this plan independently ensures we can reconcile the roadmap and arc
 
 ## 7. Data lifecycle, compliance and resilience
 - **Objectives** – Satisfy retention, backup, migration and recovery expectations while safeguarding guest, promoter and location data.【F:README.md†L106-L113】
-
 - **Frontend modules** – Admin consoles for data export requests, retention policy configuration, audit logs visualisation and compliance status reporting.【F:README.md†L106-L113】
 - **Backend modules** – Automated backups, point-in-time recovery pipelines, migration tooling, archival storage tiers, privacy request automation and compliance reporting feeds.【F:README.md†L106-L113】
 - **Dependencies** – Cloud storage policies, legal/compliance review cycles, data cataloguing, encryption key management and disaster recovery runbooks referenced in the architecture roadmap.【F:README.md†L106-L113】

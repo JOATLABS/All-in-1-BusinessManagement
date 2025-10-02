@@ -115,9 +115,3 @@ export function calculateOccupancy(event: Event): number {
 
   return Math.round(((event.totalTables - event.remainingTables) / event.totalTables) * 100);
 }
-
-export function calculateDepositDue(event: Event, quantity: number): number {
-  const cappedQuantity = Math.max(1, Math.min(quantity, event.totalTables));
-  const deposit = event.ticketed ? event.presaleDeposit : event.presaleDeposit * 0.5;
-  return Number((deposit * cappedQuantity).toFixed(2));
-}

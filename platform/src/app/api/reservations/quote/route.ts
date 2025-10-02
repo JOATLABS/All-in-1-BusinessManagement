@@ -4,11 +4,15 @@ import { createReservationQuote } from "@/lib/services/reservations";
 
 export async function POST(request: NextRequest) {
   const payload = await request.json();
-  const { eventId, tables } = payload as { eventId?: string; tables?: number };
+  const { eventId, tables, packageId } = payload as {
+    eventId?: string;
+    tables?: number;
+    packageId?: string;
+  };
 
-  if (!eventId || typeof tables !== "number") {
+  if (!eventId || typeof tables !== "number" || !packageId) {
     return NextResponse.json(
-      { error: "eventId and tables are required" },
+      { error: "eventId, tables and packageId are required" },
       { status: 400 }
     );
   }
@@ -22,10 +26,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const quote = createReservationQuote({
-    event,
-    tablesRequested: tables,
-  });
+  try {
+    const quote = createReservationQuote({
+      event,
+      tablesRequested: tables,
+      packageId,
+    });
 
-  return NextResponse.json({ quote });
+    return NextResponse.json({ quote });
+  } catch (error) {
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 400 }
+    );
+  }
 }
