@@ -33,3 +33,20 @@ The images below are included in this ZIP and referenced by relative paths so th
 ---
 
 > Questions or edits? Update this README and re-export the diagrams as needed. Both images live in `public/` and are referenced with relative paths.
+
+## Architecture deltas to address
+
+The comprehensive README outlines additional objectives and operational guardrails that are not yet reflected in this condensed architecture summary. Update the diagrams and supporting documentation to cover the following gaps:
+
+- **Marketing & promoter collaboration** – add campaign management, promoter partnership tooling and analytics pathways called out as differentiators for the lounge experience.【F:README.md†L8-L13】【F:README.md†L56-L64】
+- **Curated content services** – highlight playlist curation and DJ shout-out payment flows (with Stripe) so they are treated as first-class services in the system diagrams.【F:README.md†L8-L13】【F:README.md†L136-L144】
+- **Operational automation & observability** – incorporate automated tenant provisioning, CI/CD, monitoring, logging and alerting strategies recommended for the multi-tenant platform.【F:README.md†L78-L113】【F:README.md†L204-L213】
+- **Data lifecycle management** – show backup, migration and recovery processes to satisfy the tenant data retention expectations.【F:README.md†L106-L113】
+- **AI-powered personalisation** – reserve space in the roadmap for the AI recommendations and chatbot initiatives described as future enhancements.【F:README.md†L226-L231】
+- **Edge performance & accessibility** – reflect low-latency delivery (CDN/edge) and accessibility mandates that shape front-end architecture decisions.【F:README.md†L24-L55】【F:README.md†L168-L176】
+
+Documenting these elements keeps the living architecture aligned with the product vision and ensures downstream teams design against the same set of priorities.
+
+---
+
+> For the end-to-end delivery plans, milestones and verification checklists that align the architecture with the README objectives, see `project_plan.md`.
