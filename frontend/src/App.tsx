@@ -52,14 +52,51 @@ const HeroContent = () => {
       2500
     );
 
-    const clockInterval = setInterval(() => setNow(new Date()), 1000);
+    let clockInterval: ReturnType<typeof setInterval> | null = null;
+    let endTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const startMs = eventConfig.start.getTime();
+    const endMs = eventConfig.end.getTime();
+    const nowMs = Date.now();
+
+    if (nowMs < startMs) {
+      clockInterval = setInterval(() => {
+        const current = new Date();
+        setNow(current);
+        if (current.getTime() >= startMs) {
+          if (clockInterval !== null) {
+            clearInterval(clockInterval);
+            clockInterval = null;
+          }
+          const delayToEnd = Math.max(endMs - Date.now(), 0);
+          endTimeout = setTimeout(() => setNow(new Date()), delayToEnd + 50);
+        }
+      }, 1000);
+    } else if (nowMs < endMs) {
+      const delayToEnd = Math.max(endMs - nowMs, 0);
+      endTimeout = setTimeout(() => setNow(new Date()), delayToEnd + 50);
+    }
 
     return () => {
       clearInterval(backgroundInterval);
       clearInterval(wordInterval);
-      clearInterval(clockInterval);
+      if (clockInterval !== null) {
+        clearInterval(clockInterval);
+      }
+      if (endTimeout !== null) {
+        clearTimeout(endTimeout);
+      }
     };
-  }, []);
+  }, [eventConfig.start, eventConfig.end]);
+
+  const eventStatus = useMemo((): 'upcoming' | 'in_progress' | 'ended' => {
+    const nowMs = now.getTime();
+    const startMs = eventConfig.start.getTime();
+    const endMs = eventConfig.end.getTime();
+    if (nowMs < startMs) return 'upcoming';
+    if (nowMs < endMs) return 'in_progress';
+    return 'ended';
+  }, [now, eventConfig.start, eventConfig.end]);
 
   const countdown = useMemo(() => {
     const diff = Math.max(eventConfig.start.getTime() - now.getTime(), 0);
@@ -70,7 +107,7 @@ const HeroContent = () => {
     const secs = seconds % 60;
 
     return { days, hours, minutes, seconds: secs };
-  }, [now]);
+  }, [now, eventConfig.start]);
 
   return (
     <section className="hero" aria-labelledby="club-name">
@@ -130,15 +167,25 @@ const HeroContent = () => {
       </button>
 
       <div className="hero__countdown" role="timer" aria-live="polite">
-        <div className="hero__countdown-label">Next event begins in</div>
-        <div className="hero__countdown-grid">
-          {(['days', 'hours', 'minutes', 'seconds'] as const).map((unit) => (
-            <div key={unit} className="hero__countdown-cell">
-              <span className="hero__countdown-value">{countdown[unit].toString().padStart(2, '0')}</span>
-              <span className="hero__countdown-unit">{unit}</span>
+        {eventStatus === 'upcoming' && (
+          <>
+            <div className="hero__countdown-label">Next event begins in</div>
+            <div className="hero__countdown-grid">
+              {(['days', 'hours', 'minutes', 'seconds'] as const).map((unit) => (
+                <div key={unit} className="hero__countdown-cell">
+                  <span className="hero__countdown-value">{countdown[unit].toString().padStart(2, '0')}</span>
+                  <span className="hero__countdown-unit">{unit}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
+        {eventStatus === 'in_progress' && (
+          <div className="hero__countdown-label">Event in progress</div>
+        )}
+        {eventStatus === 'ended' && (
+          <div className="hero__countdown-label">Event ended</div>
+        )}
       </div>
 
       <div className="hero__cta-row" role="navigation" aria-label="Quick actions">
