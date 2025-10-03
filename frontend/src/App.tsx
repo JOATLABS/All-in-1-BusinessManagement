@@ -200,6 +200,13 @@ const Footer = () => {
 const Panels = () => {
   const { closeOverlay, current } = useOverlay();
 
+  // Sanitize table hotline for tel: URI — allow at most one leading '+' only if originally present
+  const sanitizedTableHotline = (() => {
+    const raw = (eventConfig.tableHotline || '').trim();
+    const digitsOnly = raw.replace(/\D/g, '');
+    return raw.startsWith('+') ? `+${digitsOnly}` : digitsOnly;
+  })();
+
   return (
     <AnimatePresence>
       {current === 'events' && (
@@ -228,7 +235,7 @@ const Panels = () => {
           <a className="panel__cta" href="mailto:host@ojaplusclub.com?subject=Table%20Reservation%20Request">
             Email concierge
           </a>
-          <a className="panel__cta" href={`tel:${eventConfig.tableHotline.replace(/[^+\d]/g, '')}`}>
+          <a className="panel__cta" href={`tel:${sanitizedTableHotline}`}>
             Call {eventConfig.tableHotline}
           </a>
         </InfoPanel>
