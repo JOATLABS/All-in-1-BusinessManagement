@@ -1,0 +1,45 @@
+{
+  "hero": {
+    "name": "OjaPlus Nightclub",
+    "tagline": "Drink. Dine. Dance.",
+    "words": [
+      "DRINK.",
+      "DINE.",
+      "DANCE.",
+      "REPEAT."
+    ],
+    "backgrounds": [
+      {
+        "src": "https://images.unsplash.com/photo-1604079628040-94301bb21b11?auto=format&fit=crop&w=1600&q=80",
+        "alt": "Crowd dancing under neon lights",
+        "focalPoint": { "x": 50, "y": 50 }
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1600&q=80",
+        "alt": "VIP table with cocktails",
+        "focalPoint": { "x": 45, "y": 40 }
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80",
+        "alt": "DJ performing in front of crowd",
+        "focalPoint": { "x": 45, "y": 45 }
+      }
+    ]
+  },
+  "event": {
+    "name": "Velvet Pulse",
+    "flyer": "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1200&q=80",
+    "start": "2025-10-10T21:00:00-04:00",
+    "end": "2025-10-11T04:00:00-04:00",
+    "description": "An Afrofuturist dance odyssey featuring rotating DJs, interactive visuals, and curated cocktail flights.",
+    "requiresTicket": true,
+    "tableHotline": "+1 (332) 555-0199"
+  },
+  "footer": {
+    "socials": [
+      { "name": "Instagram", "icon": "instagram", "url": "https://instagram.com/ojaplus" },
+      { "name": "TikTok", "icon": "tiktok", "url": "https://tiktok.com/@ojaplus" },
+      { "name": "Facebook", "icon": "facebook", "url": "https://facebook.com/ojaplus" }
+    ]
+  }
+}
