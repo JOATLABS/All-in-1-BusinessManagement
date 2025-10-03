@@ -3,7 +3,25 @@
 System Architecture and Roadmap for the Customer Website & Business‑Management System
 Introduction
 
-The client’s vision is to create a customer‑friendly Afrobeat lounge that differentiates itself through service rather than high prices. To support this mission the website needs to be more than a marketing brochure – it must include event reservations, ticket pre‑sales, DJ shout‑outs, curated playlists and promoter partnerships. Behind the scenes, the business needs a multi‑tenant management platform that supports inventory control, vendor contracts, marketing campaigns, financial management, communication with promoters and vendors, and comprehensive reporting. Both the customer‑facing site and the management system need smooth transitions, low latency, and scalability to support growth. The following sections summarise research into modern UI/UX practices, multi‑tenant best practices and event‑management requirements, propose a technology stack and present a high‑level system architecture and implementation roadmap.
+The client’s vision is to create a customer‑friendly Afrobeat lounge that differentiates itself through service rather than high prices. To support this mission the website needs to be more than a marketing brochure – it must include event reservations, ticket pre‑sales, DJ shout‑outs, curated playlists and promoter partnerships. Behind the scenes, the business needs a multi‑tenant management platform that supports inventory control, vendor contracts, marketing campaigns, financial management, communication with promoters and vendors, and comprehensive reporting. Both the customer‑facing site and the management system need smooth transitions, low latency, and scalability to support growth.
+
+Customer‑facing experience blueprint
+-----------------------------------
+
+To align the public website with leading nightlife destinations such as The Cross, Jimmy Woo and Billboard Saturdays, the following sequential blueprint captures the desired look and feel as well as key interaction patterns:
+
+1. **Sculptural splash screen.** Present a full‑screen hero with a textured, grainy neutral background, a central ornate logo or emblem and minimalist top‑right navigation (Reservations, Our Story, Menu, Contact). Add a subtle scroll indicator to encourage exploration.
+2. **Parallax storytelling.** Fade the hero motif as visitors scroll and transition the palette from warm neutrals to a dark, grainy background. Pin bold, serif headlines (e.g., “DRINK. DINE. DANCE.”) that animate sequentially for a dramatic reveal.
+3. **Narrative “Our Story” section.** Introduce the lounge with short paragraphs or bullet points on an off‑white background, paired with cinematic photography or looping clips of the venue to reinforce the narrative.
+4. **Sensory highlights.** Use icon‑supported bullet lists to describe what guests will see, taste, drink and feel – signature dishes, craft cocktails, materials and musical energy.
+5. **Nightlife gallery.** Showcase high‑impact visuals of DJs, lighting installations and VIP experiences via a gallery or slideshow with concise captions (e.g., “Immersive lighting with 12 000 bulbs”).
+6. **Marquee branding and CTAs.** Inject motion through looping marquees of the brand name between sections and follow each content block with high‑contrast calls‑to‑action such as “Book VIP Table,” “Get Tickets” and “Reserve a Table.”
+7. **Enquiry overlays.** Provide modal or slide‑in forms for reservations and general enquiries, allowing users to select enquiry types while keeping the primary page uncluttered.
+8. **Luxurious footer.** Close with a dark, refined footer featuring the logo, condensed navigation and social links to echo the site’s nightlife aesthetic.
+
+Responsiveness, smooth animations and performance optimisation (lazy loading, responsive imagery and GPU‑friendly effects) are mandatory to ensure the experience translates elegantly across desktop and mobile devices.
+
+The following sections summarise research into modern UI/UX practices, multi‑tenant best practices and event‑management requirements, propose a technology stack and present a high‑level system architecture and implementation roadmap.
 
 UI/UX design best practices
 Night‑life website trends
