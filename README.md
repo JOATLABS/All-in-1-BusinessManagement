@@ -5,6 +5,25 @@ Introduction
 
 The client’s vision is to create a customer‑friendly Afrobeat lounge that differentiates itself through service rather than high prices. To support this mission the website needs to be more than a marketing brochure – it must include dynamic upcoming event details, table reservations, conditional ticket pre‑sales for select events, and a “Contact Us” action that opens a modal for promoters, event planners or other partners. Behind the scenes, the business needs a multi‑tenant management platform that supports inventory control, vendor contracts, marketing campaigns, financial management, communication with promoters and vendors, and comprehensive reporting. Both the customer‑facing site and the management system need smooth transitions, low latency, and scalability to support growth.
 
+### Front-end prototype
+
+An initial hero-and-footer landing experience now lives inside `frontend/`. The prototype follows the research-backed blueprint and demonstrates:
+
+* A looping nightlife gallery background with grain overlays tuned to the Jimmy Woo palette.
+* Full-width marquee branding, live countdown timer, and CTA buttons anchored at the lower edge of the hero.
+* Horizontal sliding overlays for the upcoming event flyer, table reservations, ticket pre-sales, partner contact form, About modal (with operating hours) and a legal tab view.
+
+To run the prototype locally:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Visit `http://localhost:5173` to interact with the cinematic hero, CTA transitions and overlays. Run `npm run lint` or `npm run build` to apply the same checks used in CI.
+
+
 Customer‑facing experience blueprint
 -----------------------------------
 
