@@ -3,7 +3,46 @@
 System Architecture and Roadmap for the Customer Website & Business‑Management System
 Introduction
 
-The client’s vision is to create a customer‑friendly Afrobeat lounge that differentiates itself through service rather than high prices. To support this mission the website needs to be more than a marketing brochure – it must include event reservations, ticket pre‑sales, DJ shout‑outs, curated playlists and promoter partnerships. Behind the scenes, the business needs a multi‑tenant management platform that supports inventory control, vendor contracts, marketing campaigns, financial management, communication with promoters and vendors, and comprehensive reporting. Both the customer‑facing site and the management system need smooth transitions, low latency, and scalability to support growth. The following sections summarise research into modern UI/UX practices, multi‑tenant best practices and event‑management requirements, propose a technology stack and present a high‑level system architecture and implementation roadmap.
+The client’s vision is to create a customer‑friendly Afrobeat lounge that differentiates itself through service rather than high prices. To support this mission the website needs to be more than a marketing brochure – it must include dynamic upcoming event details, table reservations, conditional ticket pre‑sales for select events, and a “Contact Us” action that opens a modal for promoters, event planners or other partners. Behind the scenes, the business needs a multi‑tenant management platform that supports inventory control, vendor contracts, marketing campaigns, financial management, communication with promoters and vendors, and comprehensive reporting. Both the customer‑facing site and the management system need smooth transitions, low latency, and scalability to support growth.
+
+### Front-end prototype
+
+An initial hero-and-footer landing experience now lives inside `frontend/`. The prototype follows the research-backed blueprint and demonstrates:
+
+* A looping nightlife gallery background with grain overlays tuned to the Jimmy Woo palette.
+* Full-width marquee branding, live countdown timer, and CTA buttons anchored at the lower edge of the hero.
+* Horizontal sliding overlays for the upcoming event flyer, table reservations, ticket pre-sales, partner contact form, About modal (with operating hours) and a legal tab view.
+* Business platform routes exposed at `/admin/login` and `/admin` so internal teams can authenticate and manage the experience.
+  * `/admin/login` delivers a branded sign-in surface that mirrors the nightclub palette and prepares for API-backed authentication.
+  * `/admin` hosts the main dashboard with featured-event health, background-loop order, and social link summaries.
+  * `/admin/site` provides a tabbed configuration workspace for every public-facing surface (landing hero, event overlays, About modal, contact routing, and footer links) so content can be staged before the backend APIs land.
+
+To run the prototype locally:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Visit `http://localhost:5173` to interact with the cinematic hero, CTA transitions, overlays, and the new admin flows (switch to `/admin/login` to explore them). Run `npm run lint` or `npm run build` to apply the same checks used in CI.
+
+
+Customer‑facing experience blueprint
+-----------------------------------
+
+To align the public website with leading nightlife destinations such as The Cross, Jimmy Woo and Billboard Saturdays, concentrate the landing experience into a single cinematic hero with footer navigation, then transition horizontally into dedicated flows:
+
+1. **Full-screen landing composition.** Render the hero so it fills the viewport on load; suppress traditional navigation and instead layer the four primary CTAs (“Upcoming Event,” “Reserve a Table,” conditional “Ticket Pre-Sale,” and “Contact Us”) along the lower edge of the hero. Position them on a translucent bar that sits above the background but below the footer, mirroring the button treatment on Jimmy Woo and Billboard Saturdays while keeping the landing page visually minimal.
+2. **Nightlife gallery background.** Drive the hero background with a curated loop of nightlife photography or ultra-short video clips that transition automatically and seamlessly. Apply a subtle grainy noir overlay—akin to Jimmy Woo’s site—so the media feels atmospheric yet the underlying images remain clear. Optimise media delivery via modern codecs, preloading of the first slide and GPU-accelerated cross-fades to keep latency imperceptible.
+3. **Brand marquee and countdown.** Center the club’s name (and optional logomark) so it spans the viewport width with a 10 px margin and the highest z-index. Pair it with a live countdown clock to the next event, and introduce a looping marquee or shimmering text treatment to maintain motion. When the upcoming flyer fades in, slide the brand lockup toward the top edge so the flyer artwork occupies the core of the hero without losing identity emphasis.
+4. **CTA-driven navigation.** Treat every CTA as a doorway into another experience: clicking launches a horizontal page transition that glides the user into the respective route or modal. “Contact Us” opens the partner enquiry modal immediately; the other CTAs route to their pages with the same lateral animation so the landing remains a one-screen moment.
+5. **Footer and modal overlays.** Anchor a slim, dark footer (keep height minimal so the hero remains dominant) that overlays the base of the hero and contains condensed navigation plus an “About Us” button. Replace text lists with iconography wherever possible: surface only the social media icons, expose “Operating Hours” as a link that triggers the same About modal, and route “Legal” to a horizontally transitioned interior page that opens on a tabbed Terms/Privacy view with vertical scrolling for long-form copy. The About modal mirrors The Cross’s narrative storytelling, handling venue history, hours and policies in one place.
+6. **Palette and motion language.** Derive the base colour system from Jimmy Woo’s aesthetic—inky blacks, muted gold accents and subtle purples—and apply a grain overlay across hero media so the loop feels cinematic without obscuring detail. Reuse The Cross’s parallax cross transition language for every horizontal slide, flyer reveal and modal entry/exit so the entire experience maintains consistent slide-and-fade choreography.
+
+Responsiveness, smooth animations and performance optimisation (lazy loading, responsive imagery and GPU-friendly effects) remain mandatory to ensure the experience translates elegantly across desktop and mobile devices while preserving the cinematic feel.
+
+The following sections summarise research into modern UI/UX practices, multi‑tenant best practices and event‑management requirements, propose a technology stack and present a high‑level system architecture and implementation roadmap.
 
 UI/UX design best practices
 Night‑life website trends
