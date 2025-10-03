@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ContactPanel } from './components/ContactPanel';
 import { InfoPanel } from './components/InfoPanel';
@@ -7,6 +8,10 @@ import { UpcomingEventPanel } from './components/UpcomingEventPanel';
 import { defaultSiteContent } from './config/defaultSiteContent';
 import { useSiteContent } from './hooks/useSiteContent';
 import type { SiteContent } from './types/content';
+import { AdminLogin } from './admin/AdminLogin';
+import { AdminLayout } from './admin/AdminLayout';
+import { AdminDashboard } from './admin/Dashboard';
+import { SiteConfiguration } from './admin/SiteConfiguration';
 
 const primaryRangeFormatter = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
@@ -268,6 +273,9 @@ const Footer = ({ clubName, socials }: FooterProps) => {
         <button className="footer__link" onClick={() => openOverlay('legal')}>
           Legal
         </button>
+        <Link className="footer__link footer__link--anchor" to="/admin/login">
+          Admin
+        </Link>
       </div>
       <div className="footer__social" aria-label="Social media">
         {socials.map((social) => {
@@ -391,17 +399,47 @@ const Panels = ({ event }: PanelsProps) => {
   );
 };
 
+interface CustomerLandingProps {
+  content: SiteContent;
+  isReady: boolean;
+}
+
+const CustomerLanding = ({ content, isReady }: CustomerLandingProps) => (
+  <OverlayContextProvider>
+    <div className="app">
+      <HeroContent hero={content.hero} event={content.event} isReady={isReady} />
+      <Footer clubName={content.hero.name} socials={content.footer.socials} />
+      <Panels event={content.event} />
+    </div>
+  </OverlayContextProvider>
+);
+
 const App = () => {
   const { content, isReady } = useSiteContent();
 
   return (
-    <OverlayContextProvider>
-      <div className="app">
-        <HeroContent hero={content.hero} event={content.event} isReady={isReady} />
-        <Footer clubName={content.hero.name} socials={content.footer.socials} />
-        <Panels event={content.event} />
-      </div>
-    </OverlayContextProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<CustomerLanding content={content} isReady={isReady} />} />
+        <Route
+          path="/admin/login"
+          element={<AdminLogin brand={content.hero.name} tagline={content.hero.tagline} />}
+        />
+        <Route path="/admin" element={<AdminLayout brand={content.hero.name} tagline={content.hero.tagline} />}>
+          <Route
+            index
+            element={
+              <AdminDashboard
+                event={content.event}
+                heroBackgrounds={content.hero.backgrounds}
+                footerLinks={content.footer.socials}
+              />
+            }
+          />
+          <Route path="site" element={<SiteConfiguration content={content} />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 };
 

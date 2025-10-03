@@ -12,6 +12,10 @@ An initial hero-and-footer landing experience now lives inside `frontend/`. The 
 * A looping nightlife gallery background with grain overlays tuned to the Jimmy Woo palette.
 * Full-width marquee branding, live countdown timer, and CTA buttons anchored at the lower edge of the hero.
 * Horizontal sliding overlays for the upcoming event flyer, table reservations, ticket pre-sales, partner contact form, About modal (with operating hours) and a legal tab view.
+* Business platform routes exposed at `/admin/login` and `/admin` so internal teams can authenticate and manage the experience.
+  * `/admin/login` delivers a branded sign-in surface that mirrors the nightclub palette and prepares for API-backed authentication.
+  * `/admin` hosts the main dashboard with featured-event health, background-loop order, and social link summaries.
+  * `/admin/site` provides a tabbed configuration workspace for every public-facing surface (landing hero, event overlays, About modal, contact routing, and footer links) so content can be staged before the backend APIs land.
 
 To run the prototype locally:
 
@@ -21,7 +25,7 @@ npm install
 npm run dev
 ```
 
-Visit `http://localhost:5173` to interact with the cinematic hero, CTA transitions and overlays. Run `npm run lint` or `npm run build` to apply the same checks used in CI.
+Visit `http://localhost:5173` to interact with the cinematic hero, CTA transitions, overlays, and the new admin flows (switch to `/admin/login` to explore them). Run `npm run lint` or `npm run build` to apply the same checks used in CI.
 
 
 Customer‑facing experience blueprint
