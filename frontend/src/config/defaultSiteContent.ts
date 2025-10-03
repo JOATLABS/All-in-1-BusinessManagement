@@ -1,41 +1,31 @@
-import type { RawSiteContent } from '../types/content';
+import type { SiteContent } from '../types/content';
 
-export const defaultSiteContent: RawSiteContent = {
+export const defaultSiteContent: SiteContent = {
   hero: {
-    name: 'OJAPLUS NIGHTCLUB',
-    tagline: 'Where Lagos energy meets New York precision.',
-    words: ['DRINK', 'DANCE', 'INDULGE'],
+    name: 'OjaPlus Nightclub',
+    tagline: 'Drink. Dine. Dance.',
+    words: ['DRINK.', 'DINE.', 'DANCE.', 'REPEAT.'],
     backgrounds: [
       {
-        src: 'https://images.unsplash.com/photo-1542452255191-c85a98f2e6c9?auto=format&fit=crop&w=1600&q=80',
-        alt: 'Crowd dancing under red lights'
-      },
-      {
-        src: 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?auto=format&fit=crop&w=1600&q=80',
-        alt: 'DJ performing with neon visuals'
-      },
-      {
-        src: 'https://images.unsplash.com/photo-1546749876-2088f2e7f89b?auto=format&fit=crop&w=1600&q=80',
-        alt: 'Luxurious lounge seating with moody lighting'
+        src: 'https://images.unsplash.com/photo-1604079628040-94301bb21b11?auto=format&fit=crop&w=1600&q=80',
+        alt: 'Crowd dancing under neon lights',
+        focalPoint: { x: 50, y: 50 }
       }
     ]
   },
   event: {
-    name: 'Velvet Pulse: Lunar Noir Edition',
-    start: '2025-02-14T22:00:00-05:00',
-    end: '2025-02-15T03:00:00-05:00',
-    flyer: 'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1000&q=80',
+    name: 'Velvet Pulse',
+    flyer: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1200&q=80',
+    start: new Date(),
+    end: new Date(Date.now() + 3 * 60 * 60 * 1000),
     description:
-      'An immersive Valentine’s showcase featuring house, Afrobeats, and signature sensory installations across two floors.',
-    headliners: ['DJ Nyra', 'MC Kinetic', 'Visual Alchemist Collective'],
-    requiresTicket: true,
-    tableHotline: '+1 (646) 555-0199'
+      'Experience an Afrofuturist night with rotating DJs, immersive lighting, and curated cocktail rituals designed for storytellers.',
+    requiresTicket: false,
+    tableHotline: '+1 (332) 555-0199'
   },
   footer: {
     socials: [
-      { name: 'Instagram', url: 'https://instagram.com/ojaplus', icon: 'instagram' },
-      { name: 'Facebook', url: 'https://facebook.com/ojaplus', icon: 'facebook' },
-      { name: 'TikTok', url: 'https://tiktok.com/@ojaplus', icon: 'tiktok' }
+      { name: 'Instagram', icon: 'instagram', url: 'https://instagram.com/ojaplus' }
     ]
   }
 };

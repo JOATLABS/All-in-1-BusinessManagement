@@ -1,57 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { SiteContent } from '../types/content';
 import { defaultSiteContent } from '../config/defaultSiteContent';
-import type { RawSiteContent, SiteContent } from '../types/content';
 
-const normaliseContent = (raw: RawSiteContent): SiteContent => ({
-  hero: raw.hero,
-  event: {
-    ...raw.event,
-    start: new Date(raw.event.start),
-    end: new Date(raw.event.end)
+const parseDate = (value: string | Date) => (value instanceof Date ? value : new Date(value));
+
+const normaliseContent = (content: SiteContent): SiteContent => ({
+  hero: {
+    ...content.hero,
+    backgrounds: content.hero.backgrounds.map((background) => ({
+      ...background,
+      focalPoint: background.focalPoint ?? { x: 50, y: 50 }
+    }))
   },
-  footer: raw.footer
-});
-
-const mergeContent = (fallback: RawSiteContent, incoming?: Partial<RawSiteContent>): RawSiteContent => ({
-  hero: { ...fallback.hero, ...(incoming?.hero ?? {}) },
-  event: { ...fallback.event, ...(incoming?.event ?? {}) },
-  footer: { ...fallback.footer, ...(incoming?.footer ?? {}) }
+  event: {
+    ...content.event,
+    start: parseDate(content.event.start),
+    end: parseDate(content.event.end)
+  },
+  footer: content.footer
 });
 
 export const useSiteContent = () => {
-  const [content, setContent] = useState<SiteContent>(() => normaliseContent(defaultSiteContent));
+  const [content, setContent] = useState<SiteContent>(defaultSiteContent);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    let isMounted = true;
 
-    const load = async () => {
+    const loadContent = async () => {
       try {
         const response = await fetch('/site-content.json', { cache: 'no-store' });
         if (!response.ok) {
           throw new Error(`Failed to load site content: ${response.status}`);
         }
-        const data = (await response.json()) as Partial<RawSiteContent>;
-        if (!cancelled) {
-          setContent(normaliseContent(mergeContent(defaultSiteContent, data)));
+        const payload = (await response.json()) as SiteContent;
+        if (isMounted) {
+          setContent(normaliseContent(payload));
         }
       } catch (error) {
-        if (!cancelled) {
-          console.warn('[site-content] falling back to default configuration', error);
-        }
+        console.error(error);
       } finally {
-        if (!cancelled) {
+        if (isMounted) {
           setIsReady(true);
         }
       }
     };
 
-    void load();
+    void loadContent();
 
     return () => {
-      cancelled = true;
+      isMounted = false;
     };
   }, []);
 
-  return { content, isReady };
+  const value = useMemo(() => ({ content, isReady }), [content, isReady]);
+  return value;
 };

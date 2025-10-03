@@ -1,5 +1,4 @@
-import { createContext, useCallback, useContext, useState } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 type OverlayKey = 'about' | 'events' | 'reserve' | 'tickets' | 'contact' | 'legal' | null;
 
@@ -11,29 +10,31 @@ interface OverlayContextValue {
 
 const OverlayContext = createContext<OverlayContextValue | undefined>(undefined);
 
-export const OverlayContextProvider = ({ children }: { children: ReactNode }) => {
+interface OverlayProviderProps {
+  children: ReactNode;
+}
+
+export const OverlayContextProvider = ({ children }: OverlayProviderProps) => {
   const [current, setCurrent] = useState<OverlayKey>(null);
 
-  const openOverlay = useCallback((key: Exclude<OverlayKey, null>) => {
-    setCurrent(key);
-  }, []);
-
-  const closeOverlay = useCallback(() => {
-    setCurrent(null);
-  }, []);
-
-  return (
-    <OverlayContext.Provider value={{ current, openOverlay, closeOverlay }}>
-      {children}
-    </OverlayContext.Provider>
+  const value = useMemo(
+    () => ({
+      current,
+      openOverlay: (key: Exclude<OverlayKey, null>) => setCurrent(key),
+      closeOverlay: () => setCurrent(null)
+    }),
+    [current]
   );
+
+  return <OverlayContext.Provider value={value}>{children}</OverlayContext.Provider>;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useOverlay = () => {
-  const ctx = useContext(OverlayContext);
-  if (!ctx) {
+  const context = useContext(OverlayContext);
+  if (!context) {
     throw new Error('useOverlay must be used within an OverlayContextProvider');
   }
-  return ctx;
+
+  return context;
 };

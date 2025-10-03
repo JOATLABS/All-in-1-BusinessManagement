@@ -1,27 +1,28 @@
-import type { ReactNode } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { CloseButton } from './CloseButton';
 import { panelMotion } from './panelMotion';
+import { CloseButton } from './CloseButton';
 
-interface InfoPanelProps {
+interface InfoPanelProps extends PropsWithChildren {
   title: string;
   subtitle?: string;
-  children: ReactNode;
   onClose: () => void;
+  actions?: ReactNode;
 }
 
-export const InfoPanel = ({ title, subtitle, children, onClose }: InfoPanelProps) => {
-  return (
-    <motion.aside className="panel" {...panelMotion} transition={{ duration: 0.6, ease: 'easeInOut' }}>
-      <div className="panel__header">
-        <div>
-          <p className="panel__eyebrow">Experience</p>
-          <h2 className="panel__title">{title}</h2>
-          {subtitle && <p className="panel__subtitle">{subtitle}</p>}
-        </div>
-        <CloseButton onClick={onClose} />
+export const InfoPanel = ({ title, subtitle, children, onClose, actions }: InfoPanelProps) => (
+  <motion.aside className="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" {...panelMotion}>
+    <header className="panel__header">
+      <div>
+        <p className="panel__eyebrow">OjaPlus Nightclub</p>
+        <h2 id="panel-title" className="panel__title">
+          {title}
+        </h2>
+        {subtitle && <p className="panel__subtitle">{subtitle}</p>}
       </div>
-      <div className="panel__content">{children}</div>
-    </motion.aside>
-  );
-};
+      <CloseButton onClick={onClose} />
+    </header>
+    <div className="panel__body">{children}</div>
+    {actions && <div className="panel__actions">{actions}</div>}
+  </motion.aside>
+);

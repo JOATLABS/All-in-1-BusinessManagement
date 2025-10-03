@@ -1,38 +1,45 @@
 {
   "hero": {
-    "name": "OJAPLUS NIGHTCLUB",
-    "tagline": "Where Lagos energy meets New York precision.",
-    "words": ["DRINK", "DANCE", "INDULGE"],
+    "name": "OjaPlus Nightclub",
+    "tagline": "Drink. Dine. Dance.",
+    "words": [
+      "DRINK.",
+      "DINE.",
+      "DANCE.",
+      "REPEAT."
+    ],
     "backgrounds": [
       {
-        "src": "https://images.unsplash.com/photo-1542452255191-c85a98f2e6c9?auto=format&fit=crop&w=1600&q=80",
-        "alt": "Crowd dancing under red lights"
+        "src": "https://images.unsplash.com/photo-1604079628040-94301bb21b11?auto=format&fit=crop&w=1600&q=80",
+        "alt": "Crowd dancing under neon lights",
+        "focalPoint": { "x": 50, "y": 50 }
       },
       {
-        "src": "https://images.unsplash.com/photo-1519677100203-a0e668c92439?auto=format&fit=crop&w=1600&q=80",
-        "alt": "DJ performing with neon visuals"
+        "src": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1600&q=80",
+        "alt": "VIP table with cocktails",
+        "focalPoint": { "x": 45, "y": 40 }
       },
       {
-        "src": "https://images.unsplash.com/photo-1546749876-2088f2e7f89b?auto=format&fit=crop&w=1600&q=80",
-        "alt": "Luxurious lounge seating with moody lighting"
+        "src": "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80",
+        "alt": "DJ performing in front of crowd",
+        "focalPoint": { "x": 45, "y": 45 }
       }
     ]
   },
   "event": {
-    "name": "Velvet Pulse: Lunar Noir Edition",
-    "start": "2025-02-14T22:00:00-05:00",
-    "end": "2025-02-15T03:00:00-05:00",
-    "flyer": "https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1000&q=80",
-    "description": "An immersive Valentine’s showcase featuring house, Afrobeats, and signature sensory installations across two floors.",
-    "headliners": ["DJ Nyra", "MC Kinetic", "Visual Alchemist Collective"],
+    "name": "Velvet Pulse",
+    "flyer": "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1200&q=80",
+    "start": "2025-10-10T21:00:00-04:00",
+    "end": "2025-10-11T04:00:00-04:00",
+    "description": "An Afrofuturist dance odyssey featuring rotating DJs, interactive visuals, and curated cocktail flights.",
     "requiresTicket": true,
-    "tableHotline": "+1 (646) 555-0199"
+    "tableHotline": "+1 (332) 555-0199"
   },
   "footer": {
     "socials": [
-      { "name": "Instagram", "url": "https://instagram.com/ojaplus", "icon": "instagram" },
-      { "name": "Facebook", "url": "https://facebook.com/ojaplus", "icon": "facebook" },
-      { "name": "TikTok", "url": "https://tiktok.com/@ojaplus", "icon": "tiktok" }
+      { "name": "Instagram", "icon": "instagram", "url": "https://instagram.com/ojaplus" },
+      { "name": "TikTok", "icon": "tiktok", "url": "https://tiktok.com/@ojaplus" },
+      { "name": "Facebook", "icon": "facebook", "url": "https://facebook.com/ojaplus" }
     ]
   }
 }

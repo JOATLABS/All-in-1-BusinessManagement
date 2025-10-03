@@ -1,5 +1,6 @@
 export const panelMotion = {
-  initial: { x: '100%', opacity: 0 },
-  animate: { x: 0, opacity: 1 },
-  exit: { x: '100%', opacity: 0 }
+  initial: { opacity: 0, x: 40 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 40 },
+  transition: { duration: 0.5, ease: 'easeInOut' as const }
 };
