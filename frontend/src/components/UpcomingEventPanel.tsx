@@ -1,20 +1,10 @@
 import { motion } from 'framer-motion';
+import type { SiteContent } from '../types/content';
 import { CloseButton } from './CloseButton';
 import { panelMotion } from './panelMotion';
 
-interface UpcomingEvent {
-  name: string;
-  start: Date;
-  end: Date;
-  flyer: string;
-  description: string;
-  headliners: string[];
-  requiresTicket: boolean;
-  tableHotline: string;
-}
-
 interface UpcomingEventPanelProps {
-  event: UpcomingEvent;
+  event: SiteContent['event'];
   onClose: () => void;
 }
 
