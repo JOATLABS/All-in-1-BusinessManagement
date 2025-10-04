@@ -17,6 +17,14 @@ The images below are included in this ZIP and referenced by relative paths so th
 - **Stripe** (deposits, tickets, invoices), **Cloudinary** (media), **Twilio/Email/Slack** (notifications).
 - Deploy on **Vercel/AWS/Supabase**; use **CDN + Edge** for low latency.
 
+### Deployment model recommendation (current cost/performance sweet spot)
+- **Frontend**: deploy the Vite build output to **Cloudflare Pages** behind their global CDN for near-zero cold starts and bundled DDoS protection while keeping hosting costs minimal. Pages integrates cleanly with the existing R2 media bucket so hero and gallery assets resolve over the `media.rhythmplusroot.com` domain without origin egress charges.
+- **Backend API**: package the Express server as a lightweight container and run it on **Fly.io** or **Render** autoscaled instances (shared CPU) to balance predictable pricing with enough headroom for the Postgres connection pool and WebSocket-ready reservations roadmap. Pair it with Cloudflare Tunnel for secure ingress so we can reuse the same domain and WAF rules.
+- **Database**: use a managed **Postgres** such as **Neon** or **Supabase**; both offer generous free tiers, connection pooling, and point-in-time recovery. This keeps operational overhead low while preserving compatibility with the current Drizzle migrations and seed routines.
+- **Edge acceleration**: terminate TLS and cache static API responses (e.g., public site content) at **Cloudflare CDN**. For Worker adoption later, Cloudflare Hyperdrive can front the managed Postgres without code changes, giving globally distributed read replicas once traffic justifies the spend.
+
+This arrangement keeps monthly infrastructure costs anchored to usage-based tiers while still delivering sub-100 ms response times for hero content and reservation lookups as the platform scales into multiple locations.
+
 ### Current prototype snapshot (October 2025)
 - **Frontend** – Vite + React single-page experience with animated hero, overlay navigation, and protected admin routes backed by a shared site-content provider.【F:frontend/src/App.tsx†L1-L33】【F:frontend/src/pages/LandingPage.tsx†L1-L178】
 - **Backend** – Express + TypeScript API with Helmet/CORS, Postgres persistence, and JSON-driven seeding for hero/event/footer overlays.【F:backend/src/app.ts†L1-L27】【F:backend/src/db/index.ts†L1-L54】【F:backend/src/db/seed.ts†L1-L62】
