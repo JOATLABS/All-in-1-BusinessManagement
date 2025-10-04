@@ -915,6 +915,18 @@ body::before {
   color: rgba(246, 241, 230, 0.65);
 }
 
+.admin-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 960px) {
   .admin-login {
     grid-template-columns: 1fr;
@@ -1024,6 +1036,13 @@ body::before {
   display: flex;
   gap: 1rem;
   align-items: center;
+}
+
+.admin-shell__user {
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .admin-shell__signout {

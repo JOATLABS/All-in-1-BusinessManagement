@@ -2,11 +2,21 @@ import { motion } from 'framer-motion';
 import { panelMotion } from './panelMotion';
 import { CloseButton } from './CloseButton';
 
-interface ContactPanelProps {
-  onClose: () => void;
+interface ContactPanelContent {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  topics: Array<{ value: string; label: string }>;
+  messagePlaceholder: string;
+  submitLabel: string;
 }
 
-export const ContactPanel = ({ onClose }: ContactPanelProps) => (
+interface ContactPanelProps {
+  onClose: () => void;
+  content: ContactPanelContent;
+}
+
+export const ContactPanel = ({ onClose, content }: ContactPanelProps) => (
   <motion.aside
     className="panel"
     role="dialog"
@@ -16,11 +26,11 @@ export const ContactPanel = ({ onClose }: ContactPanelProps) => (
   >
     <header className="panel__header">
       <div>
-        <p className="panel__eyebrow">Partner with us</p>
+        <p className="panel__eyebrow">{content.eyebrow}</p>
         <h2 id="contact-title" className="panel__title">
-          Contact Us
+          {content.title}
         </h2>
-        <p className="panel__subtitle">Promoters, planners & collaborators</p>
+        <p className="panel__subtitle">{content.subtitle}</p>
       </div>
       <CloseButton onClick={onClose} />
     </header>
@@ -29,10 +39,11 @@ export const ContactPanel = ({ onClose }: ContactPanelProps) => (
         Enquiry type
       </label>
       <select id="contact-type" name="contact-type" className="panel__select">
-        <option value="private-hire">Private hire</option>
-        <option value="promoter">Promoter partnership</option>
-        <option value="production">Production & AV</option>
-        <option value="other">General enquiry</option>
+        {content.topics.map((topic) => (
+          <option key={topic.value} value={topic.value}>
+            {topic.label}
+          </option>
+        ))}
       </select>
 
       <label className="panel__label" htmlFor="contact-name">
@@ -52,11 +63,11 @@ export const ContactPanel = ({ onClose }: ContactPanelProps) => (
         id="contact-message"
         name="message"
         className="panel__textarea"
-        placeholder="Share event goals, audience size, or special requests"
+        placeholder={content.messagePlaceholder}
       />
 
       <button type="submit" className="panel__submit">
-        Send enquiry
+        {content.submitLabel}
       </button>
     </form>
   </motion.aside>

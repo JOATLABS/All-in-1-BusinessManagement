@@ -32,8 +32,58 @@ export interface FooterContent {
   }>;
 }
 
+export interface AboutOverlayContent {
+  title: string;
+  subtitle: string;
+  paragraphs: string[];
+  hours: Array<{ label: string; value: string }>;
+}
+
+export interface ReserveOverlayContent {
+  title: string;
+  subtitle: string;
+  intro: string;
+  bullets: string[];
+  emailCta: { label: string; href: string };
+  hotlineLabel: string;
+}
+
+export interface TicketsOverlayContent {
+  title: string;
+  subtitle: string;
+  ticketCopy: string;
+  fallbackCopy: string;
+  ctaLabel: string;
+  ctaUrl: string;
+}
+
+export interface ContactOverlayContent {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  topics: Array<{ value: string; label: string }>;
+  messagePlaceholder: string;
+  submitLabel: string;
+}
+
+export interface LegalOverlayContent {
+  title: string;
+  subtitle: string;
+  terms: string[];
+  privacyPlaceholder: string;
+}
+
+export interface OverlaysContent {
+  about: AboutOverlayContent;
+  reserve: ReserveOverlayContent;
+  tickets: TicketsOverlayContent;
+  contact: ContactOverlayContent;
+  legal: LegalOverlayContent;
+}
+
 export interface SiteContent {
   hero: HeroContent;
   event: EventContent;
   footer: FooterContent;
+  overlays: OverlaysContent;
 }
