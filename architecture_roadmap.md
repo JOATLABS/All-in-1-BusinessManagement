@@ -26,7 +26,7 @@ The images below are included in this ZIP and referenced by relative paths so th
 See `best_practices_audit.md` for the latest compliance findings and `project_tasks.md` for remediation commitments tied to this snapshot.
 
 ## Key Features to Implement
-- **Customer site**: galleries, services, event list with countdown, section reservations, playlists, shout-outs.
+- **Customer site**: cinematic landing hero, services, event list with countdown, section reservations, conditional ticket pre-sales, partner contact modal.
 - **Promoter/Vendor portal**: contracts & signatures, payouts/receipts, messaging, scheduling.
 - **Admin**: theme/site config, contract templates, inventory & vendors, budge/accounting, events, CS inbox, payroll, records, reports, audits, notifications and SLA handling.
 - **Event policy**: Free entry by default; **ticketed** special events are pre-paid online to avoid lines at the door.
@@ -34,7 +34,7 @@ See `best_practices_audit.md` for the latest compliance findings and `project_ta
 ## Roadmap (high-level)
 1. **Discovery** → user journeys, data model, location routing style (subdomain vs path).
 2. **Design** → mobile‑first, dark mode, accessible UI; component library; micro‑interactions.
-3. **MVP** → customer flows (events/reservations/shout-outs), promoter onboarding, admin basics.
+3. **MVP** → customer flows (events, reservations, conditional ticketing, contact modal), promoter onboarding, admin basics.
 4. **Backoffice** → inventory, contracts, finance, CRM/CS inbox, notifications.
 5. **Scale** → RUM monitoring, performance budgets, horizontal scaling, cost observability.
 
