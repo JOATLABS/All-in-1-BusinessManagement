@@ -3,7 +3,7 @@
 System Architecture and Roadmap for the Customer Website & Business‑Management System
 Introduction
 
-The client’s vision is to create a customer‑friendly Afrobeat lounge that differentiates itself through service rather than high prices. To support this mission the website needs to be more than a marketing brochure – it must include event reservations, ticket pre‑sales, DJ shout‑outs, curated playlists and promoter partnerships. Behind the scenes, the business needs a multi‑tenant management platform that supports inventory control, vendor contracts, marketing campaigns, financial management, communication with promoters and vendors, and comprehensive reporting. Both the customer‑facing site and the management system need smooth transitions, low latency, and scalability to support growth. The following sections summarise research into modern UI/UX practices, multi‑tenant best practices and event‑management requirements, propose a technology stack and present a high‑level system architecture and implementation roadmap.
+The client’s vision is to create a customer‑friendly Afrobeat lounge that differentiates itself through service rather than high prices. To support this mission the website needs to be more than a marketing brochure – it must include event reservations, conditional ticket pre‑sales, looping nightlife visuals, and direct partner contact routes. Behind the scenes, the business needs a multi‑tenant management platform that supports inventory control, vendor contracts, marketing campaigns, financial management, communication with promoters and vendors, and comprehensive reporting. Both the customer‑facing site and the management system need smooth transitions, low latency, and scalability to support growth. The following sections summarise research into modern UI/UX practices, multi‑tenant best practices and event‑management requirements, propose a technology stack and present a high‑level system architecture and implementation roadmap.
 
 UI/UX design best practices
 Night‑life website trends
@@ -196,7 +196,7 @@ Authentication & RBAC: Handles user registration, login (email/social), password
 update.dev
 .
 
-Event & reservation service: Manages event creation, scheduling, ticket inventories, section reservations and deposit payments. Supports recurring weekend events and special one‑off events. Exposes APIs for DJ shout‑outs and curated playlists. Integrates with Stripe to collect payments ahead of events.
+Event & reservation service: Manages event creation, scheduling, ticket inventories, section reservations, partner contact routing, and deposit payments. Supports recurring weekend events and special one‑off events. Provides APIs that feed the landing hero CTAs with countdowns, ticket requirements, and reservation availability. Integrates with Stripe to collect deposits and paid ticket add-ons ahead of events.
 
 Inventory & logistics service: Tracks physical inventory (e.g., alcohol, snacks, decorations), vendor orders and shipments. Provides low‑stock alerts, purchase‑order management and vendor communication interfaces. Data can be exported to the accounting module.
 
@@ -278,7 +278,7 @@ wisp.blog
 
 Integrate authentication (Auth.js or Clerk) and user session management.
 
-Configure Stripe for reservation deposits and DJ shout‑out payments.
+Configure Stripe for reservation deposits and paid ticket add-ons.
 
 Backend services (6 weeks)
 
@@ -345,6 +345,39 @@ Add AI‑driven personalisation for music recommendations and event suggestions.
 Explore integrations with generative AI chatbots for customer service and vendor support.
 
 Expand modules (e.g., payroll processing, advanced marketing automation) as business requirements evolve.
+
+## Prototype development setup
+
+The current repository includes a working Vite/React landing experience and an Express-based admin API so we can validate the content workflow without accruing technical debt. The steps below keep both experiences running locally while honouring the architecture roadmap.
+
+The backend persists hero, event, footer and overlay copy in PostgreSQL through Drizzle ORM so admin edits survive restarts while matching the production-ready stack documented earlier.
+
+### Backend API (Express + TypeScript)
+
+1. `cd backend`
+2. `npm install`
+3. Copy `.env.example` to `.env` and point `DATABASE_URL` at your PostgreSQL instance (for local work a Dockerised Postgres 15+ container is recommended).
+4. `npm run db:seed` to load the hero/event/footer seed data and the default admin user (the server will create any missing tables automatically).
+5. `npm run dev`
+
+The API listens on **http://localhost:4000** by default and reads/writes content using the `DATABASE_URL` connection string. Adjust the backend `.env` or `VITE_API_PROXY_TARGET` if you need to run it elsewhere.
+
+### Frontend (Vite + React + TypeScript)
+
+1. `cd frontend`
+2. `npm install`
+3. Copy `.env.example` to `.env.local` if you need to override the defaults (e.g. `VITE_API_BASE_URL` for remote environments).
+4. `npm run dev`
+
+The Vite dev server proxies `/api` requests to the backend, so no extra CORS configuration is required for local work.
+
+### Admin access for the prototype
+
+- Email: `owner@ojaplusclub.com`
+- Password: `Nightlife!23`
+
+After signing in, the **Site Configuration** workspace saves changes directly to the API and refreshes the landing content. Run `npm run lint` and `npm run build` in `frontend/` plus `npm run build` in `backend/` before committing changes to maintain quality gates.
+
 
 Conclusion
 
