@@ -148,3 +148,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Node.js and web assets
+node_modules/
+.turbo/
+.next/
+pnpm-lock.yaml
+yarn.lock
+*.log
+backend/dist/
