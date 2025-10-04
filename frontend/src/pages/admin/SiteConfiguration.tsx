@@ -55,12 +55,28 @@ const heroToDraft = (hero: HeroContent) => ({
   backgrounds: hero.backgrounds.map((background) => ({ ...background }))
 });
 
+const formatDateTimeLocal = (value: Date): string => {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+    return '';
+  }
+
+  const pad = (segment: number) => segment.toString().padStart(2, '0');
+
+  const year = value.getFullYear();
+  const month = pad(value.getMonth() + 1);
+  const day = pad(value.getDate());
+  const hours = pad(value.getHours());
+  const minutes = pad(value.getMinutes());
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const eventToDraft = (event: EventContent): EventDraftState => ({
   name: event.name,
   description: event.description,
   flyer: event.flyer,
-  start: event.start.toISOString().slice(0, 16),
-  end: event.end.toISOString().slice(0, 16),
+  start: formatDateTimeLocal(event.start),
+  end: formatDateTimeLocal(event.end),
   requiresTicket: event.requiresTicket,
   tableHotline: event.tableHotline
 });
