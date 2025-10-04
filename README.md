@@ -346,6 +346,39 @@ Explore integrations with generative AI chatbots for customer service and vendor
 
 Expand modules (e.g., payroll processing, advanced marketing automation) as business requirements evolve.
 
+## Prototype development setup
+
+The current repository includes a working Vite/React landing experience and an Express-based admin API so we can validate the content workflow without accruing technical debt. The steps below keep both experiences running locally while honouring the architecture roadmap.
+
+The backend persists hero, event, footer and overlay copy in PostgreSQL through Drizzle ORM so admin edits survive restarts while matching the production-ready stack documented earlier.
+
+### Backend API (Express + TypeScript)
+
+1. `cd backend`
+2. `npm install`
+3. Copy `.env.example` to `.env` and point `DATABASE_URL` at your PostgreSQL instance (for local work a Dockerised Postgres 15+ container is recommended).
+4. `npm run db:seed` to load the hero/event/footer seed data and the default admin user (the server will create any missing tables automatically).
+5. `npm run dev`
+
+The API listens on **http://localhost:4000** by default and reads/writes content using the `DATABASE_URL` connection string. Adjust the backend `.env` or `VITE_API_PROXY_TARGET` if you need to run it elsewhere.
+
+### Frontend (Vite + React + TypeScript)
+
+1. `cd frontend`
+2. `npm install`
+3. Copy `.env.example` to `.env.local` if you need to override the defaults (e.g. `VITE_API_BASE_URL` for remote environments).
+4. `npm run dev`
+
+The Vite dev server proxies `/api` requests to the backend, so no extra CORS configuration is required for local work.
+
+### Admin access for the prototype
+
+- Email: `owner@ojaplusclub.com`
+- Password: `Nightlife!23`
+
+After signing in, the **Site Configuration** workspace saves changes directly to the API and refreshes the landing content. Run `npm run lint` and `npm run build` in `frontend/` plus `npm run build` in `backend/` before committing changes to maintain quality gates.
+
+
 Conclusion
 
 The proposed architecture leverages modern web technologies to deliver a low‑latency, engaging customer portal and a powerful multi‑tenant management system. By adopting dark‑mode aesthetics, bold typography and interactive elements, the site can capture the nightlife vibe while remaining accessible and mobile‑friendly
