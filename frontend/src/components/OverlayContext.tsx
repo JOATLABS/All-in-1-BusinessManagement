@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
-type OverlayKey = 'about' | 'events' | 'reserve' | 'tickets' | 'contact' | 'legal' | null;
+type OverlayKey = 'about' | 'events' | 'tickets' | 'contact' | 'legal' | null;
 
 interface OverlayContextValue {
   current: OverlayKey;

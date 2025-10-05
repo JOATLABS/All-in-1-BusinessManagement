@@ -4,7 +4,8 @@ import type {
   EventContent,
   FooterContent,
   HeroContent,
-  OverlaysContent
+  OverlaysContent,
+  ReservationContent
 } from '../types.js';
 
 export const siteContentTable = pgTable('site_content', {
@@ -12,6 +13,7 @@ export const siteContentTable = pgTable('site_content', {
   hero: jsonb('hero').$type<HeroContent>().notNull(),
   event: jsonb('event').$type<EventContent>().notNull(),
   footer: jsonb('footer').$type<FooterContent>().notNull(),
+  reservation: jsonb('reservation').$type<ReservationContent>().notNull(),
   overlays: jsonb('overlays').$type<OverlaysContent>().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });

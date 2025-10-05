@@ -4,10 +4,17 @@ import { siteContentTable } from '../db/schema.js';
 import { DEFAULT_SITE_CONTENT_ID } from '../db/seed.js';
 import type { SiteContent } from '../types.js';
 
-const mapRowToContent = (row: { hero: SiteContent['hero']; event: SiteContent['event']; footer: SiteContent['footer']; overlays: SiteContent['overlays'] }): SiteContent => ({
+const mapRowToContent = (row: {
+  hero: SiteContent['hero'];
+  event: SiteContent['event'];
+  footer: SiteContent['footer'];
+  reservation: SiteContent['reservation'];
+  overlays: SiteContent['overlays'];
+}): SiteContent => ({
   hero: row.hero,
   event: row.event,
   footer: row.footer,
+  reservation: row.reservation,
   overlays: row.overlays
 });
 
@@ -18,6 +25,7 @@ export const getSiteContent = async (): Promise<SiteContent> => {
       hero: siteContentTable.hero,
       event: siteContentTable.event,
       footer: siteContentTable.footer,
+      reservation: siteContentTable.reservation,
       overlays: siteContentTable.overlays
     })
     .from(siteContentTable)
@@ -41,6 +49,7 @@ export const saveSiteContent = async (content: SiteContent): Promise<void> => {
       hero: content.hero,
       event: content.event,
       footer: content.footer,
+      reservation: content.reservation,
       overlays: content.overlays,
       updatedAt: timestamp
     })

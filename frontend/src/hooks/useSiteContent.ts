@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { SiteContent } from '../types/content';
+import type { ReservationTierPattern, SiteContent } from '../types/content';
 import { defaultSiteContent } from '../config/defaultSiteContent';
 import { fetchSiteContent, type SiteContentResponse } from '../services/contentService';
 
@@ -7,6 +7,18 @@ const parseDate = (value: string | Date) => (value instanceof Date ? value : new
 
 const ensureArray = <T>(value: T[] | undefined, fallback: T[]): T[] =>
   value && value.length ? value : fallback;
+
+const parseNonNegativeInt = (value: unknown, fallback: number): number => {
+  const numeric = typeof value === 'number' ? value : Number.parseInt(String(value), 10);
+
+  if (!Number.isFinite(numeric) || Number.isNaN(numeric) || numeric < 0) {
+    return fallback;
+  }
+
+  return Math.floor(numeric);
+};
+
+const reservationPatterns: ReservationTierPattern[] = ['grid', 'halo', 'pillars'];
 
 const normaliseContent = (content: SiteContent): SiteContent => ({
   hero: {
@@ -25,20 +37,53 @@ const normaliseContent = (content: SiteContent): SiteContent => ({
   footer: {
     socials: ensureArray(content.footer?.socials, defaultSiteContent.footer.socials)
   },
+  reservation: {
+    title: content.reservation?.title ?? defaultSiteContent.reservation.title,
+    subtitle: content.reservation?.subtitle ?? defaultSiteContent.reservation.subtitle,
+    intro: content.reservation?.intro ?? defaultSiteContent.reservation.intro,
+    availabilityNote:
+      content.reservation?.availabilityNote ?? defaultSiteContent.reservation.availabilityNote,
+    paymentSteps: ensureArray(content.reservation?.paymentSteps, defaultSiteContent.reservation.paymentSteps),
+    confirmationHeadline:
+      content.reservation?.confirmationHeadline ?? defaultSiteContent.reservation.confirmationHeadline,
+    confirmationSubtext:
+      content.reservation?.confirmationSubtext ?? defaultSiteContent.reservation.confirmationSubtext,
+    tableTiers: (() => {
+      const fallbackTiers = defaultSiteContent.reservation.tableTiers;
+      const sourceTiers = ensureArray(content.reservation?.tableTiers, fallbackTiers);
+
+      return sourceTiers.map((tier, index) => {
+        const fallback = fallbackTiers[index] ?? fallbackTiers[0];
+        const total = parseNonNegativeInt(tier.total, fallback.total);
+        const reserved = Math.min(parseNonNegativeInt(tier.reserved, fallback.reserved), total);
+        const pattern = reservationPatterns.includes(tier.visual?.pattern as ReservationTierPattern)
+          ? tier.visual.pattern
+          : fallback.visual.pattern;
+
+        return {
+          id: tier.id?.trim() ? tier.id : fallback.id,
+          label: tier.label ?? fallback.label,
+          capacity: tier.capacity ?? fallback.capacity,
+          description: tier.description ?? fallback.description,
+          price: tier.price ?? fallback.price,
+          total,
+          reserved,
+          visual: {
+            pattern,
+            primaryColor: tier.visual?.primaryColor?.trim() ?? fallback.visual.primaryColor,
+            secondaryColor: tier.visual?.secondaryColor?.trim() ?? fallback.visual.secondaryColor,
+            accentColor: tier.visual?.accentColor?.trim() ?? fallback.visual.accentColor
+          }
+        };
+      });
+    })()
+  },
   overlays: {
     about: {
       title: content.overlays?.about.title ?? defaultSiteContent.overlays.about.title,
       subtitle: content.overlays?.about.subtitle ?? defaultSiteContent.overlays.about.subtitle,
       paragraphs: ensureArray(content.overlays?.about.paragraphs, defaultSiteContent.overlays.about.paragraphs),
       hours: ensureArray(content.overlays?.about.hours, defaultSiteContent.overlays.about.hours)
-    },
-    reserve: {
-      title: content.overlays?.reserve.title ?? defaultSiteContent.overlays.reserve.title,
-      subtitle: content.overlays?.reserve.subtitle ?? defaultSiteContent.overlays.reserve.subtitle,
-      intro: content.overlays?.reserve.intro ?? defaultSiteContent.overlays.reserve.intro,
-      bullets: ensureArray(content.overlays?.reserve.bullets, defaultSiteContent.overlays.reserve.bullets),
-      emailCta: content.overlays?.reserve.emailCta ?? defaultSiteContent.overlays.reserve.emailCta,
-      hotlineLabel: content.overlays?.reserve.hotlineLabel ?? defaultSiteContent.overlays.reserve.hotlineLabel
     },
     tickets: {
       title: content.overlays?.tickets.title ?? defaultSiteContent.overlays.tickets.title,
@@ -75,6 +120,7 @@ const fromResponse = (payload: SiteContentResponse): SiteContent => ({
     end: new Date(payload.event.end)
   },
   footer: payload.footer,
+  reservation: payload.reservation,
   overlays: payload.overlays
 });
 

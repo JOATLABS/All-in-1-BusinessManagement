@@ -145,9 +145,9 @@ const HeroContent = ({ hero, event, isReady }: HeroContentProps) => {
           <button onClick={() => openOverlay('events')} className="hero__nav-link">
             Events
           </button>
-          <button onClick={() => openOverlay('reserve')} className="hero__nav-link">
+          <Link to="/reserve" className="hero__nav-link">
             Reserve
-          </button>
+          </Link>
           <button onClick={() => openOverlay('contact')} className="hero__nav-link">
             Contact
           </button>
@@ -229,9 +229,9 @@ const HeroContent = ({ hero, event, isReady }: HeroContentProps) => {
         <button className="hero__cta" onClick={() => openOverlay('events')}>
           Upcoming Event
         </button>
-        <button className="hero__cta" onClick={() => openOverlay('reserve')}>
+        <Link className="hero__cta" to="/reserve">
           Table Reservation
-        </button>
+        </Link>
         <button className="hero__cta" onClick={() => openOverlay('tickets')}>
           Ticket Pre-Sale
         </button>
@@ -299,38 +299,14 @@ interface PanelsProps {
 
 const Panels = ({ event, overlays }: PanelsProps) => {
   const { closeOverlay, current } = useOverlay();
-  const hotlineHref = `tel:${event.tableHotline.replace(/[^+\d]/g, '')}`;
-  const reserveOverlay = overlays.reserve;
   const ticketsOverlay = overlays.tickets;
   const contactOverlay = overlays.contact;
   const aboutOverlay = overlays.about;
   const legalOverlay = overlays.legal;
-  const hotlineLabel = reserveOverlay.hotlineLabel.replace('{hotline}', event.tableHotline);
 
   return (
     <AnimatePresence>
       {current === 'events' && <UpcomingEventPanel key="events" event={event} onClose={closeOverlay} />}
-      {current === 'reserve' && (
-        <InfoPanel
-          key="reserve"
-          onClose={closeOverlay}
-          title={reserveOverlay.title}
-          subtitle={reserveOverlay.subtitle}
-        >
-          <p>{reserveOverlay.intro}</p>
-          <ul>
-            {reserveOverlay.bullets.map((bullet) => (
-              <li key={bullet}>{bullet}</li>
-            ))}
-          </ul>
-          <a className="panel__cta" href={reserveOverlay.emailCta.href}>
-            {reserveOverlay.emailCta.label}
-          </a>
-          <a className="panel__cta" href={hotlineHref}>
-            {hotlineLabel}
-          </a>
-        </InfoPanel>
-      )}
       {current === 'tickets' && (
         <InfoPanel
           key="tickets"
