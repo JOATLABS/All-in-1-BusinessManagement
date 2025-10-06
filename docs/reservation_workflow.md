@@ -84,19 +84,20 @@ This document explains how the VIP section reservation flow operates across the 
 
 ## 10. Local Preview Checklist
 
-When product or stakeholder reviews need a quick snapshot of the `/reserve` experience without the full backend stack, spin up the frontend against a lightweight mock API:
+Stakeholder previews should exercise the real reservation stack so availability counts, payment flows, and confirmation codes behave exactly as they will in production. To capture the `/reserve` page with live data:
 
-1. **Start a mock availability server**
+1. **Seed and start the backend**
    ```bash
-   node scripts/mock-reservations-api.js
+   npm --prefix backend run db:seed
+   npm --prefix backend run dev
    ```
-   The helper should expose `GET /api/v1/site-content` and `GET /api/v1/reservations/availability` responses with the same shape as the production service (see `backend/src/routes/reservations.ts`). Include CORS headers (`Access-Control-Allow-Origin: *`) so browser-based previews work across containers.
-2. **Run Vite with the mock base URL**
+   The dev server exposes the full REST surface (including `/api/v1/reservations/availability` and booking creation) backed by the local Postgres instance, which mirrors production logic and concurrency controls.
+2. **Run the frontend against the dev API**
    ```bash
-   VITE_API_BASE_URL=http://127.0.0.1:4000 npm --prefix frontend run dev -- --host 0.0.0.0 --port 4173
+   VITE_API_BASE_URL=http://127.0.0.1:3001 npm --prefix frontend run dev -- --host 0.0.0.0 --port 4173
    ```
-   The explicit host binding lets Playwright or other preview tooling reach the dev server from separate containers.
-3. **Capture the preview** – Use the browser automation utilities (e.g., `browser_container`) to open `http://127.0.0.1:4173/reserve` and grab a screenshot. Forward both the Vite port and the mock API port when running the capture so the page resolves live availability and renders without warning banners.
+   Pointing Vite at the live dev service keeps the UI aligned with real payment copy, availability decrements, and QR previews without introducing drift from mock data.
+3. **Capture the preview** – Use the browser automation utilities (e.g., `browser_container`) to open `http://127.0.0.1:4173/reserve` and grab a screenshot. Forward the Vite port (4173) and the backend port (3001) so the page resolves authenticated calls without errors.
 
-This workflow keeps the visual QA process aligned with production behaviour while avoiding direct dependencies on the full Postgres-backed API during quick reviews.
+This workflow leverages the real API at every step, which aligns with staging-environment best practices that emphasise validating changes against production-like services instead of mocks to catch integration issues early.
 
