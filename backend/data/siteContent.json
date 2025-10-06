@@ -42,6 +42,66 @@
       { "name": "Facebook", "icon": "facebook", "url": "https://facebook.com/ojaplus" }
     ]
   },
+  "reservation": {
+    "title": "Reserve Your VIP Section",
+    "subtitle": "Lock your night from anywhere",
+    "intro": "Skip the host stand and claim the perfect section before you leave the house. Every booking includes a dedicated concierge, bottle-ready setup, and seamless entry for your crew.",
+    "availabilityNote": "Counts refresh in real time as sections are confirmed. Once you complete payment, your section is immediately removed from inventory.",
+    "paymentSteps": [
+      "Crew details",
+      "Secure payment",
+      "Confirmation QR code"
+    ],
+    "confirmationHeadline": "You’re on the list.",
+    "confirmationSubtext": "We’ve emailed your confirmation QR code. Flash it with your ID when you arrive so we can escort your party to the floor.",
+    "tableTiers": [
+      {
+        "id": "intimate",
+        "label": "Intimate Booth",
+        "capacity": "Fits up to 4 guests",
+        "description": "Cozy lounge pocket with a private ice well for early arrivals and date nights.",
+        "price": "$50 deposit",
+        "total": 6,
+        "reserved": 2,
+        "visual": {
+          "pattern": "grid",
+          "primaryColor": "#9333ea",
+          "secondaryColor": "#f472b6",
+          "accentColor": "#ffffff1a"
+        }
+      },
+      {
+        "id": "social",
+        "label": "Social Nook",
+        "capacity": "Seats 6–7 guests",
+        "description": "Corner arrangement near the dance floor with room to mingle and a shared spotlight moment.",
+        "price": "$90 deposit",
+        "total": 7,
+        "reserved": 3,
+        "visual": {
+          "pattern": "halo",
+          "primaryColor": "#22d3ee",
+          "secondaryColor": "#6366f1",
+          "accentColor": "#ffffff14"
+        }
+      },
+      {
+        "id": "grand",
+        "label": "Grand Suite",
+        "capacity": "Hosts 8–10 guests",
+        "description": "Raised suite with bottle lockers, ambient lighting controls, and panoramic views of the DJ.",
+        "price": "$150 deposit",
+        "total": 5,
+        "reserved": 1,
+        "visual": {
+          "pattern": "pillars",
+          "primaryColor": "#f97316",
+          "secondaryColor": "#facc15",
+          "accentColor": "#ffffff12"
+        }
+      }
+    ]
+  },
   "overlays": {
     "about": {
       "title": "Our Story",
@@ -54,21 +114,6 @@
         { "label": "Thursday–Saturday", "value": "9:00 PM – 4:00 AM" },
         { "label": "Sunday", "value": "5:00 PM – 11:00 PM (Experiential supper club)" }
       ]
-    },
-    "reserve": {
-      "title": "Reserve a Table",
-      "subtitle": "Tailor the night for your crew",
-      "intro": "Lock in bottle service and bespoke lighting for your guests. Our concierge team responds within 30 minutes to craft the perfect arrival, seating, and celebration cues.",
-      "bullets": [
-        "Private lounges for 6–12 guests with custom sound design",
-        "Chef-curated share plates and premium champagne flights",
-        "Dedicated host with priority entry and valet coordination"
-      ],
-      "emailCta": {
-        "label": "Email concierge",
-        "href": "mailto:host@ojaplusclub.com?subject=Table%20Reservation%20Request"
-      },
-      "hotlineLabel": "Call {hotline}"
     },
     "tickets": {
       "title": "Ticket Pre-Sale",

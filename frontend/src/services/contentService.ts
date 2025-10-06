@@ -5,6 +5,7 @@ export interface SiteContentResponse {
   hero: SiteContent['hero'];
   event: Omit<SiteContent['event'], 'start' | 'end'> & { start: string; end: string };
   footer: SiteContent['footer'];
+  reservation: SiteContent['reservation'];
   overlays: SiteContent['overlays'];
 }
 

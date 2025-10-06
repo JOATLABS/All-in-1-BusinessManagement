@@ -3,6 +3,7 @@ import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { SiteContentProvider } from './content/SiteContentProvider';
 import { LandingPage } from './pages/LandingPage';
+import ReserveTablePage from './pages/ReserveTablePage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminLogin } from './pages/admin/AdminLogin';
@@ -14,6 +15,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/reserve" element={<ReserveTablePage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"

@@ -85,7 +85,7 @@ export const SiteConfiguration = ({ content }: SiteConfigurationProps) => {
         end: formatDateInput(content.event.end),
         flyer: content.event.flyer,
         description: content.event.description,
-        headliners: [...content.event.headliners],
+        headliners: [...(content.event.headliners ?? [])],
         requiresTicket: content.event.requiresTicket,
         ticketUrl: '',
         tableHotline: content.event.tableHotline,

@@ -22,9 +22,11 @@ const schemaStatements = [
     hero JSONB NOT NULL,
     event JSONB NOT NULL,
     footer JSONB NOT NULL,
+    reservation JSONB NOT NULL,
     overlays JSONB NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  )`
+  )`,
+  `ALTER TABLE site_content ADD COLUMN IF NOT EXISTS reservation JSONB NOT NULL DEFAULT '{}'::jsonb`
 ];
 
 const ensureSchema = async (client: PoolClient): Promise<void> => {
