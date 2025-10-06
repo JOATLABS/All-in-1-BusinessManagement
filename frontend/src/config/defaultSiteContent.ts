@@ -30,13 +30,13 @@ export const defaultSiteContent: SiteContent = {
   },
   reservation: {
     title: 'Reserve Your VIP Section',
-    subtitle: 'Lock your night from anywhere',
-    heroEyebrow: 'Direct VIP reservations',
+    subtitle: 'Book instantly',
+    heroEyebrow: 'VIP reservations',
     backLinkLabel: '← Back to experiences',
     intro:
-      'Skip the host stand and claim the perfect section before you leave the house. Every booking includes a dedicated concierge, bottle-ready setup, and seamless entry for your crew.',
+      'Grab your booth online and walk straight in. Concierge entry and bottle service are ready when you arrive.',
     availabilityNote:
-      'Counts refresh in real time as sections are confirmed. Once you complete payment, your section is immediately removed from inventory.',
+      'Numbers update live—finish payment and the section is yours.',
     availability: {
       heading: "Tonight's availability",
       liveTag: 'Live update',
@@ -46,7 +46,7 @@ export const defaultSiteContent: SiteContent = {
       totalLabel: 'Total inventory'
     },
     carousel: {
-      heading: 'Choose your section',
+      heading: 'Pick your section',
       previousLabel: 'View previous section',
       nextLabel: 'View next section',
       availableLabel: 'Available',
@@ -63,16 +63,16 @@ export const defaultSiteContent: SiteContent = {
       paymentProcessingLabel: 'Processing…',
       confirmationCtaLabel: 'Done'
     },
-    paymentSteps: ['Crew details', 'Secure payment', 'Confirmation QR code'],
-    confirmationHeadline: 'You’re on the list.',
+    paymentSteps: ['Guest info', 'Payment', 'QR pass'],
+    confirmationHeadline: 'You’re confirmed.',
     confirmationSubtext:
-      'We’ve emailed your confirmation QR code. Flash it with your ID when you arrive so we can escort your party to the floor.',
+      'Your QR pass is in your inbox. Show it with your ID when you arrive.',
     tableTiers: [
       {
         id: 'intimate',
         label: 'Intimate Booth',
-        capacity: 'Fits up to 4 guests',
-        description: 'Cozy lounge pocket with a private ice well for early arrivals and date nights.',
+        capacity: 'Seats up to 4',
+        description: 'Private lounge nook for tight crews and early hangs.',
         price: '$50',
         total: 6,
         reserved: 2,
@@ -86,8 +86,8 @@ export const defaultSiteContent: SiteContent = {
       {
         id: 'social',
         label: 'Social Nook',
-        capacity: 'Seats 6–7 guests',
-        description: 'Corner arrangement near the dance floor with room to mingle and a shared spotlight moment.',
+        capacity: 'Seats 6–7',
+        description: 'Corner energy beside the floor with room to move.',
         price: '$90',
         total: 7,
         reserved: 3,
@@ -101,8 +101,8 @@ export const defaultSiteContent: SiteContent = {
       {
         id: 'grand',
         label: 'Grand Suite',
-        capacity: 'Hosts 8–10 guests',
-        description: 'Raised suite with bottle lockers, ambient lighting controls, and panoramic views of the DJ.',
+        capacity: 'Hosts 8–10',
+        description: 'Raised suite with bottle lockers and DJ views.',
         price: '$150',
         total: 5,
         reserved: 1,
