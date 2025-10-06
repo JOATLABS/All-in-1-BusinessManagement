@@ -31,10 +31,38 @@ export const defaultSiteContent: SiteContent = {
   reservation: {
     title: 'Reserve Your VIP Section',
     subtitle: 'Lock your night from anywhere',
+    heroEyebrow: 'Direct VIP reservations',
+    backLinkLabel: '← Back to experiences',
     intro:
       'Skip the host stand and claim the perfect section before you leave the house. Every booking includes a dedicated concierge, bottle-ready setup, and seamless entry for your crew.',
     availabilityNote:
       'Counts refresh in real time as sections are confirmed. Once you complete payment, your section is immediately removed from inventory.',
+    availability: {
+      heading: "Tonight's availability",
+      liveTag: 'Live update',
+      loadingLabel: 'Syncing…',
+      openLabel: 'Open sections',
+      reservedLabel: 'Already booked',
+      totalLabel: 'Total inventory'
+    },
+    carousel: {
+      heading: 'Choose your section',
+      previousLabel: 'View previous section',
+      nextLabel: 'View next section',
+      availableLabel: 'Available',
+      reserveButtonLabel: 'Reserve for {price}',
+      soldOutLabel: 'Sold out'
+    },
+    modal: {
+      stepsHeading: 'How it works',
+      detailsHeading: 'Crew details',
+      paymentHeading: 'Secure payment',
+      confirmationCodeLabel: 'Confirmation code',
+      detailsCtaLabel: 'Continue to payment',
+      paymentCtaLabel: 'Pay {price}',
+      paymentProcessingLabel: 'Processing…',
+      confirmationCtaLabel: 'Done'
+    },
     paymentSteps: ['Crew details', 'Secure payment', 'Confirmation QR code'],
     confirmationHeadline: 'You’re on the list.',
     confirmationSubtext:
@@ -45,7 +73,7 @@ export const defaultSiteContent: SiteContent = {
         label: 'Intimate Booth',
         capacity: 'Fits up to 4 guests',
         description: 'Cozy lounge pocket with a private ice well for early arrivals and date nights.',
-        price: '$50 deposit',
+        price: '$50',
         total: 6,
         reserved: 2,
         visual: {
@@ -60,7 +88,7 @@ export const defaultSiteContent: SiteContent = {
         label: 'Social Nook',
         capacity: 'Seats 6–7 guests',
         description: 'Corner arrangement near the dance floor with room to mingle and a shared spotlight moment.',
-        price: '$90 deposit',
+        price: '$90',
         total: 7,
         reserved: 3,
         visual: {
@@ -75,7 +103,7 @@ export const defaultSiteContent: SiteContent = {
         label: 'Grand Suite',
         capacity: 'Hosts 8–10 guests',
         description: 'Raised suite with bottle lockers, ambient lighting controls, and panoramic views of the DJ.',
-        price: '$150 deposit',
+        price: '$150',
         total: 5,
         reserved: 1,
         visual: {
@@ -127,7 +155,7 @@ export const defaultSiteContent: SiteContent = {
       subtitle: 'Terms & privacy',
       terms: [
         'Entry requires valid government-issued identification. We reserve the right to refuse admission to ensure a secure and inclusive environment for guests and staff.',
-        'By entering, you consent to audio and video capture for promotional use. Table reservations are confirmed upon receipt of a signed service agreement and deposit. Ticket sales are final unless an event is cancelled.',
+        'By entering, you consent to audio and video capture for promotional use. Table reservations are confirmed once full payment is received. Ticket sales are final unless an event is cancelled.',
         'For privacy inquiries, contact privacy@ojaplusclub.com. Full privacy notice launches with the membership portal.'
       ],
       privacyPlaceholder: 'Privacy policy content will publish alongside the membership rollout.'

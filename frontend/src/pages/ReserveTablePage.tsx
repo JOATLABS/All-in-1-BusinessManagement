@@ -30,6 +30,8 @@ const defaultFormState = {
   cvc: ''
 };
 
+const formatPriceLabel = (template: string, price: string) => template.replace('{price}', price);
+
 const createQrMatrix = (seed: string, size = 21) => {
   const matrix: boolean[][] = Array.from({ length: size }, () => Array(size).fill(false));
   let hash = 0;
@@ -94,6 +96,7 @@ const QrPreview = ({ seed }: { seed: string }) => {
 const ReserveTablePage = () => {
   const { content, isReady } = useSiteContentContext();
   const { reservation, hero } = content;
+  const { heroEyebrow, backLinkLabel, availability: availabilityCopy, carousel, modal } = reservation;
   const [activeIndex, setActiveIndex] = useState(0);
   const [modalTierId, setModalTierId] = useState<string | null>(null);
   const [modalStep, setModalStep] = useState<ModalStep>('details');
@@ -400,7 +403,7 @@ const ReserveTablePage = () => {
   }, [modalStep, reservation.paymentSteps.length]);
 
   return (
-    <div className="reserve-experience">
+    <div className="reserve-experience" data-testid="reserve-page">
       <section
         className="reserve-experience__hero"
         style={{
@@ -410,62 +413,96 @@ const ReserveTablePage = () => {
             : 'center'
         }}
         aria-labelledby="reserve-heading"
+        data-testid="reserve-hero"
       >
         <header className="reserve-experience__hero-inner">
-          <Link to="/" className="reserve-experience__back">
-            ← Back to experiences
+          <Link
+            to="/"
+            className="reserve-experience__back"
+            data-testid="reserve-back-link"
+          >
+            {backLinkLabel}
           </Link>
-          <p className="reserve-experience__eyebrow">Direct VIP reservations</p>
-          <h1 id="reserve-heading" className="reserve-experience__title">
+          <p className="reserve-experience__eyebrow" data-testid="reserve-hero-eyebrow">
+            {heroEyebrow}
+          </p>
+          <h1 id="reserve-heading" className="reserve-experience__title" data-testid="reserve-hero-title">
             {reservation.title}
           </h1>
-          <p className="reserve-experience__subtitle">{reservation.subtitle}</p>
+          <p className="reserve-experience__subtitle" data-testid="reserve-hero-subtitle">
+            {reservation.subtitle}
+          </p>
         </header>
       </section>
 
       <main className="reserve-experience__main">
-        <section className="reserve-experience__summary" aria-labelledby="availability-heading">
+        <section
+          className="reserve-experience__summary"
+          aria-labelledby="availability-heading"
+          data-testid="reserve-availability"
+        >
           <div className="reserve-experience__summary-header">
-            <h2 id="availability-heading">Tonight&apos;s availability</h2>
-            <span className="reserve-experience__summary-tag" aria-live="polite">
-              {isAvailabilityLoading ? 'Syncing…' : 'Live update'}
+            <h2 id="availability-heading" data-testid="reserve-availability-heading">
+              {availabilityCopy.heading}
+            </h2>
+            <span
+              className="reserve-experience__summary-tag"
+              aria-live="polite"
+              data-testid="reserve-availability-status"
+            >
+              {isAvailabilityLoading ? availabilityCopy.loadingLabel : availabilityCopy.liveTag}
             </span>
           </div>
           <div className="reserve-experience__counts">
             <dl>
               <div>
-                <dt>Open sections</dt>
-                <dd>{totals.available}</dd>
+                <dt>{availabilityCopy.openLabel}</dt>
+                <dd data-testid="availability-open-count">{totals.available}</dd>
               </div>
               <div>
-                <dt>Already booked</dt>
-                <dd>{totals.reserved}</dd>
+                <dt>{availabilityCopy.reservedLabel}</dt>
+                <dd data-testid="availability-reserved-count">{totals.reserved}</dd>
               </div>
               <div>
-                <dt>Total inventory</dt>
-                <dd>{totals.total}</dd>
+                <dt>{availabilityCopy.totalLabel}</dt>
+                <dd data-testid="availability-total-count">{totals.total}</dd>
               </div>
             </dl>
           </div>
-          <p className="reserve-experience__intro">{reservation.intro}</p>
-          <p className="reserve-experience__note">{reservation.availabilityNote}</p>
+          <p className="reserve-experience__intro" data-testid="reserve-intro">
+            {reservation.intro}
+          </p>
+          <p className="reserve-experience__note" data-testid="reserve-availability-note">
+            {reservation.availabilityNote}
+          </p>
           {availabilityError ? (
-            <p className="reserve-experience__warning" role="status">
+            <p
+              className="reserve-experience__warning"
+              role="status"
+              data-testid="reserve-availability-error"
+            >
               {availabilityError}
             </p>
           ) : null}
         </section>
 
-        <section className="reserve-experience__carousel" aria-labelledby="tier-heading">
+        <section
+          className="reserve-experience__carousel"
+          aria-labelledby="tier-heading"
+          data-testid="reserve-carousel"
+        >
           <header className="reserve-experience__carousel-header">
-            <h2 id="tier-heading">Choose your section</h2>
+            <h2 id="tier-heading" data-testid="reserve-carousel-heading">
+              {carousel.heading}
+            </h2>
             <div className="reserve-experience__carousel-controls">
               <button
                 type="button"
                 className="reserve-experience__nav"
                 onClick={() => setActiveIndex((index) => Math.max(index - 1, 0))}
                 disabled={activeIndex === 0}
-                aria-label="View previous section"
+                aria-label={carousel.previousLabel}
+                data-testid="reserve-carousel-previous"
               >
                 ‹
               </button>
@@ -477,7 +514,8 @@ const ReserveTablePage = () => {
                 className="reserve-experience__nav"
                 onClick={() => setActiveIndex((index) => Math.min(index + 1, tiers.length - 1))}
                 disabled={activeIndex >= tiers.length - 1}
-                aria-label="View next section"
+                aria-label={carousel.nextLabel}
+                data-testid="reserve-carousel-next"
               >
                 ›
               </button>
@@ -496,30 +534,38 @@ const ReserveTablePage = () => {
                 };
 
                 return (
-                    <li key={tier.id} className="reserve-carousel__slide">
-                      <article
-                        className={`tier-card tier-card--${tier.visual.pattern}`}
-                        style={tierCustomProperties}
-                      >
-                        <TableVisual tier={tier} isActive={tier.id === tiers[activeIndex]?.id} />
-                        <div className="tier-card__meta">
-                          <div>
-                            <h3>{tier.label}</h3>
-                            <p>{tier.description}</p>
-                          </div>
-                          <div className="tier-card__available" aria-live="polite">
-                            <span>Available</span>
-                            <strong>{tier.available}</strong>
-                          </div>
+                  <li key={tier.id} className="reserve-carousel__slide">
+                    <article
+                      className={`tier-card tier-card--${tier.visual.pattern}`}
+                      style={tierCustomProperties}
+                      data-testid={`tier-card-${tier.id}`}
+                    >
+                      <TableVisual tier={tier} isActive={tier.id === tiers[activeIndex]?.id} />
+                      <div className="tier-card__meta">
+                        <div>
+                          <h3>{tier.label}</h3>
+                          <p>{tier.description}</p>
                         </div>
-                        <p className="tier-card__capacity">{tier.capacity}</p>
-                        <button
-                          type="button"
-                          className="tier-card__cta"
-                          onClick={() => openModal(tier.id)}
-                          disabled={tier.available === 0}
+                        <div
+                          className="tier-card__available"
+                          aria-live="polite"
+                          data-testid={`tier-card-${tier.id}-availability`}
                         >
-                          {tier.available > 0 ? `Reserve for ${tier.price}` : 'Sold out'}
+                          <span>{carousel.availableLabel}</span>
+                          <strong>{tier.available}</strong>
+                        </div>
+                      </div>
+                      <p className="tier-card__capacity">{tier.capacity}</p>
+                      <button
+                        type="button"
+                        className="tier-card__cta"
+                        onClick={() => openModal(tier.id)}
+                        disabled={tier.available === 0}
+                        data-testid={`tier-card-${tier.id}-reserve`}
+                      >
+                        {tier.available > 0
+                          ? formatPriceLabel(carousel.reserveButtonLabel, tier.price)
+                          : carousel.soldOutLabel}
                         </button>
                       </article>
                     </li>
@@ -544,10 +590,22 @@ const ReserveTablePage = () => {
       </main>
 
       {isModalOpen && modalTier ? (
-        <div className="reserve-modal" role="dialog" aria-modal="true" aria-labelledby="reserve-modal-title">
+        <div
+          className="reserve-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reserve-modal-title"
+          data-testid="reservation-modal"
+        >
           <div className="reserve-modal__backdrop" onClick={closeModal} aria-hidden="true" />
           <div className="reserve-modal__content">
-            <button type="button" className="reserve-modal__close" onClick={closeModal} aria-label="Close">
+            <button
+              type="button"
+              className="reserve-modal__close"
+              onClick={closeModal}
+              aria-label="Close"
+              data-testid="reservation-modal-close"
+            >
               ×
             </button>
             <header className="reserve-modal__header">
@@ -558,11 +616,15 @@ const ReserveTablePage = () => {
               </p>
             </header>
             <div className="reserve-modal__layout">
-              <aside className="reserve-modal__steps">
-                <h3>How it works</h3>
+              <aside className="reserve-modal__steps" data-testid="reservation-modal-steps">
+                <h3 data-testid="reservation-steps-heading">{modal.stepsHeading}</h3>
                 <ol>
                   {reservation.paymentSteps.map((step, index) => (
-                    <li key={step} className={index === stepIndex ? 'is-active' : ''}>
+                    <li
+                      key={step}
+                      className={index === stepIndex ? 'is-active' : ''}
+                      data-testid={`reservation-step-${index + 1}`}
+                    >
                       <span>{index + 1}</span>
                       {step}
                     </li>
@@ -571,7 +633,12 @@ const ReserveTablePage = () => {
               </aside>
               <div className="reserve-modal__panel">
                 {modalStep === 'details' && (
-                  <form className="reserve-modal__form" onSubmit={handleDetailsSubmit}>
+                  <form
+                    className="reserve-modal__form"
+                    onSubmit={handleDetailsSubmit}
+                    data-testid="reservation-details-form"
+                  >
+                    <h3 data-testid="reservation-details-heading">{modal.detailsHeading}</h3>
                     <label>
                       Full name
                       <input
@@ -612,14 +679,24 @@ const ReserveTablePage = () => {
                         required
                       />
                     </label>
-                    <button type="submit" className="reserve-modal__cta" disabled={isSubmitting}>
-                      Continue to payment
+                    <button
+                      type="submit"
+                      className="reserve-modal__cta"
+                      disabled={isSubmitting}
+                      data-testid="reservation-details-submit"
+                    >
+                      {modal.detailsCtaLabel}
                     </button>
                   </form>
                 )}
 
                 {modalStep === 'payment' && (
-                  <form className="reserve-modal__form" onSubmit={handlePaymentSubmit}>
+                  <form
+                    className="reserve-modal__form"
+                    onSubmit={handlePaymentSubmit}
+                    data-testid="reservation-payment-form"
+                  >
+                    <h3 data-testid="reservation-payment-heading">{modal.paymentHeading}</h3>
                     <label>
                       Card number
                       <input
@@ -659,27 +736,45 @@ const ReserveTablePage = () => {
                       type="submit"
                       className="reserve-modal__cta"
                       disabled={isSubmitting}
+                      data-testid="reservation-payment-submit"
                     >
-                      {isSubmitting ? 'Processing…' : `Pay ${modalTier.price}`}
+                      {isSubmitting
+                        ? modal.paymentProcessingLabel
+                        : formatPriceLabel(modal.paymentCtaLabel, modalTier.price)}
                     </button>
                   </form>
                 )}
 
                 {modalStep === 'confirmation' && qrSeed && (
-                  <div className="reserve-modal__confirmation" aria-live="polite">
+                  <div
+                    className="reserve-modal__confirmation"
+                    aria-live="polite"
+                    data-testid="reservation-confirmation"
+                  >
                     <h3>{reservation.confirmationHeadline}</h3>
                     <p>{reservation.confirmationSubtext}</p>
                     <QrPreview seed={qrSeed} />
-                    <p className="reserve-modal__code">Confirmation code: {qrSeed}</p>
-                    <button type="button" className="reserve-modal__cta" onClick={closeModal}>
-                      Done
+                    <p className="reserve-modal__code" data-testid="reservation-confirmation-code">
+                      {modal.confirmationCodeLabel}: {qrSeed}
+                    </p>
+                    <button
+                      type="button"
+                      className="reserve-modal__cta"
+                      onClick={closeModal}
+                      data-testid="reservation-confirmation-close"
+                    >
+                      {modal.confirmationCtaLabel}
                     </button>
                   </div>
                 )}
               </div>
             </div>
             {modalError ? (
-              <p className="reserve-modal__error" role="alert">
+              <p
+                className="reserve-modal__error"
+                role="alert"
+                data-testid="reservation-modal-error"
+              >
                 {modalError}
               </p>
             ) : null}

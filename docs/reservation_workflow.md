@@ -76,3 +76,9 @@ This document explains how the VIP section reservation flow operates across the 
 - **Guest self-service** – Offer links for guests to modify arrival times or upgrade sections while enforcing availability constraints.
 - **Analytics loop** – Feed reservation and redemption data into dashboards to forecast demand by tier and optimize pricing blocks.
 
+## 9. Automation Hooks
+
+- **Stable selectors** – The public reservation flow now exposes `data-testid` attributes that match the pattern `tier-card-{tierId}` for carousel cards, `availability-*` for summary counters, and `reservation-*` for modal steps/buttons so end-to-end tests can target UI states without relying on CSS classes.
+- **Admin coverage** – The site configuration screen mirrors this convention with `reservation-` prefixed attributes on copy inputs, tier inventory fields, and the “Add section tier” button, enabling automation suites to seed content and verify availability math against the live API.
+- **Template placeholders** – CTA fields in both the carousel and modal accept a `{price}` token. Tests should assert the placeholder remains intact in configuration payloads so runtime formatting (handled in `ReserveTablePage`) continues to inject the tier price automatically.
+

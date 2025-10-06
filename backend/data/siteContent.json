@@ -12,17 +12,26 @@
       {
         "src": "https://images.unsplash.com/photo-1604079628040-94301bb21b11?auto=format&fit=crop&w=1600&q=80",
         "alt": "Crowd dancing under neon lights",
-        "focalPoint": { "x": 50, "y": 50 }
+        "focalPoint": {
+          "x": 50,
+          "y": 50
+        }
       },
       {
         "src": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1600&q=80",
         "alt": "VIP table with cocktails",
-        "focalPoint": { "x": 45, "y": 40 }
+        "focalPoint": {
+          "x": 45,
+          "y": 40
+        }
       },
       {
         "src": "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80",
         "alt": "DJ performing in front of crowd",
-        "focalPoint": { "x": 45, "y": 45 }
+        "focalPoint": {
+          "x": 45,
+          "y": 45
+        }
       }
     ]
   },
@@ -37,9 +46,21 @@
   },
   "footer": {
     "socials": [
-      { "name": "Instagram", "icon": "instagram", "url": "https://instagram.com/ojaplus" },
-      { "name": "TikTok", "icon": "tiktok", "url": "https://tiktok.com/@ojaplus" },
-      { "name": "Facebook", "icon": "facebook", "url": "https://facebook.com/ojaplus" }
+      {
+        "name": "Instagram",
+        "icon": "instagram",
+        "url": "https://instagram.com/ojaplus"
+      },
+      {
+        "name": "TikTok",
+        "icon": "tiktok",
+        "url": "https://tiktok.com/@ojaplus"
+      },
+      {
+        "name": "Facebook",
+        "icon": "facebook",
+        "url": "https://facebook.com/ojaplus"
+      }
     ]
   },
   "reservation": {
@@ -60,7 +81,7 @@
         "label": "Intimate Booth",
         "capacity": "Fits up to 4 guests",
         "description": "Cozy lounge pocket with a private ice well for early arrivals and date nights.",
-        "price": "$50 deposit",
+        "price": "$50",
         "total": 6,
         "reserved": 2,
         "visual": {
@@ -75,7 +96,7 @@
         "label": "Social Nook",
         "capacity": "Seats 6–7 guests",
         "description": "Corner arrangement near the dance floor with room to mingle and a shared spotlight moment.",
-        "price": "$90 deposit",
+        "price": "$90",
         "total": 7,
         "reserved": 3,
         "visual": {
@@ -90,7 +111,7 @@
         "label": "Grand Suite",
         "capacity": "Hosts 8–10 guests",
         "description": "Raised suite with bottle lockers, ambient lighting controls, and panoramic views of the DJ.",
-        "price": "$150 deposit",
+        "price": "$150",
         "total": 5,
         "reserved": 1,
         "visual": {
@@ -100,7 +121,35 @@
           "accentColor": "#ffffff12"
         }
       }
-    ]
+    ],
+    "heroEyebrow": "Direct VIP reservations",
+    "backLinkLabel": "← Back to experiences",
+    "availability": {
+      "heading": "Tonight's availability",
+      "liveTag": "Live update",
+      "loadingLabel": "Syncing…",
+      "openLabel": "Open sections",
+      "reservedLabel": "Already booked",
+      "totalLabel": "Total inventory"
+    },
+    "carousel": {
+      "heading": "Choose your section",
+      "previousLabel": "View previous section",
+      "nextLabel": "View next section",
+      "availableLabel": "Available",
+      "reserveButtonLabel": "Reserve for {price}",
+      "soldOutLabel": "Sold out"
+    },
+    "modal": {
+      "detailsHeading": "Crew details",
+      "paymentHeading": "Secure payment",
+      "confirmationCodeLabel": "Confirmation code",
+      "detailsCtaLabel": "Continue to payment",
+      "paymentCtaLabel": "Pay {price}",
+      "paymentProcessingLabel": "Processing…",
+      "confirmationCtaLabel": "Done",
+      "stepsHeading": "How it works"
+    }
   },
   "overlays": {
     "about": {
@@ -111,8 +160,14 @@
         "Every room features handcrafted timber, velvet seating, and lighting sequences designed to echo vintage cinema reels. Expect curated Afrofuturist playlists, surprise performances, and midnight rituals that amplify the dance floor."
       ],
       "hours": [
-        { "label": "Thursday–Saturday", "value": "9:00 PM – 4:00 AM" },
-        { "label": "Sunday", "value": "5:00 PM – 11:00 PM (Experiential supper club)" }
+        {
+          "label": "Thursday–Saturday",
+          "value": "9:00 PM – 4:00 AM"
+        },
+        {
+          "label": "Sunday",
+          "value": "5:00 PM – 11:00 PM (Experiential supper club)"
+        }
       ]
     },
     "tickets": {
@@ -128,10 +183,22 @@
       "title": "Contact Us",
       "subtitle": "Promoters, planners & collaborators",
       "topics": [
-        { "value": "private-hire", "label": "Private hire" },
-        { "value": "promoter", "label": "Promoter partnership" },
-        { "value": "production", "label": "Production & AV" },
-        { "value": "other", "label": "General enquiry" }
+        {
+          "value": "private-hire",
+          "label": "Private hire"
+        },
+        {
+          "value": "promoter",
+          "label": "Promoter partnership"
+        },
+        {
+          "value": "production",
+          "label": "Production & AV"
+        },
+        {
+          "value": "other",
+          "label": "General enquiry"
+        }
       ],
       "messagePlaceholder": "Share event goals, audience size, or special requests",
       "submitLabel": "Send enquiry"
@@ -141,7 +208,7 @@
       "subtitle": "Terms & privacy",
       "terms": [
         "Entry requires valid government-issued identification. We reserve the right to refuse admission to ensure a secure and inclusive environment for guests and staff.",
-        "By entering, you consent to audio and video capture for promotional use. Table reservations are confirmed upon receipt of a signed service agreement and deposit. Ticket sales are final unless an event is cancelled.",
+        "By entering, you consent to audio and video capture for promotional use. Table reservations are confirmed once full payment is received. Ticket sales are final unless an event is cancelled.",
         "For privacy inquiries, contact privacy@ojaplusclub.com. Full privacy notice launches with the membership portal."
       ],
       "privacyPlaceholder": "Privacy policy content will publish alongside the membership rollout."

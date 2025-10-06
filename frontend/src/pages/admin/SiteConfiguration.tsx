@@ -35,6 +35,9 @@ type OverlayDraftState = ReturnType<typeof cloneOverlays>;
 
 const cloneReservation = (reservation: ReservationContent) => ({
   ...reservation,
+  availability: { ...reservation.availability },
+  carousel: { ...reservation.carousel },
+  modal: { ...reservation.modal },
   paymentSteps: [...reservation.paymentSteps],
   tableTiers: reservation.tableTiers.map((tier) => ({
     ...tier,
@@ -192,6 +195,8 @@ export const SiteConfiguration = () => {
     field:
       | 'title'
       | 'subtitle'
+      | 'heroEyebrow'
+      | 'backLinkLabel'
       | 'intro'
       | 'availabilityNote'
       | 'confirmationHeadline'
@@ -199,6 +204,48 @@ export const SiteConfiguration = () => {
     value: string
   ) => {
     setReservationDraft((prev) => ({ ...prev, [field]: value }));
+    markDirty();
+  };
+
+  const handleReservationAvailabilityChange = (
+    field: keyof ReservationContent['availability'],
+    value: string
+  ) => {
+    setReservationDraft((prev) => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [field]: value
+      }
+    }));
+    markDirty();
+  };
+
+  const handleReservationCarouselChange = (
+    field: keyof ReservationContent['carousel'],
+    value: string
+  ) => {
+    setReservationDraft((prev) => ({
+      ...prev,
+      carousel: {
+        ...prev.carousel,
+        [field]: value
+      }
+    }));
+    markDirty();
+  };
+
+  const handleReservationModalChange = (
+    field: keyof ReservationContent['modal'],
+    value: string
+  ) => {
+    setReservationDraft((prev) => ({
+      ...prev,
+      modal: {
+        ...prev.modal,
+        [field]: value
+      }
+    }));
     markDirty();
   };
 
@@ -287,7 +334,7 @@ export const SiteConfiguration = () => {
           label: 'New section',
           capacity: 'Fits 4 guests',
           description: 'Describe this VIP section.',
-          price: '$50 deposit',
+          price: '$50',
           total: 0,
           reserved: 0,
           visual: {
@@ -426,8 +473,13 @@ export const SiteConfiguration = () => {
     const reservationPayload: ReservationContent = {
       title: reservationDraft.title,
       subtitle: reservationDraft.subtitle,
+      heroEyebrow: reservationDraft.heroEyebrow,
+      backLinkLabel: reservationDraft.backLinkLabel,
       intro: reservationDraft.intro,
       availabilityNote: reservationDraft.availabilityNote,
+      availability: { ...reservationDraft.availability },
+      carousel: { ...reservationDraft.carousel },
+      modal: { ...reservationDraft.modal },
       paymentSteps: reservationDraft.paymentSteps.length
         ? [...reservationDraft.paymentSteps]
         : ['Crew details', 'Secure payment', 'Confirmation QR code'],
@@ -690,6 +742,7 @@ export const SiteConfiguration = () => {
                 <input
                   value={reservationDraft.title}
                   onChange={(event) => handleReservationChange('title', event.target.value)}
+                  data-testid="reservation-title-input"
                 />
               </label>
               <label>
@@ -697,6 +750,23 @@ export const SiteConfiguration = () => {
                 <input
                   value={reservationDraft.subtitle}
                   onChange={(event) => handleReservationChange('subtitle', event.target.value)}
+                  data-testid="reservation-subtitle-input"
+                />
+              </label>
+              <label>
+                Hero eyebrow
+                <input
+                  value={reservationDraft.heroEyebrow}
+                  onChange={(event) => handleReservationChange('heroEyebrow', event.target.value)}
+                  data-testid="reservation-hero-eyebrow-input"
+                />
+              </label>
+              <label>
+                Back link label
+                <input
+                  value={reservationDraft.backLinkLabel}
+                  onChange={(event) => handleReservationChange('backLinkLabel', event.target.value)}
+                  data-testid="reservation-back-link-input"
                 />
               </label>
               <label>
@@ -705,6 +775,7 @@ export const SiteConfiguration = () => {
                   rows={3}
                   value={reservationDraft.intro}
                   onChange={(event) => handleReservationChange('intro', event.target.value)}
+                  data-testid="reservation-intro-input"
                 />
               </label>
               <label>
@@ -713,17 +784,204 @@ export const SiteConfiguration = () => {
                   rows={2}
                   value={reservationDraft.availabilityNote}
                   onChange={(event) => handleReservationChange('availabilityNote', event.target.value)}
+                  data-testid="reservation-availability-note-input"
                 />
                 <span className="admin-config__hint">
                   Share how frequently counts refresh or how long sections stay on hold during checkout.
                 </span>
               </label>
+              <h4>Availability labels</h4>
+              <div className="admin-config__grid">
+                <label>
+                  Availability heading
+                  <input
+                    value={reservationDraft.availability.heading}
+                    onChange={(event) => handleReservationAvailabilityChange('heading', event.target.value)}
+                    data-testid="reservation-availability-heading-input"
+                  />
+                </label>
+                <label>
+                  Live badge label
+                  <input
+                    value={reservationDraft.availability.liveTag}
+                    onChange={(event) => handleReservationAvailabilityChange('liveTag', event.target.value)}
+                    data-testid="reservation-availability-live-tag-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Loading badge label
+                  <input
+                    value={reservationDraft.availability.loadingLabel}
+                    onChange={(event) => handleReservationAvailabilityChange('loadingLabel', event.target.value)}
+                    data-testid="reservation-availability-loading-input"
+                  />
+                </label>
+                <label>
+                  Open sections label
+                  <input
+                    value={reservationDraft.availability.openLabel}
+                    onChange={(event) => handleReservationAvailabilityChange('openLabel', event.target.value)}
+                    data-testid="reservation-open-label-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Reserved sections label
+                  <input
+                    value={reservationDraft.availability.reservedLabel}
+                    onChange={(event) => handleReservationAvailabilityChange('reservedLabel', event.target.value)}
+                    data-testid="reservation-reserved-label-input"
+                  />
+                </label>
+                <label>
+                  Total sections label
+                  <input
+                    value={reservationDraft.availability.totalLabel}
+                    onChange={(event) => handleReservationAvailabilityChange('totalLabel', event.target.value)}
+                    data-testid="reservation-total-label-input"
+                  />
+                </label>
+              </div>
+              <h4>Carousel copy</h4>
+              <div className="admin-config__grid">
+                <label>
+                  Carousel heading
+                  <input
+                    value={reservationDraft.carousel.heading}
+                    onChange={(event) => handleReservationCarouselChange('heading', event.target.value)}
+                    data-testid="reservation-carousel-heading-input"
+                  />
+                </label>
+                <label>
+                  Previous section label
+                  <input
+                    value={reservationDraft.carousel.previousLabel}
+                    onChange={(event) => handleReservationCarouselChange('previousLabel', event.target.value)}
+                    data-testid="reservation-carousel-previous-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Next section label
+                  <input
+                    value={reservationDraft.carousel.nextLabel}
+                    onChange={(event) => handleReservationCarouselChange('nextLabel', event.target.value)}
+                    data-testid="reservation-carousel-next-input"
+                  />
+                </label>
+                <label>
+                  Availability badge label
+                  <input
+                    value={reservationDraft.carousel.availableLabel}
+                    onChange={(event) => handleReservationCarouselChange('availableLabel', event.target.value)}
+                    data-testid="reservation-carousel-available-label-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Reserve button label
+                  <input
+                    value={reservationDraft.carousel.reserveButtonLabel}
+                    onChange={(event) => handleReservationCarouselChange('reserveButtonLabel', event.target.value)}
+                    data-testid="reservation-carousel-reserve-label-input"
+                  />
+                  <span className="admin-config__hint">Use {'{price}'} to insert the tier price.</span>
+                </label>
+                <label>
+                  Sold out label
+                  <input
+                    value={reservationDraft.carousel.soldOutLabel}
+                    onChange={(event) => handleReservationCarouselChange('soldOutLabel', event.target.value)}
+                    data-testid="reservation-carousel-soldout-label-input"
+                  />
+                </label>
+              </div>
+              <h4>Modal copy</h4>
+              <div className="admin-config__grid">
+                <label>
+                  Steps heading
+                  <input
+                    value={reservationDraft.modal.stepsHeading}
+                    onChange={(event) => handleReservationModalChange('stepsHeading', event.target.value)}
+                    data-testid="reservation-modal-steps-heading-input"
+                  />
+                </label>
+                <label>
+                  Details form heading
+                  <input
+                    value={reservationDraft.modal.detailsHeading}
+                    onChange={(event) => handleReservationModalChange('detailsHeading', event.target.value)}
+                    data-testid="reservation-modal-details-heading-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Payment form heading
+                  <input
+                    value={reservationDraft.modal.paymentHeading}
+                    onChange={(event) => handleReservationModalChange('paymentHeading', event.target.value)}
+                    data-testid="reservation-modal-payment-heading-input"
+                  />
+                </label>
+                <label>
+                  Confirmation code label
+                  <input
+                    value={reservationDraft.modal.confirmationCodeLabel}
+                    onChange={(event) => handleReservationModalChange('confirmationCodeLabel', event.target.value)}
+                    data-testid="reservation-modal-code-label-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Details button label
+                  <input
+                    value={reservationDraft.modal.detailsCtaLabel}
+                    onChange={(event) => handleReservationModalChange('detailsCtaLabel', event.target.value)}
+                    data-testid="reservation-modal-details-cta-input"
+                  />
+                </label>
+                <label>
+                  Payment button label
+                  <input
+                    value={reservationDraft.modal.paymentCtaLabel}
+                    onChange={(event) => handleReservationModalChange('paymentCtaLabel', event.target.value)}
+                    data-testid="reservation-modal-payment-cta-input"
+                  />
+                  <span className="admin-config__hint">Use {'{price}'} to insert the tier price.</span>
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Processing state label
+                  <input
+                    value={reservationDraft.modal.paymentProcessingLabel}
+                    onChange={(event) => handleReservationModalChange('paymentProcessingLabel', event.target.value)}
+                    data-testid="reservation-modal-processing-label-input"
+                  />
+                </label>
+                <label>
+                  Confirmation button label
+                  <input
+                    value={reservationDraft.modal.confirmationCtaLabel}
+                    onChange={(event) => handleReservationModalChange('confirmationCtaLabel', event.target.value)}
+                    data-testid="reservation-modal-confirmation-cta-input"
+                  />
+                </label>
+              </div>
               <label>
                 Payment steps
                 <textarea
                   rows={3}
                   value={reservationDraft.paymentSteps.join('\n')}
                   onChange={(event) => handleReservationStepsChange(event.target.value)}
+                  data-testid="reservation-payment-steps-input"
                 />
                 <span className="admin-config__hint">One step per line (e.g. details, payment, confirmation).</span>
               </label>
@@ -733,6 +991,7 @@ export const SiteConfiguration = () => {
                   <input
                     value={reservationDraft.confirmationHeadline}
                     onChange={(event) => handleReservationChange('confirmationHeadline', event.target.value)}
+                    data-testid="reservation-confirmation-headline-input"
                   />
                 </label>
                 <label>
@@ -740,6 +999,7 @@ export const SiteConfiguration = () => {
                   <input
                     value={reservationDraft.confirmationSubtext}
                     onChange={(event) => handleReservationChange('confirmationSubtext', event.target.value)}
+                    data-testid="reservation-confirmation-subtext-input"
                   />
                 </label>
               </div>
@@ -751,7 +1011,7 @@ export const SiteConfiguration = () => {
                 Configure each tier with total sections and how many are already reserved so availability stays accurate.
               </p>
               {reservationDraft.tableTiers.map((tier, index) => (
-                <div key={tier.id} className="admin-config__tier">
+                <div key={tier.id} className="admin-config__tier" data-testid={`reservation-tier-${tier.id}`}>
                   <div className="admin-config__tier-header">
                     <h4>{tier.label || `Tier ${index + 1}`}</h4>
                     <button
@@ -759,6 +1019,7 @@ export const SiteConfiguration = () => {
                       className="admin-config__remove"
                       onClick={() => handleRemoveTier(index)}
                       disabled={reservationDraft.tableTiers.length <= 1}
+                      data-testid={`reservation-tier-${tier.id}-remove`}
                     >
                       Remove
                     </button>
@@ -766,13 +1027,18 @@ export const SiteConfiguration = () => {
                   <div className="admin-config__grid">
                     <label>
                       Label
-                      <input value={tier.label} onChange={(event) => handleTierChange(index, 'label', event.target.value)} />
+                      <input
+                        value={tier.label}
+                        onChange={(event) => handleTierChange(index, 'label', event.target.value)}
+                        data-testid={`reservation-tier-${tier.id}-label-input`}
+                      />
                     </label>
                     <label>
                       Capacity note
                       <input
                         value={tier.capacity}
                         onChange={(event) => handleTierChange(index, 'capacity', event.target.value)}
+                        data-testid={`reservation-tier-${tier.id}-capacity-input`}
                       />
                     </label>
                   </div>
@@ -782,12 +1048,17 @@ export const SiteConfiguration = () => {
                       rows={2}
                       value={tier.description}
                       onChange={(event) => handleTierChange(index, 'description', event.target.value)}
+                      data-testid={`reservation-tier-${tier.id}-description-input`}
                     />
                   </label>
                   <div className="admin-config__grid">
                     <label>
-                      Price / deposit label
-                      <input value={tier.price} onChange={(event) => handleTierChange(index, 'price', event.target.value)} />
+                      Price label
+                      <input
+                        value={tier.price}
+                        onChange={(event) => handleTierChange(index, 'price', event.target.value)}
+                        data-testid={`reservation-tier-${tier.id}-price-input`}
+                      />
                     </label>
                     <label>
                       Total sections
@@ -796,6 +1067,7 @@ export const SiteConfiguration = () => {
                         min={0}
                         value={tier.total}
                         onChange={(event) => handleTierChange(index, 'total', event.target.value)}
+                        data-testid={`reservation-tier-${tier.id}-total-input`}
                       />
                     </label>
                     <label>
@@ -805,6 +1077,7 @@ export const SiteConfiguration = () => {
                         min={0}
                         value={tier.reserved}
                         onChange={(event) => handleTierChange(index, 'reserved', event.target.value)}
+                        data-testid={`reservation-tier-${tier.id}-reserved-input`}
                       />
                     </label>
                   </div>
@@ -850,7 +1123,12 @@ export const SiteConfiguration = () => {
                   </div>
                 </div>
               ))}
-              <button type="button" className="admin-config__add" onClick={handleAddTier}>
+              <button
+                type="button"
+                className="admin-config__add"
+                onClick={handleAddTier}
+                data-testid="reservation-add-tier"
+              >
                 Add section tier
               </button>
             </fieldset>

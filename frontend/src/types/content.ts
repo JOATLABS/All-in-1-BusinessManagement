@@ -64,11 +64,45 @@ export interface ReservationTableTier {
   visual: ReservationTierVisual;
 }
 
+export interface ReservationAvailabilityCopy {
+  heading: string;
+  liveTag: string;
+  loadingLabel: string;
+  openLabel: string;
+  reservedLabel: string;
+  totalLabel: string;
+}
+
+export interface ReservationCarouselCopy {
+  heading: string;
+  previousLabel: string;
+  nextLabel: string;
+  availableLabel: string;
+  reserveButtonLabel: string;
+  soldOutLabel: string;
+}
+
+export interface ReservationModalCopy {
+  stepsHeading: string;
+  detailsHeading: string;
+  paymentHeading: string;
+  confirmationCodeLabel: string;
+  detailsCtaLabel: string;
+  paymentCtaLabel: string;
+  paymentProcessingLabel: string;
+  confirmationCtaLabel: string;
+}
+
 export interface ReservationContent {
   title: string;
   subtitle: string;
+  heroEyebrow: string;
+  backLinkLabel: string;
   intro: string;
   availabilityNote: string;
+  availability: ReservationAvailabilityCopy;
+  carousel: ReservationCarouselCopy;
+  modal: ReservationModalCopy;
   paymentSteps: string[];
   confirmationHeadline: string;
   confirmationSubtext: string;

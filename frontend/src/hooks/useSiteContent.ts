@@ -37,47 +37,85 @@ const normaliseContent = (content: SiteContent): SiteContent => ({
   footer: {
     socials: ensureArray(content.footer?.socials, defaultSiteContent.footer.socials)
   },
-  reservation: {
-    title: content.reservation?.title ?? defaultSiteContent.reservation.title,
-    subtitle: content.reservation?.subtitle ?? defaultSiteContent.reservation.subtitle,
-    intro: content.reservation?.intro ?? defaultSiteContent.reservation.intro,
-    availabilityNote:
-      content.reservation?.availabilityNote ?? defaultSiteContent.reservation.availabilityNote,
-    paymentSteps: ensureArray(content.reservation?.paymentSteps, defaultSiteContent.reservation.paymentSteps),
-    confirmationHeadline:
-      content.reservation?.confirmationHeadline ?? defaultSiteContent.reservation.confirmationHeadline,
-    confirmationSubtext:
-      content.reservation?.confirmationSubtext ?? defaultSiteContent.reservation.confirmationSubtext,
-    tableTiers: (() => {
-      const fallbackTiers = defaultSiteContent.reservation.tableTiers;
-      const sourceTiers = ensureArray(content.reservation?.tableTiers, fallbackTiers);
+  reservation: (() => {
+    const fallback = defaultSiteContent.reservation;
+    const source = content.reservation ?? fallback;
+
+    const availability = source.availability ?? fallback.availability;
+    const carousel = source.carousel ?? fallback.carousel;
+    const modal = source.modal ?? fallback.modal;
+
+    const paymentSteps = ensureArray(source.paymentSteps, fallback.paymentSteps);
+
+    const tableTiers = (() => {
+      const fallbackTiers = fallback.tableTiers;
+      const sourceTiers = ensureArray(source.tableTiers, fallbackTiers);
 
       return sourceTiers.map((tier, index) => {
-        const fallback = fallbackTiers[index] ?? fallbackTiers[0];
-        const total = parseNonNegativeInt(tier.total, fallback.total);
-        const reserved = Math.min(parseNonNegativeInt(tier.reserved, fallback.reserved), total);
+        const fallbackTier = fallbackTiers[index] ?? fallbackTiers[0];
+        const total = parseNonNegativeInt(tier.total, fallbackTier.total);
+        const reserved = Math.min(parseNonNegativeInt(tier.reserved, fallbackTier.reserved), total);
         const pattern = reservationPatterns.includes(tier.visual?.pattern as ReservationTierPattern)
           ? tier.visual.pattern
-          : fallback.visual.pattern;
+          : fallbackTier.visual.pattern;
 
         return {
-          id: tier.id?.trim() ? tier.id : fallback.id,
-          label: tier.label ?? fallback.label,
-          capacity: tier.capacity ?? fallback.capacity,
-          description: tier.description ?? fallback.description,
-          price: tier.price ?? fallback.price,
+          id: tier.id?.trim() ? tier.id : fallbackTier.id,
+          label: tier.label ?? fallbackTier.label,
+          capacity: tier.capacity ?? fallbackTier.capacity,
+          description: tier.description ?? fallbackTier.description,
+          price: tier.price ?? fallbackTier.price,
           total,
           reserved,
           visual: {
             pattern,
-            primaryColor: tier.visual?.primaryColor?.trim() ?? fallback.visual.primaryColor,
-            secondaryColor: tier.visual?.secondaryColor?.trim() ?? fallback.visual.secondaryColor,
-            accentColor: tier.visual?.accentColor?.trim() ?? fallback.visual.accentColor
+            primaryColor: tier.visual?.primaryColor?.trim() ?? fallbackTier.visual.primaryColor,
+            secondaryColor: tier.visual?.secondaryColor?.trim() ?? fallbackTier.visual.secondaryColor,
+            accentColor: tier.visual?.accentColor?.trim() ?? fallbackTier.visual.accentColor
           }
         };
       });
-    })()
-  },
+    })();
+
+    return {
+      title: source.title ?? fallback.title,
+      subtitle: source.subtitle ?? fallback.subtitle,
+      heroEyebrow: source.heroEyebrow ?? fallback.heroEyebrow,
+      backLinkLabel: source.backLinkLabel ?? fallback.backLinkLabel,
+      intro: source.intro ?? fallback.intro,
+      availabilityNote: source.availabilityNote ?? fallback.availabilityNote,
+      availability: {
+        heading: availability.heading ?? fallback.availability.heading,
+        liveTag: availability.liveTag ?? fallback.availability.liveTag,
+        loadingLabel: availability.loadingLabel ?? fallback.availability.loadingLabel,
+        openLabel: availability.openLabel ?? fallback.availability.openLabel,
+        reservedLabel: availability.reservedLabel ?? fallback.availability.reservedLabel,
+        totalLabel: availability.totalLabel ?? fallback.availability.totalLabel
+      },
+      carousel: {
+        heading: carousel.heading ?? fallback.carousel.heading,
+        previousLabel: carousel.previousLabel ?? fallback.carousel.previousLabel,
+        nextLabel: carousel.nextLabel ?? fallback.carousel.nextLabel,
+        availableLabel: carousel.availableLabel ?? fallback.carousel.availableLabel,
+        reserveButtonLabel: carousel.reserveButtonLabel ?? fallback.carousel.reserveButtonLabel,
+        soldOutLabel: carousel.soldOutLabel ?? fallback.carousel.soldOutLabel
+      },
+      modal: {
+        stepsHeading: modal.stepsHeading ?? fallback.modal.stepsHeading,
+        detailsHeading: modal.detailsHeading ?? fallback.modal.detailsHeading,
+        paymentHeading: modal.paymentHeading ?? fallback.modal.paymentHeading,
+        confirmationCodeLabel: modal.confirmationCodeLabel ?? fallback.modal.confirmationCodeLabel,
+        detailsCtaLabel: modal.detailsCtaLabel ?? fallback.modal.detailsCtaLabel,
+        paymentCtaLabel: modal.paymentCtaLabel ?? fallback.modal.paymentCtaLabel,
+        paymentProcessingLabel: modal.paymentProcessingLabel ?? fallback.modal.paymentProcessingLabel,
+        confirmationCtaLabel: modal.confirmationCtaLabel ?? fallback.modal.confirmationCtaLabel
+      },
+      paymentSteps,
+      confirmationHeadline: source.confirmationHeadline ?? fallback.confirmationHeadline,
+      confirmationSubtext: source.confirmationSubtext ?? fallback.confirmationSubtext,
+      tableTiers
+    };
+  })(),
   overlays: {
     about: {
       title: content.overlays?.about.title ?? defaultSiteContent.overlays.about.title,

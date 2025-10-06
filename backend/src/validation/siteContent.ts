@@ -67,11 +67,45 @@ const reservationTierSchema = z
     }
   });
 
+const reservationAvailabilitySchema = z.object({
+  heading: z.string().min(1),
+  liveTag: z.string().min(1),
+  loadingLabel: z.string().min(1),
+  openLabel: z.string().min(1),
+  reservedLabel: z.string().min(1),
+  totalLabel: z.string().min(1)
+});
+
+const reservationCarouselSchema = z.object({
+  heading: z.string().min(1),
+  previousLabel: z.string().min(1),
+  nextLabel: z.string().min(1),
+  availableLabel: z.string().min(1),
+  reserveButtonLabel: z.string().min(1),
+  soldOutLabel: z.string().min(1)
+});
+
+const reservationModalSchema = z.object({
+  stepsHeading: z.string().min(1),
+  detailsHeading: z.string().min(1),
+  paymentHeading: z.string().min(1),
+  confirmationCodeLabel: z.string().min(1),
+  detailsCtaLabel: z.string().min(1),
+  paymentCtaLabel: z.string().min(1),
+  paymentProcessingLabel: z.string().min(1),
+  confirmationCtaLabel: z.string().min(1)
+});
+
 const reservationSchema = z.object({
   title: z.string().min(1),
   subtitle: z.string().min(1),
+  heroEyebrow: z.string().min(1),
+  backLinkLabel: z.string().min(1),
   intro: z.string().min(1),
   availabilityNote: z.string().min(1),
+  availability: reservationAvailabilitySchema,
+  carousel: reservationCarouselSchema,
+  modal: reservationModalSchema,
   paymentSteps: z.array(z.string().min(1)).min(1),
   confirmationHeadline: z.string().min(1),
   confirmationSubtext: z.string().min(1),
