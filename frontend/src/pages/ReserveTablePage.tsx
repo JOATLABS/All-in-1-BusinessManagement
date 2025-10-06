@@ -3,6 +3,12 @@ import { Link } from 'react-router-dom';
 import TableVisual from '../components/TableVisual';
 import { useSiteContentContext } from '../content/SiteContentProvider';
 import type { ReservationTableTier } from '../types/content';
+import { ApiError } from '../services/apiClient';
+import {
+  createReservation as createReservationRequest,
+  fetchReservationAvailability
+} from '../services/reservationService';
+import type { ReservationAvailabilityResponse } from '../types/reservations';
 
 type ModalStep = 'details' | 'payment' | 'confirmation';
 
@@ -22,18 +28,6 @@ const defaultFormState = {
   cardNumber: '',
   expiry: '',
   cvc: ''
-};
-
-const generateCodeSeed = (tier: ReservationTableTier, email: string) => {
-  const normalisedEmail = email.trim().toLowerCase();
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const base = `${tier.id}-${normalisedEmail}-${timestamp}`;
-  let hash = 7;
-  for (const char of base) {
-    hash = (hash * 31 + char.charCodeAt(0)) % 1_000_003;
-  }
-
-  return `VIP-${tier.id.toUpperCase()}-${hash.toString(36).toUpperCase()}`;
 };
 
 const createQrMatrix = (seed: string, size = 21) => {
@@ -98,23 +92,37 @@ const QrPreview = ({ seed }: { seed: string }) => {
 };
 
 const ReserveTablePage = () => {
-  const { content } = useSiteContentContext();
+  const { content, isReady } = useSiteContentContext();
   const { reservation, hero } = content;
-  const [sessionReservations, setSessionReservations] = useState<Record<string, number>>({});
   const [activeIndex, setActiveIndex] = useState(0);
   const [modalTierId, setModalTierId] = useState<string | null>(null);
   const [modalStep, setModalStep] = useState<ModalStep>('details');
   const [formState, setFormState] = useState({ ...defaultFormState });
   const [qrSeed, setQrSeed] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<ReservationAvailabilityResponse | null>(null);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const detailsNameRef = useRef<HTMLInputElement | null>(null);
   const paymentCardRef = useRef<HTMLInputElement | null>(null);
 
+  const availabilityByTier = useMemo(() => {
+    const map = new Map<string, ReservationAvailabilityResponse['tiers'][number]>();
+    if (availability) {
+      for (const tier of availability.tiers) {
+        map.set(tier.tierId, tier);
+      }
+    }
+    return map;
+  }, [availability]);
+
   const tiers = useMemo<TierWithAvailability[]>(() => {
-    const base = reservation.tableTiers;
-    return base.map((tier) => {
-      const sessionReserved = sessionReservations[tier.id] ?? 0;
-      const reservedTotal = Math.min(tier.reserved + sessionReserved, tier.total);
+    return reservation.tableTiers.map((tier) => {
+      const live = availabilityByTier.get(tier.id);
+      const baseReserved = live ? live.baseReserved : Math.min(tier.reserved, tier.total);
+      const confirmed = live?.confirmed ?? 0;
+      const reservedTotal = Math.min(baseReserved + confirmed, tier.total);
       const available = Math.max(tier.total - reservedTotal, 0);
 
       return {
@@ -123,7 +131,7 @@ const ReserveTablePage = () => {
         available
       };
     });
-  }, [reservation.tableTiers, sessionReservations]);
+  }, [availabilityByTier, reservation.tableTiers]);
 
   useEffect(() => {
     if (activeIndex > tiers.length - 1) {
@@ -131,20 +139,26 @@ const ReserveTablePage = () => {
     }
   }, [activeIndex, tiers.length]);
 
-  const totals = useMemo(
-    () =>
-      tiers.reduce(
-        (accumulator, tier) => {
-          return {
-            total: accumulator.total + tier.total,
-            reserved: accumulator.reserved + tier.reservedTotal,
-            available: accumulator.available + tier.available
-          };
-        },
-        { total: 0, reserved: 0, available: 0 }
-      ),
-    [tiers]
-  );
+  const totals = useMemo(() => {
+    if (availability) {
+      return {
+        total: availability.summary.total,
+        reserved: availability.summary.baseReserved + availability.summary.confirmed,
+        available: availability.summary.available
+      };
+    }
+
+    return tiers.reduce(
+      (accumulator, tier) => {
+        return {
+          total: accumulator.total + tier.total,
+          reserved: accumulator.reserved + tier.reservedTotal,
+          available: accumulator.available + tier.available
+        };
+      },
+      { total: 0, reserved: 0, available: 0 }
+    );
+  }, [availability, tiers]);
 
   const background = hero.backgrounds[0] ?? {
     src: '',
@@ -192,12 +206,33 @@ const ReserveTablePage = () => {
   const modalTier = tiers.find((tier) => tier.id === modalTierId) ?? null;
   const isModalOpen = Boolean(modalTier);
 
+  const loadAvailability = useCallback(async () => {
+    try {
+      setIsAvailabilityLoading(true);
+      const response = await fetchReservationAvailability();
+      setAvailability(response);
+      setAvailabilityError(null);
+    } catch (error) {
+      console.error('Failed to refresh live availability', error);
+      setAvailabilityError('Unable to refresh live availability. Showing the latest known counts.');
+    } finally {
+      setIsAvailabilityLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isReady) {
+      void loadAvailability();
+    }
+  }, [isReady, loadAvailability]);
+
   const closeModal = useCallback(() => {
     setModalTierId(null);
     setModalStep('details');
     setQrSeed(null);
     setModalError(null);
     setFormState({ ...defaultFormState });
+    setIsSubmitting(false);
   }, []);
 
   useEffect(() => {
@@ -280,7 +315,7 @@ const ReserveTablePage = () => {
     setModalStep('payment');
   };
 
-  const handlePaymentSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handlePaymentSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!modalTier) {
       return;
@@ -288,6 +323,7 @@ const ReserveTablePage = () => {
 
     if (modalTier.available <= 0) {
       setModalError('This section just sold out. Choose another size to continue.');
+      await loadAvailability();
       return;
     }
 
@@ -307,19 +343,48 @@ const ReserveTablePage = () => {
       return;
     }
 
-    const nextSeed = generateCodeSeed(modalTier, formState.email);
+    const guestCount = Number.parseInt(formState.guests, 10);
+    if (!Number.isFinite(guestCount) || guestCount <= 0) {
+      setModalError('Guest count must be at least 1.');
+      return;
+    }
 
-    setSessionReservations((previous) => {
-      const current = previous[modalTier.id] ?? 0;
-      return {
-        ...previous,
-        [modalTier.id]: Math.min(current + 1, modalTier.total)
-      };
-    });
-
-    setQrSeed(nextSeed);
-    setModalStep('confirmation');
     setModalError(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await createReservationRequest({
+        tierId: modalTier.id,
+        guestName: formState.name.trim(),
+        email: formState.email.trim(),
+        phone: formState.phone.trim() ? formState.phone.trim() : undefined,
+        guestCount,
+        paymentIntentId: `demo_${Date.now()}`
+      });
+
+      setAvailability(response.availability);
+      setQrSeed(response.reservation.confirmationCode);
+      setModalStep('confirmation');
+      setFormState((previous) => ({
+        ...previous,
+        cardNumber: '',
+        expiry: '',
+        cvc: ''
+      }));
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 409) {
+          setModalError(error.message || 'This section just sold out. Choose another size to continue.');
+          await loadAvailability();
+        } else {
+          setModalError(error.message || 'Payment failed. Try again.');
+        }
+      } else {
+        setModalError('Payment failed. Try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const stepIndex = useMemo(() => {
@@ -362,7 +427,9 @@ const ReserveTablePage = () => {
         <section className="reserve-experience__summary" aria-labelledby="availability-heading">
           <div className="reserve-experience__summary-header">
             <h2 id="availability-heading">Tonight&apos;s availability</h2>
-            <span className="reserve-experience__summary-tag">Live update</span>
+            <span className="reserve-experience__summary-tag" aria-live="polite">
+              {isAvailabilityLoading ? 'Syncing…' : 'Live update'}
+            </span>
           </div>
           <div className="reserve-experience__counts">
             <dl>
@@ -382,6 +449,11 @@ const ReserveTablePage = () => {
           </div>
           <p className="reserve-experience__intro">{reservation.intro}</p>
           <p className="reserve-experience__note">{reservation.availabilityNote}</p>
+          {availabilityError ? (
+            <p className="reserve-experience__warning" role="status">
+              {availabilityError}
+            </p>
+          ) : null}
         </section>
 
         <section className="reserve-experience__carousel" aria-labelledby="tier-heading">
@@ -424,33 +496,33 @@ const ReserveTablePage = () => {
                 };
 
                 return (
-                  <li key={tier.id} className="reserve-carousel__slide">
-                    <article
-                      className={`tier-card tier-card--${tier.visual.pattern}`}
-                      style={tierCustomProperties}
-                    >
-                      <TableVisual tier={tier} isActive={tier.id === tiers[activeIndex]?.id} />
-                    <div className="tier-card__meta">
-                      <div>
-                        <h3>{tier.label}</h3>
-                        <p>{tier.description}</p>
-                      </div>
-                      <div className="tier-card__available" aria-live="polite">
-                        <span>Available</span>
-                        <strong>{tier.available}</strong>
-                      </div>
-                    </div>
-                    <p className="tier-card__capacity">{tier.capacity}</p>
-                    <button
-                      type="button"
-                      className="tier-card__cta"
-                      onClick={() => openModal(tier.id)}
-                      disabled={tier.available === 0}
-                    >
-                      {tier.available > 0 ? `Reserve for ${tier.price}` : 'Sold out'}
-                    </button>
-                    </article>
-                  </li>
+                    <li key={tier.id} className="reserve-carousel__slide">
+                      <article
+                        className={`tier-card tier-card--${tier.visual.pattern}`}
+                        style={tierCustomProperties}
+                      >
+                        <TableVisual tier={tier} isActive={tier.id === tiers[activeIndex]?.id} />
+                        <div className="tier-card__meta">
+                          <div>
+                            <h3>{tier.label}</h3>
+                            <p>{tier.description}</p>
+                          </div>
+                          <div className="tier-card__available" aria-live="polite">
+                            <span>Available</span>
+                            <strong>{tier.available}</strong>
+                          </div>
+                        </div>
+                        <p className="tier-card__capacity">{tier.capacity}</p>
+                        <button
+                          type="button"
+                          className="tier-card__cta"
+                          onClick={() => openModal(tier.id)}
+                          disabled={tier.available === 0}
+                        >
+                          {tier.available > 0 ? `Reserve for ${tier.price}` : 'Sold out'}
+                        </button>
+                      </article>
+                    </li>
                 );
               })}
             </ul>
@@ -540,7 +612,7 @@ const ReserveTablePage = () => {
                         required
                       />
                     </label>
-                    <button type="submit" className="reserve-modal__cta">
+                    <button type="submit" className="reserve-modal__cta" disabled={isSubmitting}>
                       Continue to payment
                     </button>
                   </form>
@@ -583,8 +655,12 @@ const ReserveTablePage = () => {
                         />
                       </label>
                     </div>
-                    <button type="submit" className="reserve-modal__cta">
-                      Pay {modalTier.price}
+                    <button
+                      type="submit"
+                      className="reserve-modal__cta"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Processing…' : `Pay ${modalTier.price}`}
                     </button>
                   </form>
                 )}

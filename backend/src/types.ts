@@ -110,6 +110,22 @@ export interface SiteContent {
   overlays: OverlaysContent;
 }
 
+export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled';
+
+export interface ReservationRecord {
+  id: string;
+  tierId: string;
+  guestName: string;
+  email: string;
+  phone?: string | null;
+  guestCount: number;
+  paymentIntentId?: string | null;
+  status: ReservationStatus;
+  confirmationCode: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AdminUser {
   id: string;
   email: string;

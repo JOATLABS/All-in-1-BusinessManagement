@@ -1665,6 +1665,14 @@ body::before {
   text-transform: uppercase;
 }
 
+.reserve-experience__warning {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #f97316;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .reserve-experience__carousel {
   background: rgba(10, 7, 3, 0.85);
   border: 1px solid rgba(245, 195, 107, 0.16);
