@@ -82,3 +82,21 @@ This document explains how the VIP section reservation flow operates across the 
 - **Admin coverage** – The site configuration screen mirrors this convention with `reservation-` prefixed attributes on copy inputs, tier inventory fields, and the “Add section tier” button, enabling automation suites to seed content and verify availability math against the live API.
 - **Template placeholders** – CTA fields in both the carousel and modal accept a `{price}` token. Tests should assert the placeholder remains intact in configuration payloads so runtime formatting (handled in `ReserveTablePage`) continues to inject the tier price automatically.
 
+## 10. Local Preview Checklist
+
+When product or stakeholder reviews need a quick snapshot of the `/reserve` experience without the full backend stack, spin up the frontend against a lightweight mock API:
+
+1. **Start a mock availability server**
+   ```bash
+   node scripts/mock-reservations-api.js
+   ```
+   The helper should expose `GET /api/v1/site-content` and `GET /api/v1/reservations/availability` responses with the same shape as the production service (see `backend/src/routes/reservations.ts`). Include CORS headers (`Access-Control-Allow-Origin: *`) so browser-based previews work across containers.
+2. **Run Vite with the mock base URL**
+   ```bash
+   VITE_API_BASE_URL=http://127.0.0.1:4000 npm --prefix frontend run dev -- --host 0.0.0.0 --port 4173
+   ```
+   The explicit host binding lets Playwright or other preview tooling reach the dev server from separate containers.
+3. **Capture the preview** – Use the browser automation utilities (e.g., `browser_container`) to open `http://127.0.0.1:4173/reserve` and grab a screenshot. Forward both the Vite port and the mock API port when running the capture so the page resolves live availability and renders without warning banners.
+
+This workflow keeps the visual QA process aligned with production behaviour while avoiding direct dependencies on the full Postgres-backed API during quick reviews.
+
