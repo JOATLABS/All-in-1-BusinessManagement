@@ -69,6 +69,7 @@ This document explains how the VIP section reservation flow operates across the 
 2. **Fraud and chargeback monitoring** – Monitor repeated failed attempts and mismatched billing details, and feed suspicious events into manual review.
 3. **Data protection** – Because the hosted payment element handles card data, the platform only stores minimal PII (name, email, phone). Ensure QR payloads exclude sensitive data and expire after the event.
 4. **Disaster recovery** – Export nightly reservation manifests (CSV/PDF) with QR codes so the door team can continue scanning if connectivity drops.
+5. **Admin release workflow** – Operations can visit `/admin/reservations` to review the latest bookings, cancel no-shows, or reinstate sections. Each action calls the authenticated `/api/v1/admin/reservations` surface so availability updates immediately for the public site.
 
 ## 8. Future Enhancements
 

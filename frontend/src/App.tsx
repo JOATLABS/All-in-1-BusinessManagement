@@ -8,6 +8,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { SiteConfiguration } from './pages/admin/SiteConfiguration';
+import { Reservations } from './pages/admin/Reservations';
 
 const App = () => (
   <AuthProvider>
@@ -26,6 +27,7 @@ const App = () => (
             }
           >
             <Route index element={<AdminDashboard />} />
+            <Route path="reservations" element={<Reservations />} />
             <Route path="site-configuration" element={<SiteConfiguration />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,3 +1,5 @@
+export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled';
+
 export interface ReservationAvailabilityTier {
   tierId: string;
   total: number;
@@ -34,4 +36,29 @@ export interface CreateReservationResponse {
     status: 'confirmed';
   };
   availability: ReservationAvailabilityResponse;
+}
+
+export interface AdminReservation {
+  id: string;
+  tierId: string;
+  tierLabel: string;
+  tierPrice: string;
+  tierCapacity: string;
+  guestName: string;
+  email: string;
+  phone?: string | null;
+  guestCount: number;
+  paymentIntentId?: string | null;
+  status: ReservationStatus;
+  confirmationCode: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminReservationListResponse {
+  reservations: AdminReservation[];
+}
+
+export interface AdminReservationUpdateResponse {
+  reservation: AdminReservation;
 }

@@ -1,5 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSiteContentContext } from '../../content/SiteContentProvider';
+import { useAuth } from '../../auth/AuthContext';
+import { fetchAdminReservations } from '../../services/adminReservationService';
+import type { AdminReservation } from '../../types/reservations';
 
 const rangeFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -9,6 +12,13 @@ const rangeFormatter = new Intl.DateTimeFormat('en-US', {
 });
 
 const fallbackFormatter = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit'
+});
+
+const reservationTimestampFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
   hour: 'numeric',
   minute: '2-digit'
 });
@@ -25,9 +35,21 @@ const formatEventWindow = (start: Date, end: Date) => {
   return `${rangeFormatter.format(start)} – ${fallbackFormatter.format(end)}`;
 };
 
+const formatReservationTimestamp = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+
+  return reservationTimestampFormatter.format(date);
+};
+
 export const AdminDashboard = () => {
   const { content } = useSiteContentContext();
+  const { token } = useAuth();
   const { event, hero, footer } = content;
+  const [recentReservations, setRecentReservations] = useState<AdminReservation[]>([]);
+  const [reservationsError, setReservationsError] = useState<string | null>(null);
 
   const countdown = useMemo(() => {
     const now = new Date();
@@ -44,6 +66,48 @@ export const AdminDashboard = () => {
   const backgroundsActive = hero.backgrounds.length;
   const heroWords = hero.words.length;
   const socialLinks = footer.socials.length;
+
+  useEffect(() => {
+    if (!token) {
+      setRecentReservations([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadRecentReservations = async () => {
+      try {
+        const response = await fetchAdminReservations(token, { limit: 5 });
+        if (cancelled) {
+          return;
+        }
+        setRecentReservations(response.reservations);
+        setReservationsError(null);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : 'Unable to load the latest reservations right now.';
+        setReservationsError(message);
+      }
+    };
+
+    void loadRecentReservations();
+
+    let refreshInterval: number | undefined;
+    if (typeof window !== 'undefined') {
+      refreshInterval = window.setInterval(() => {
+        void loadRecentReservations();
+      }, 60_000);
+    }
+
+    return () => {
+      cancelled = true;
+      if (typeof window !== 'undefined' && refreshInterval) {
+        window.clearInterval(refreshInterval);
+      }
+    };
+  }, [token]);
 
   return (
     <section>
@@ -105,6 +169,38 @@ export const AdminDashboard = () => {
               <span className="admin-dashboard__muted">Events · Reserve · Tickets · Contact · Legal</span>
             </li>
           </ul>
+        </article>
+
+        <article className="admin-dashboard__card admin-dashboard__card--wide" data-testid="dashboard-latest-reservations">
+          <h2>Latest reservations</h2>
+          {reservationsError ? (
+            <p className="admin-dashboard__hint">{reservationsError}</p>
+          ) : recentReservations.length === 0 ? (
+            <p className="admin-dashboard__hint">No reservations have been recorded yet.</p>
+          ) : (
+            <ul className="admin-dashboard__list admin-dashboard__list--reservations">
+              {recentReservations.map((reservation) => (
+                <li key={reservation.id} data-testid={`dashboard-reservation-${reservation.id}`}>
+                  <div>
+                    <span className="admin-dashboard__reservation-guest">{reservation.guestName}</span>
+                    <span className="admin-dashboard__muted">
+                      {reservation.tierLabel} · {reservation.confirmationCode}
+                    </span>
+                  </div>
+                  <div className="admin-dashboard__reservation-meta">
+                    <span className={`admin-dashboard__badge admin-dashboard__badge--${reservation.status}`}>
+                      {reservation.status === 'confirmed'
+                        ? 'Confirmed'
+                        : reservation.status === 'pending'
+                          ? 'Pending'
+                          : 'Cancelled'}
+                    </span>
+                    <span className="admin-dashboard__muted">{formatReservationTimestamp(reservation.createdAt)}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </article>
       </div>
     </section>

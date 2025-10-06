@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerSiteContentRoutes } from './routes/siteContent.js';
 import { registerReservationRoutes } from './routes/reservations.js';
+import { registerAdminReservationRoutes } from './routes/adminReservations.js';
 
 export const createApp = () => {
   const app = express();
@@ -21,6 +22,7 @@ export const createApp = () => {
   registerAuthRoutes(router);
   registerSiteContentRoutes(router);
   registerReservationRoutes(router);
+  registerAdminReservationRoutes(router);
 
   app.use('/api/v1', router);
 

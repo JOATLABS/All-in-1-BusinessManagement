@@ -1,12 +1,16 @@
 import { randomUUID, randomBytes } from 'node:crypto';
-import { sql, eq } from 'drizzle-orm';
+import { sql, eq, desc } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { getDb } from '../db/index.js';
 import { DEFAULT_SITE_CONTENT_ID } from '../db/seed.js';
 import * as schema from '../db/schema.js';
 import { reservationsTable, siteContentTable } from '../db/schema.js';
-import type { ReservationContent } from '../types.js';
-import type { CreateReservationPayload } from '../validation/reservations.js';
+import type { ReservationContent, ReservationRecord, ReservationStatus } from '../types.js';
+import type {
+  CreateReservationPayload,
+  AdminReservationQuery,
+  UpdateReservationStatusPayload
+} from '../validation/reservations.js';
 
 export class ReservationTierNotFoundError extends Error {
   constructor(message = 'Selected section was not found') {
@@ -19,6 +23,13 @@ export class ReservationSoldOutError extends Error {
   constructor(message = 'This section just sold out. Choose another size to continue.') {
     super(message);
     this.name = 'ReservationSoldOutError';
+  }
+}
+
+export class ReservationNotFoundError extends Error {
+  constructor(message = 'Reservation could not be found') {
+    super(message);
+    this.name = 'ReservationNotFoundError';
   }
 }
 
@@ -56,6 +67,12 @@ export interface CreateReservationResult {
 type Database = NodePgDatabase<typeof schema>;
 
 type ConfirmedCountRow = { tierId: string; confirmed: number };
+
+export interface ReservationWithTierSummary extends ReservationRecord {
+  tierLabel: string;
+  tierPrice: string;
+  tierCapacity: string;
+}
 
 const generateConfirmationCode = (tierId: string) => {
   const identifier = tierId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase() || 'VIP';
@@ -112,6 +129,57 @@ const fetchReservationContent = async (db: Database): Promise<ReservationContent
   const [row] = result.rows as Array<{ reservation: ReservationContent }>;
   return row.reservation;
 };
+
+const fetchReservationContentSnapshot = async (db: Database): Promise<ReservationContent> => {
+  const result = await db
+    .select({ reservation: siteContentTable.reservation })
+    .from(siteContentTable)
+    .where(eq(siteContentTable.id, DEFAULT_SITE_CONTENT_ID))
+    .limit(1);
+
+  if (!result.length) {
+    throw new Error('Site content has not been initialised.');
+  }
+
+  const [record] = result;
+  return record.reservation;
+};
+
+const buildTierLookup = (reservationContent: ReservationContent) => {
+  const lookup = new Map<string, ReservationContent['tableTiers'][number]>();
+  for (const tier of reservationContent.tableTiers) {
+    lookup.set(tier.id, tier);
+  }
+  return lookup;
+};
+
+const mapReservationWithTier = (
+  row: ReservationRecord,
+  lookup: Map<string, ReservationContent['tableTiers'][number]>
+): ReservationWithTierSummary => {
+  const tier = lookup.get(row.tierId);
+
+  return {
+    ...row,
+    tierLabel: tier?.label ?? row.tierId,
+    tierPrice: tier?.price ?? '',
+    tierCapacity: tier?.capacity ?? ''
+  };
+};
+
+const normaliseReservationRow = (row: schema.ReservationRow): ReservationRecord => ({
+  id: row.id,
+  tierId: row.tierId,
+  guestName: row.guestName,
+  email: row.email,
+  phone: row.phone ?? null,
+  guestCount: row.guestCount,
+  paymentIntentId: row.paymentIntentId ?? null,
+  status: row.status as ReservationStatus,
+  confirmationCode: row.confirmationCode,
+  createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
+  updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : row.updatedAt
+});
 
 const selectConfirmedCounts = async (db: Database): Promise<ConfirmedCountRow[]> => {
   const rows = await db
@@ -197,4 +265,51 @@ export const createReservation = async (
       availability
     } satisfies CreateReservationResult;
   });
+};
+
+export const listReservations = async (
+  params: AdminReservationQuery = {}
+): Promise<ReservationWithTierSummary[]> => {
+  const db = getDb();
+  const reservationContent = await fetchReservationContentSnapshot(db);
+  const lookup = buildTierLookup(reservationContent);
+
+  const safeLimit = Math.min(Math.max(params.limit ?? 100, 1), 500);
+
+  const rows = params.status
+    ? await db
+        .select()
+        .from(reservationsTable)
+        .where(eq(reservationsTable.status, params.status))
+        .orderBy(desc(reservationsTable.createdAt))
+        .limit(safeLimit)
+    : await db
+        .select()
+        .from(reservationsTable)
+        .orderBy(desc(reservationsTable.createdAt))
+        .limit(safeLimit);
+
+  return rows.map((row) => mapReservationWithTier(normaliseReservationRow(row), lookup));
+};
+
+export const updateReservationStatus = async (
+  id: string,
+  payload: UpdateReservationStatusPayload
+): Promise<ReservationWithTierSummary> => {
+  const db = getDb();
+  const reservationContent = await fetchReservationContentSnapshot(db);
+  const lookup = buildTierLookup(reservationContent);
+  const timestamp = new Date();
+
+  const [updated] = await db
+    .update(reservationsTable)
+    .set({ status: payload.status as ReservationStatus, updatedAt: timestamp })
+    .where(eq(reservationsTable.id, id))
+    .returning();
+
+  if (!updated) {
+    throw new ReservationNotFoundError();
+  }
+
+  return mapReservationWithTier(normaliseReservationRow(updated), lookup);
 };
