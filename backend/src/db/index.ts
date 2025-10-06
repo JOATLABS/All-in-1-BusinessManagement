@@ -22,9 +22,25 @@ const schemaStatements = [
     hero JSONB NOT NULL,
     event JSONB NOT NULL,
     footer JSONB NOT NULL,
+    reservation JSONB NOT NULL,
     overlays JSONB NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  )`
+  )`,
+  `ALTER TABLE site_content ADD COLUMN IF NOT EXISTS reservation JSONB NOT NULL DEFAULT '{}'::jsonb`,
+  `CREATE TABLE IF NOT EXISTS reservations (
+    id UUID PRIMARY KEY,
+    tier_id TEXT NOT NULL,
+    guest_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT,
+    guest_count INTEGER NOT NULL,
+    payment_intent_id TEXT,
+    status TEXT NOT NULL,
+    confirmation_code TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS reservations_tier_status_idx ON reservations (tier_id, status)`
 ];
 
 const ensureSchema = async (client: PoolClient): Promise<void> => {

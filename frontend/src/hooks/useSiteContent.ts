@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { SiteContent } from '../types/content';
+import type { ReservationTierPattern, SiteContent } from '../types/content';
 import { defaultSiteContent } from '../config/defaultSiteContent';
 import { fetchSiteContent, type SiteContentResponse } from '../services/contentService';
 
@@ -7,6 +7,18 @@ const parseDate = (value: string | Date) => (value instanceof Date ? value : new
 
 const ensureArray = <T>(value: T[] | undefined, fallback: T[]): T[] =>
   value && value.length ? value : fallback;
+
+const parseNonNegativeInt = (value: unknown, fallback: number): number => {
+  const numeric = typeof value === 'number' ? value : Number.parseInt(String(value), 10);
+
+  if (!Number.isFinite(numeric) || Number.isNaN(numeric) || numeric < 0) {
+    return fallback;
+  }
+
+  return Math.floor(numeric);
+};
+
+const reservationPatterns: ReservationTierPattern[] = ['grid', 'halo', 'pillars'];
 
 const normaliseContent = (content: SiteContent): SiteContent => ({
   hero: {
@@ -25,20 +37,91 @@ const normaliseContent = (content: SiteContent): SiteContent => ({
   footer: {
     socials: ensureArray(content.footer?.socials, defaultSiteContent.footer.socials)
   },
+  reservation: (() => {
+    const fallback = defaultSiteContent.reservation;
+    const source = content.reservation ?? fallback;
+
+    const availability = source.availability ?? fallback.availability;
+    const carousel = source.carousel ?? fallback.carousel;
+    const modal = source.modal ?? fallback.modal;
+
+    const paymentSteps = ensureArray(source.paymentSteps, fallback.paymentSteps);
+
+    const tableTiers = (() => {
+      const fallbackTiers = fallback.tableTiers;
+      const sourceTiers = ensureArray(source.tableTiers, fallbackTiers);
+
+      return sourceTiers.map((tier, index) => {
+        const fallbackTier = fallbackTiers[index] ?? fallbackTiers[0];
+        const total = parseNonNegativeInt(tier.total, fallbackTier.total);
+        const reserved = Math.min(parseNonNegativeInt(tier.reserved, fallbackTier.reserved), total);
+        const pattern = reservationPatterns.includes(tier.visual?.pattern as ReservationTierPattern)
+          ? tier.visual.pattern
+          : fallbackTier.visual.pattern;
+
+        return {
+          id: tier.id?.trim() ? tier.id : fallbackTier.id,
+          label: tier.label ?? fallbackTier.label,
+          capacity: tier.capacity ?? fallbackTier.capacity,
+          description: tier.description ?? fallbackTier.description,
+          price: tier.price ?? fallbackTier.price,
+          total,
+          reserved,
+          visual: {
+            pattern,
+            primaryColor: tier.visual?.primaryColor?.trim() ?? fallbackTier.visual.primaryColor,
+            secondaryColor: tier.visual?.secondaryColor?.trim() ?? fallbackTier.visual.secondaryColor,
+            accentColor: tier.visual?.accentColor?.trim() ?? fallbackTier.visual.accentColor
+          }
+        };
+      });
+    })();
+
+    return {
+      title: source.title ?? fallback.title,
+      subtitle: source.subtitle ?? fallback.subtitle,
+      heroEyebrow: source.heroEyebrow ?? fallback.heroEyebrow,
+      backLinkLabel: source.backLinkLabel ?? fallback.backLinkLabel,
+      intro: source.intro ?? fallback.intro,
+      availabilityNote: source.availabilityNote ?? fallback.availabilityNote,
+      availability: {
+        heading: availability.heading ?? fallback.availability.heading,
+        liveTag: availability.liveTag ?? fallback.availability.liveTag,
+        loadingLabel: availability.loadingLabel ?? fallback.availability.loadingLabel,
+        openLabel: availability.openLabel ?? fallback.availability.openLabel,
+        reservedLabel: availability.reservedLabel ?? fallback.availability.reservedLabel,
+        totalLabel: availability.totalLabel ?? fallback.availability.totalLabel
+      },
+      carousel: {
+        heading: carousel.heading ?? fallback.carousel.heading,
+        previousLabel: carousel.previousLabel ?? fallback.carousel.previousLabel,
+        nextLabel: carousel.nextLabel ?? fallback.carousel.nextLabel,
+        availableLabel: carousel.availableLabel ?? fallback.carousel.availableLabel,
+        reserveButtonLabel: carousel.reserveButtonLabel ?? fallback.carousel.reserveButtonLabel,
+        soldOutLabel: carousel.soldOutLabel ?? fallback.carousel.soldOutLabel
+      },
+      modal: {
+        stepsHeading: modal.stepsHeading ?? fallback.modal.stepsHeading,
+        detailsHeading: modal.detailsHeading ?? fallback.modal.detailsHeading,
+        paymentHeading: modal.paymentHeading ?? fallback.modal.paymentHeading,
+        confirmationCodeLabel: modal.confirmationCodeLabel ?? fallback.modal.confirmationCodeLabel,
+        detailsCtaLabel: modal.detailsCtaLabel ?? fallback.modal.detailsCtaLabel,
+        paymentCtaLabel: modal.paymentCtaLabel ?? fallback.modal.paymentCtaLabel,
+        paymentProcessingLabel: modal.paymentProcessingLabel ?? fallback.modal.paymentProcessingLabel,
+        confirmationCtaLabel: modal.confirmationCtaLabel ?? fallback.modal.confirmationCtaLabel
+      },
+      paymentSteps,
+      confirmationHeadline: source.confirmationHeadline ?? fallback.confirmationHeadline,
+      confirmationSubtext: source.confirmationSubtext ?? fallback.confirmationSubtext,
+      tableTiers
+    };
+  })(),
   overlays: {
     about: {
       title: content.overlays?.about.title ?? defaultSiteContent.overlays.about.title,
       subtitle: content.overlays?.about.subtitle ?? defaultSiteContent.overlays.about.subtitle,
       paragraphs: ensureArray(content.overlays?.about.paragraphs, defaultSiteContent.overlays.about.paragraphs),
       hours: ensureArray(content.overlays?.about.hours, defaultSiteContent.overlays.about.hours)
-    },
-    reserve: {
-      title: content.overlays?.reserve.title ?? defaultSiteContent.overlays.reserve.title,
-      subtitle: content.overlays?.reserve.subtitle ?? defaultSiteContent.overlays.reserve.subtitle,
-      intro: content.overlays?.reserve.intro ?? defaultSiteContent.overlays.reserve.intro,
-      bullets: ensureArray(content.overlays?.reserve.bullets, defaultSiteContent.overlays.reserve.bullets),
-      emailCta: content.overlays?.reserve.emailCta ?? defaultSiteContent.overlays.reserve.emailCta,
-      hotlineLabel: content.overlays?.reserve.hotlineLabel ?? defaultSiteContent.overlays.reserve.hotlineLabel
     },
     tickets: {
       title: content.overlays?.tickets.title ?? defaultSiteContent.overlays.tickets.title,
@@ -75,6 +158,7 @@ const fromResponse = (payload: SiteContentResponse): SiteContent => ({
     end: new Date(payload.event.end)
   },
   footer: payload.footer,
+  reservation: payload.reservation,
   overlays: payload.overlays
 });
 
