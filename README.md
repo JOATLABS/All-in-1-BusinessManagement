@@ -5,6 +5,11 @@ Introduction
 
 The client’s vision is to create a customer‑friendly Afrobeat lounge that differentiates itself through service rather than high prices. To support this mission the website needs to be more than a marketing brochure – it must include event reservations, conditional ticket pre‑sales, looping nightlife visuals, and direct partner contact routes. Behind the scenes, the business needs a multi‑tenant management platform that supports inventory control, vendor contracts, marketing campaigns, financial management, communication with promoters and vendors, and comprehensive reporting. Both the customer‑facing site and the management system need smooth transitions, low latency, and scalability to support growth. The following sections summarise research into modern UI/UX practices, multi‑tenant best practices and event‑management requirements, propose a technology stack and present a high‑level system architecture and implementation roadmap.
 
+## Developer Guides
+
+- [Admin Dashboard & Configuration API](docs/admin_dashboard.md) – how to run the real admin console, authenticate, and use the configuration endpoints that power the public site.
+- [Reservation Workflow Overview](docs/reservation_workflow.md) – how availability, payment, and QR confirmations flow through the stack.
+
 UI/UX design best practices
 Night‑life website trends
 

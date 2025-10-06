@@ -28,6 +28,93 @@ export const defaultSiteContent: SiteContent = {
       { name: 'Instagram', icon: 'instagram', url: 'https://instagram.com/ojaplus' }
     ]
   },
+  reservation: {
+    title: 'Reserve Your VIP Section',
+    subtitle: 'Book instantly',
+    heroEyebrow: 'VIP reservations',
+    backLinkLabel: '← Back to experiences',
+    intro:
+      'Grab your booth online and walk straight in. Concierge entry and bottle service are ready when you arrive.',
+    availabilityNote:
+      'Numbers update live—finish payment and the section is yours.',
+    availability: {
+      heading: "Tonight's availability",
+      liveTag: 'Live update',
+      loadingLabel: 'Syncing…',
+      openLabel: 'Open sections',
+      reservedLabel: 'Already booked',
+      totalLabel: 'Total inventory'
+    },
+    carousel: {
+      heading: 'Pick your section',
+      previousLabel: 'View previous section',
+      nextLabel: 'View next section',
+      availableLabel: 'Available',
+      reserveButtonLabel: 'Reserve for {price}',
+      soldOutLabel: 'Sold out'
+    },
+    modal: {
+      stepsHeading: 'How it works',
+      detailsHeading: 'Crew details',
+      paymentHeading: 'Secure payment',
+      confirmationCodeLabel: 'Confirmation code',
+      detailsCtaLabel: 'Continue to payment',
+      paymentCtaLabel: 'Pay {price}',
+      paymentProcessingLabel: 'Processing…',
+      confirmationCtaLabel: 'Done'
+    },
+    paymentSteps: ['Guest info', 'Payment', 'QR pass'],
+    confirmationHeadline: 'You’re confirmed.',
+    confirmationSubtext:
+      'Your QR pass is in your inbox. Show it with your ID when you arrive.',
+    tableTiers: [
+      {
+        id: 'intimate',
+        label: 'Intimate Booth',
+        capacity: 'Seats up to 4',
+        description: 'Private lounge nook for tight crews and early hangs.',
+        price: '$50',
+        total: 6,
+        reserved: 2,
+        visual: {
+          pattern: 'grid',
+          primaryColor: '#9333ea',
+          secondaryColor: '#f472b6',
+          accentColor: '#ffffff1a'
+        }
+      },
+      {
+        id: 'social',
+        label: 'Social Nook',
+        capacity: 'Seats 6–7',
+        description: 'Corner energy beside the floor with room to move.',
+        price: '$90',
+        total: 7,
+        reserved: 3,
+        visual: {
+          pattern: 'halo',
+          primaryColor: '#22d3ee',
+          secondaryColor: '#6366f1',
+          accentColor: '#ffffff14'
+        }
+      },
+      {
+        id: 'grand',
+        label: 'Grand Suite',
+        capacity: 'Hosts 8–10',
+        description: 'Raised suite with bottle lockers and DJ views.',
+        price: '$150',
+        total: 5,
+        reserved: 1,
+        visual: {
+          pattern: 'pillars',
+          primaryColor: '#f97316',
+          secondaryColor: '#facc15',
+          accentColor: '#ffffff12'
+        }
+      }
+    ]
+  },
   overlays: {
     about: {
       title: 'Our Story',
@@ -40,19 +127,6 @@ export const defaultSiteContent: SiteContent = {
         { label: 'Thursday–Saturday', value: '9:00 PM – 4:00 AM' },
         { label: 'Sunday', value: '5:00 PM – 11:00 PM (Experiential supper club)' }
       ]
-    },
-    reserve: {
-      title: 'Reserve a Table',
-      subtitle: 'Tailor the night for your crew',
-      intro:
-        'Lock in bottle service and bespoke lighting for your guests. Our concierge team responds within 30 minutes to craft the perfect arrival, seating, and celebration cues.',
-      bullets: [
-        'Private lounges for 6–12 guests with custom sound design',
-        'Chef-curated share plates and premium champagne flights',
-        'Dedicated host with priority entry and valet coordination'
-      ],
-      emailCta: { label: 'Email concierge', href: 'mailto:host@ojaplusclub.com?subject=Table%20Reservation%20Request' },
-      hotlineLabel: 'Call {hotline}'
     },
     tickets: {
       title: 'Ticket Pre-Sale',
@@ -81,7 +155,7 @@ export const defaultSiteContent: SiteContent = {
       subtitle: 'Terms & privacy',
       terms: [
         'Entry requires valid government-issued identification. We reserve the right to refuse admission to ensure a secure and inclusive environment for guests and staff.',
-        'By entering, you consent to audio and video capture for promotional use. Table reservations are confirmed upon receipt of a signed service agreement and deposit. Ticket sales are final unless an event is cancelled.',
+        'By entering, you consent to audio and video capture for promotional use. Table reservations are confirmed once full payment is received. Ticket sales are final unless an event is cancelled.',
         'For privacy inquiries, contact privacy@ojaplusclub.com. Full privacy notice launches with the membership portal.'
       ],
       privacyPlaceholder: 'Privacy policy content will publish alongside the membership rollout.'

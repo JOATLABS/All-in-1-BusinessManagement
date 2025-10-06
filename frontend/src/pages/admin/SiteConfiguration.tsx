@@ -2,14 +2,14 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { useSiteContentContext } from '../../content/SiteContentProvider';
 import { updateSiteContent, type SiteContentResponse } from '../../services/contentService';
-import type { EventContent, HeroContent, OverlaysContent } from '../../types/content';
+import type { EventContent, HeroContent, OverlaysContent, ReservationContent } from '../../types/content';
 
 type TabId = 'hero' | 'about' | 'events' | 'contact' | 'legal';
 
 const tabs: Array<{ id: TabId; label: string }> = [
   { id: 'hero', label: 'Landing Hero' },
   { id: 'about', label: 'About Modal' },
-  { id: 'events', label: 'Events Overlay' },
+  { id: 'events', label: 'Events & Reservations' },
   { id: 'contact', label: 'Contact Modal' },
   { id: 'legal', label: 'Legal Footer' }
 ];
@@ -19,11 +19,6 @@ const cloneOverlays = (overlays: OverlaysContent) => ({
     ...overlays.about,
     paragraphs: [...overlays.about.paragraphs],
     hours: overlays.about.hours.map((hour) => ({ ...hour }))
-  },
-  reserve: {
-    ...overlays.reserve,
-    bullets: [...overlays.reserve.bullets],
-    emailCta: { ...overlays.reserve.emailCta }
   },
   tickets: { ...overlays.tickets },
   contact: {
@@ -37,6 +32,18 @@ const cloneOverlays = (overlays: OverlaysContent) => ({
 });
 
 type OverlayDraftState = ReturnType<typeof cloneOverlays>;
+
+const cloneReservation = (reservation: ReservationContent) => ({
+  ...reservation,
+  availability: { ...reservation.availability },
+  carousel: { ...reservation.carousel },
+  modal: { ...reservation.modal },
+  paymentSteps: [...reservation.paymentSteps],
+  tableTiers: reservation.tableTiers.map((tier) => ({
+    ...tier,
+    visual: { ...tier.visual }
+  }))
+});
 
 type EventDraftState = {
   name: string;
@@ -88,6 +95,7 @@ export const SiteConfiguration = () => {
   const [heroDraft, setHeroDraft] = useState(() => heroToDraft(content.hero));
   const [eventDraft, setEventDraft] = useState<EventDraftState>(() => eventToDraft(content.event));
   const [overlayDraft, setOverlayDraft] = useState<OverlayDraftState>(() => cloneOverlays(content.overlays));
+  const [reservationDraft, setReservationDraft] = useState(() => cloneReservation(content.reservation));
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [hasChanges, setHasChanges] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -121,6 +129,7 @@ export const SiteConfiguration = () => {
     setHeroDraft(heroToDraft(content.hero));
     setEventDraft(eventToDraft(content.event));
     setOverlayDraft(cloneOverlays(content.overlays));
+    setReservationDraft(cloneReservation(content.reservation));
   }, [content, hasChanges, status]);
 
   const handleHeroBackgroundChange = (
@@ -182,22 +191,174 @@ export const SiteConfiguration = () => {
     markDirty();
   };
 
-  const handleReserveChange = (field: 'title' | 'subtitle' | 'intro' | 'hotlineLabel', value: string) => {
-    updateOverlay('reserve', { ...overlayDraft.reserve, [field]: value });
+  const handleReservationChange = (
+    field:
+      | 'title'
+      | 'subtitle'
+      | 'heroEyebrow'
+      | 'backLinkLabel'
+      | 'intro'
+      | 'availabilityNote'
+      | 'confirmationHeadline'
+      | 'confirmationSubtext',
+    value: string
+  ) => {
+    setReservationDraft((prev) => ({ ...prev, [field]: value }));
+    markDirty();
   };
 
-  const handleReserveBulletsChange = (value: string) => {
-    updateOverlay('reserve', {
-      ...overlayDraft.reserve,
-      bullets: value.split('\n').filter(Boolean)
-    });
+  const handleReservationAvailabilityChange = (
+    field: keyof ReservationContent['availability'],
+    value: string
+  ) => {
+    setReservationDraft((prev) => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [field]: value
+      }
+    }));
+    markDirty();
   };
 
-  const handleReserveEmailChange = (field: 'label' | 'href', value: string) => {
-    updateOverlay('reserve', {
-      ...overlayDraft.reserve,
-      emailCta: { ...overlayDraft.reserve.emailCta, [field]: value }
+  const handleReservationCarouselChange = (
+    field: keyof ReservationContent['carousel'],
+    value: string
+  ) => {
+    setReservationDraft((prev) => ({
+      ...prev,
+      carousel: {
+        ...prev.carousel,
+        [field]: value
+      }
+    }));
+    markDirty();
+  };
+
+  const handleReservationModalChange = (
+    field: keyof ReservationContent['modal'],
+    value: string
+  ) => {
+    setReservationDraft((prev) => ({
+      ...prev,
+      modal: {
+        ...prev.modal,
+        [field]: value
+      }
+    }));
+    markDirty();
+  };
+
+  const handleReservationStepsChange = (value: string) => {
+    setReservationDraft((prev) => ({
+      ...prev,
+      paymentSteps: value
+        .split('\n')
+        .map((step) => step.trim())
+        .filter(Boolean)
+    }));
+    markDirty();
+  };
+
+  const handleTierChange = (
+    index: number,
+    field: 'label' | 'capacity' | 'description' | 'price' | 'total' | 'reserved',
+    value: string
+  ) => {
+    setReservationDraft((prev) => {
+      const tiers = prev.tableTiers.map((tier, tierIndex) => {
+        if (tierIndex !== index) {
+          return tier;
+        }
+
+        if (field === 'total' || field === 'reserved') {
+          const numeric = Number.parseInt(value, 10);
+          const safeValue = Number.isFinite(numeric) && !Number.isNaN(numeric) && numeric >= 0
+            ? Math.floor(numeric)
+            : 0;
+
+          const nextTotal = field === 'total' ? safeValue : tier.total;
+          const nextReserved = field === 'reserved' ? Math.min(safeValue, nextTotal) : Math.min(tier.reserved, nextTotal);
+
+          return {
+            ...tier,
+            total: nextTotal,
+            reserved: nextReserved
+          };
+        }
+
+        return { ...tier, [field]: value };
+      });
+
+      return { ...prev, tableTiers: tiers };
     });
+    markDirty();
+  };
+
+  const handleTierVisualChange = (
+    index: number,
+    field: 'pattern' | 'primaryColor' | 'secondaryColor' | 'accentColor',
+    value: string
+  ) => {
+    setReservationDraft((prev) => {
+      const tiers = prev.tableTiers.map((tier, tierIndex) => {
+        if (tierIndex !== index) {
+          return tier;
+        }
+
+        if (field === 'pattern' && !['grid', 'halo', 'pillars'].includes(value)) {
+          return tier;
+        }
+
+        return {
+          ...tier,
+          visual: {
+            ...tier.visual,
+            [field]: field === 'pattern' ? (value as ReservationContent['tableTiers'][number]['visual']['pattern']) : value
+          }
+        };
+      });
+
+      return { ...prev, tableTiers: tiers };
+    });
+    markDirty();
+  };
+
+  const handleAddTier = () => {
+    setReservationDraft((prev) => ({
+      ...prev,
+      tableTiers: [
+        ...prev.tableTiers,
+        {
+          id: `tier-${prev.tableTiers.length + 1}`,
+          label: 'New section',
+          capacity: 'Fits 4 guests',
+          description: 'Describe this VIP section.',
+          price: '$50',
+          total: 0,
+          reserved: 0,
+          visual: {
+            pattern: 'grid',
+            primaryColor: '#6366f1',
+            secondaryColor: '#a855f7',
+            accentColor: '#ffffff1a'
+          }
+        }
+      ]
+    }));
+    markDirty();
+  };
+
+  const handleRemoveTier = (index: number) => {
+    setReservationDraft((prev) => {
+      if (prev.tableTiers.length <= 1) {
+        return prev;
+      }
+
+      const tiers = prev.tableTiers.filter((_, tierIndex) => tierIndex !== index);
+      return { ...prev, tableTiers: tiers };
+    });
+    markDirty();
   };
 
   const handleTicketsChange = (field: keyof OverlayDraftState['tickets'], value: string) => {
@@ -309,6 +470,46 @@ export const SiteConfiguration = () => {
       return;
     }
 
+    const reservationPayload: ReservationContent = {
+      title: reservationDraft.title,
+      subtitle: reservationDraft.subtitle,
+      heroEyebrow: reservationDraft.heroEyebrow,
+      backLinkLabel: reservationDraft.backLinkLabel,
+      intro: reservationDraft.intro,
+      availabilityNote: reservationDraft.availabilityNote,
+      availability: { ...reservationDraft.availability },
+      carousel: { ...reservationDraft.carousel },
+      modal: { ...reservationDraft.modal },
+      paymentSteps: reservationDraft.paymentSteps.length
+        ? [...reservationDraft.paymentSteps]
+        : ['Crew details', 'Secure payment', 'Confirmation QR code'],
+      confirmationHeadline: reservationDraft.confirmationHeadline,
+      confirmationSubtext: reservationDraft.confirmationSubtext,
+      tableTiers: (reservationDraft.tableTiers.length ? reservationDraft.tableTiers : content.reservation.tableTiers).map(
+        (tier, index) => {
+          const total = Math.max(0, Math.floor(tier.total));
+          const reserved = Math.min(Math.max(0, Math.floor(tier.reserved)), total);
+          const pattern = ['grid', 'halo', 'pillars'].includes(tier.visual.pattern)
+            ? tier.visual.pattern
+            : 'grid';
+
+          return {
+            ...tier,
+            id: tier.id?.trim() ? tier.id : `tier-${index + 1}`,
+            total,
+            reserved,
+            visual: {
+              ...tier.visual,
+              pattern,
+              primaryColor: tier.visual.primaryColor?.trim() || '#6366f1',
+              secondaryColor: tier.visual.secondaryColor?.trim() || '#a855f7',
+              accentColor: tier.visual.accentColor?.trim() || '#ffffff1a'
+            }
+          };
+        }
+      )
+    };
+
     const payload: SiteContentResponse = {
       hero: {
         name: heroDraft.name,
@@ -328,6 +529,7 @@ export const SiteConfiguration = () => {
       footer: {
         socials: content.footer.socials.map((social) => ({ ...social }))
       },
+      reservation: reservationPayload,
       overlays: overlayDraft
     };
 
@@ -534,60 +736,401 @@ export const SiteConfiguration = () => {
             </fieldset>
 
             <fieldset>
-              <legend>Reservation overlay</legend>
+              <legend>Reservation experience</legend>
               <label>
                 Title
                 <input
-                  value={overlayDraft.reserve.title}
-                  onChange={(event) => handleReserveChange('title', event.target.value)}
+                  value={reservationDraft.title}
+                  onChange={(event) => handleReservationChange('title', event.target.value)}
+                  data-testid="reservation-title-input"
                 />
               </label>
               <label>
                 Subtitle
                 <input
-                  value={overlayDraft.reserve.subtitle}
-                  onChange={(event) => handleReserveChange('subtitle', event.target.value)}
+                  value={reservationDraft.subtitle}
+                  onChange={(event) => handleReservationChange('subtitle', event.target.value)}
+                  data-testid="reservation-subtitle-input"
+                />
+              </label>
+              <label>
+                Hero eyebrow
+                <input
+                  value={reservationDraft.heroEyebrow}
+                  onChange={(event) => handleReservationChange('heroEyebrow', event.target.value)}
+                  data-testid="reservation-hero-eyebrow-input"
+                />
+              </label>
+              <label>
+                Back link label
+                <input
+                  value={reservationDraft.backLinkLabel}
+                  onChange={(event) => handleReservationChange('backLinkLabel', event.target.value)}
+                  data-testid="reservation-back-link-input"
                 />
               </label>
               <label>
                 Intro copy
                 <textarea
                   rows={3}
-                  value={overlayDraft.reserve.intro}
-                  onChange={(event) => handleReserveChange('intro', event.target.value)}
+                  value={reservationDraft.intro}
+                  onChange={(event) => handleReservationChange('intro', event.target.value)}
+                  data-testid="reservation-intro-input"
                 />
               </label>
               <label>
-                Highlights
+                Availability note
+                <textarea
+                  rows={2}
+                  value={reservationDraft.availabilityNote}
+                  onChange={(event) => handleReservationChange('availabilityNote', event.target.value)}
+                  data-testid="reservation-availability-note-input"
+                />
+                <span className="admin-config__hint">
+                  Share how frequently counts refresh or how long sections stay on hold during checkout.
+                </span>
+              </label>
+              <h4>Availability labels</h4>
+              <div className="admin-config__grid">
+                <label>
+                  Availability heading
+                  <input
+                    value={reservationDraft.availability.heading}
+                    onChange={(event) => handleReservationAvailabilityChange('heading', event.target.value)}
+                    data-testid="reservation-availability-heading-input"
+                  />
+                </label>
+                <label>
+                  Live badge label
+                  <input
+                    value={reservationDraft.availability.liveTag}
+                    onChange={(event) => handleReservationAvailabilityChange('liveTag', event.target.value)}
+                    data-testid="reservation-availability-live-tag-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Loading badge label
+                  <input
+                    value={reservationDraft.availability.loadingLabel}
+                    onChange={(event) => handleReservationAvailabilityChange('loadingLabel', event.target.value)}
+                    data-testid="reservation-availability-loading-input"
+                  />
+                </label>
+                <label>
+                  Open sections label
+                  <input
+                    value={reservationDraft.availability.openLabel}
+                    onChange={(event) => handleReservationAvailabilityChange('openLabel', event.target.value)}
+                    data-testid="reservation-open-label-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Reserved sections label
+                  <input
+                    value={reservationDraft.availability.reservedLabel}
+                    onChange={(event) => handleReservationAvailabilityChange('reservedLabel', event.target.value)}
+                    data-testid="reservation-reserved-label-input"
+                  />
+                </label>
+                <label>
+                  Total sections label
+                  <input
+                    value={reservationDraft.availability.totalLabel}
+                    onChange={(event) => handleReservationAvailabilityChange('totalLabel', event.target.value)}
+                    data-testid="reservation-total-label-input"
+                  />
+                </label>
+              </div>
+              <h4>Carousel copy</h4>
+              <div className="admin-config__grid">
+                <label>
+                  Carousel heading
+                  <input
+                    value={reservationDraft.carousel.heading}
+                    onChange={(event) => handleReservationCarouselChange('heading', event.target.value)}
+                    data-testid="reservation-carousel-heading-input"
+                  />
+                </label>
+                <label>
+                  Previous section label
+                  <input
+                    value={reservationDraft.carousel.previousLabel}
+                    onChange={(event) => handleReservationCarouselChange('previousLabel', event.target.value)}
+                    data-testid="reservation-carousel-previous-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Next section label
+                  <input
+                    value={reservationDraft.carousel.nextLabel}
+                    onChange={(event) => handleReservationCarouselChange('nextLabel', event.target.value)}
+                    data-testid="reservation-carousel-next-input"
+                  />
+                </label>
+                <label>
+                  Availability badge label
+                  <input
+                    value={reservationDraft.carousel.availableLabel}
+                    onChange={(event) => handleReservationCarouselChange('availableLabel', event.target.value)}
+                    data-testid="reservation-carousel-available-label-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Reserve button label
+                  <input
+                    value={reservationDraft.carousel.reserveButtonLabel}
+                    onChange={(event) => handleReservationCarouselChange('reserveButtonLabel', event.target.value)}
+                    data-testid="reservation-carousel-reserve-label-input"
+                  />
+                  <span className="admin-config__hint">Use {'{price}'} to insert the tier price.</span>
+                </label>
+                <label>
+                  Sold out label
+                  <input
+                    value={reservationDraft.carousel.soldOutLabel}
+                    onChange={(event) => handleReservationCarouselChange('soldOutLabel', event.target.value)}
+                    data-testid="reservation-carousel-soldout-label-input"
+                  />
+                </label>
+              </div>
+              <h4>Modal copy</h4>
+              <div className="admin-config__grid">
+                <label>
+                  Steps heading
+                  <input
+                    value={reservationDraft.modal.stepsHeading}
+                    onChange={(event) => handleReservationModalChange('stepsHeading', event.target.value)}
+                    data-testid="reservation-modal-steps-heading-input"
+                  />
+                </label>
+                <label>
+                  Details form heading
+                  <input
+                    value={reservationDraft.modal.detailsHeading}
+                    onChange={(event) => handleReservationModalChange('detailsHeading', event.target.value)}
+                    data-testid="reservation-modal-details-heading-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Payment form heading
+                  <input
+                    value={reservationDraft.modal.paymentHeading}
+                    onChange={(event) => handleReservationModalChange('paymentHeading', event.target.value)}
+                    data-testid="reservation-modal-payment-heading-input"
+                  />
+                </label>
+                <label>
+                  Confirmation code label
+                  <input
+                    value={reservationDraft.modal.confirmationCodeLabel}
+                    onChange={(event) => handleReservationModalChange('confirmationCodeLabel', event.target.value)}
+                    data-testid="reservation-modal-code-label-input"
+                  />
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Details button label
+                  <input
+                    value={reservationDraft.modal.detailsCtaLabel}
+                    onChange={(event) => handleReservationModalChange('detailsCtaLabel', event.target.value)}
+                    data-testid="reservation-modal-details-cta-input"
+                  />
+                </label>
+                <label>
+                  Payment button label
+                  <input
+                    value={reservationDraft.modal.paymentCtaLabel}
+                    onChange={(event) => handleReservationModalChange('paymentCtaLabel', event.target.value)}
+                    data-testid="reservation-modal-payment-cta-input"
+                  />
+                  <span className="admin-config__hint">Use {'{price}'} to insert the tier price.</span>
+                </label>
+              </div>
+              <div className="admin-config__grid">
+                <label>
+                  Processing state label
+                  <input
+                    value={reservationDraft.modal.paymentProcessingLabel}
+                    onChange={(event) => handleReservationModalChange('paymentProcessingLabel', event.target.value)}
+                    data-testid="reservation-modal-processing-label-input"
+                  />
+                </label>
+                <label>
+                  Confirmation button label
+                  <input
+                    value={reservationDraft.modal.confirmationCtaLabel}
+                    onChange={(event) => handleReservationModalChange('confirmationCtaLabel', event.target.value)}
+                    data-testid="reservation-modal-confirmation-cta-input"
+                  />
+                </label>
+              </div>
+              <label>
+                Payment steps
                 <textarea
                   rows={3}
-                  value={overlayDraft.reserve.bullets.join('\n')}
-                  onChange={(event) => handleReserveBulletsChange(event.target.value)}
+                  value={reservationDraft.paymentSteps.join('\n')}
+                  onChange={(event) => handleReservationStepsChange(event.target.value)}
+                  data-testid="reservation-payment-steps-input"
                 />
-                <span className="admin-config__hint">One bullet per line.</span>
+                <span className="admin-config__hint">One step per line (e.g. details, payment, confirmation).</span>
               </label>
-              <label>
-                Email CTA label
-                <input
-                  value={overlayDraft.reserve.emailCta.label}
-                  onChange={(event) => handleReserveEmailChange('label', event.target.value)}
-                />
-              </label>
-              <label>
-                Email CTA link
-                <input
-                  value={overlayDraft.reserve.emailCta.href}
-                  onChange={(event) => handleReserveEmailChange('href', event.target.value)}
-                />
-              </label>
-              <label>
-                Hotline label
-                <input
-                  value={overlayDraft.reserve.hotlineLabel}
-                  onChange={(event) => handleReserveChange('hotlineLabel', event.target.value)}
-                />
-                <span className="admin-config__hint">Use {`{hotline}`} to inject the number.</span>
-              </label>
+              <div className="admin-config__grid">
+                <label>
+                  Confirmation headline
+                  <input
+                    value={reservationDraft.confirmationHeadline}
+                    onChange={(event) => handleReservationChange('confirmationHeadline', event.target.value)}
+                    data-testid="reservation-confirmation-headline-input"
+                  />
+                </label>
+                <label>
+                  Confirmation subtext
+                  <input
+                    value={reservationDraft.confirmationSubtext}
+                    onChange={(event) => handleReservationChange('confirmationSubtext', event.target.value)}
+                    data-testid="reservation-confirmation-subtext-input"
+                  />
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>VIP sections</legend>
+              <p className="admin-config__hint">
+                Configure each tier with total sections and how many are already reserved so availability stays accurate.
+              </p>
+              {reservationDraft.tableTiers.map((tier, index) => (
+                <div key={tier.id} className="admin-config__tier" data-testid={`reservation-tier-${tier.id}`}>
+                  <div className="admin-config__tier-header">
+                    <h4>{tier.label || `Tier ${index + 1}`}</h4>
+                    <button
+                      type="button"
+                      className="admin-config__remove"
+                      onClick={() => handleRemoveTier(index)}
+                      disabled={reservationDraft.tableTiers.length <= 1}
+                      data-testid={`reservation-tier-${tier.id}-remove`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="admin-config__grid">
+                    <label>
+                      Label
+                      <input
+                        value={tier.label}
+                        onChange={(event) => handleTierChange(index, 'label', event.target.value)}
+                        data-testid={`reservation-tier-${tier.id}-label-input`}
+                      />
+                    </label>
+                    <label>
+                      Capacity note
+                      <input
+                        value={tier.capacity}
+                        onChange={(event) => handleTierChange(index, 'capacity', event.target.value)}
+                        data-testid={`reservation-tier-${tier.id}-capacity-input`}
+                      />
+                    </label>
+                  </div>
+                  <label>
+                    Description
+                    <textarea
+                      rows={2}
+                      value={tier.description}
+                      onChange={(event) => handleTierChange(index, 'description', event.target.value)}
+                      data-testid={`reservation-tier-${tier.id}-description-input`}
+                    />
+                  </label>
+                  <div className="admin-config__grid">
+                    <label>
+                      Price label
+                      <input
+                        value={tier.price}
+                        onChange={(event) => handleTierChange(index, 'price', event.target.value)}
+                        data-testid={`reservation-tier-${tier.id}-price-input`}
+                      />
+                    </label>
+                    <label>
+                      Total sections
+                      <input
+                        type="number"
+                        min={0}
+                        value={tier.total}
+                        onChange={(event) => handleTierChange(index, 'total', event.target.value)}
+                        data-testid={`reservation-tier-${tier.id}-total-input`}
+                      />
+                    </label>
+                    <label>
+                      Reserved sections
+                      <input
+                        type="number"
+                        min={0}
+                        value={tier.reserved}
+                        onChange={(event) => handleTierChange(index, 'reserved', event.target.value)}
+                        data-testid={`reservation-tier-${tier.id}-reserved-input`}
+                      />
+                    </label>
+                  </div>
+                  <div className="admin-config__grid">
+                    <label>
+                      Visual style
+                      <select
+                        value={tier.visual.pattern}
+                        onChange={(event) => handleTierVisualChange(index, 'pattern', event.target.value)}
+                      >
+                        <option value="grid">Grid mesh</option>
+                        <option value="halo">Halo glow</option>
+                        <option value="pillars">Pillar lights</option>
+                      </select>
+                    </label>
+                    <label>
+                      Primary color
+                      <input
+                        type="text"
+                        value={tier.visual.primaryColor}
+                        onChange={(event) => handleTierVisualChange(index, 'primaryColor', event.target.value)}
+                        placeholder="#9333ea"
+                      />
+                    </label>
+                    <label>
+                      Secondary color
+                      <input
+                        type="text"
+                        value={tier.visual.secondaryColor}
+                        onChange={(event) => handleTierVisualChange(index, 'secondaryColor', event.target.value)}
+                        placeholder="#f472b6"
+                      />
+                    </label>
+                    <label>
+                      Accent overlay
+                      <input
+                        type="text"
+                        value={tier.visual.accentColor}
+                        onChange={(event) => handleTierVisualChange(index, 'accentColor', event.target.value)}
+                        placeholder="#ffffff1a"
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="admin-config__add"
+                onClick={handleAddTier}
+                data-testid="reservation-add-tier"
+              >
+                Add section tier
+              </button>
             </fieldset>
 
             <fieldset>
