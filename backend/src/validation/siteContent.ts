@@ -39,13 +39,43 @@ const aboutSchema = z.object({
   hours: z.array(z.object({ label: z.string().min(1), value: z.string().min(1) })).min(1)
 });
 
-const reserveSchema = z.object({
+const reservationTierVisualSchema = z.object({
+  pattern: z.enum(['grid', 'halo', 'pillars']),
+  primaryColor: z.string().min(1),
+  secondaryColor: z.string().min(1),
+  accentColor: z.string().min(1)
+});
+
+const reservationTierSchema = z
+  .object({
+    id: z.string().min(1),
+    label: z.string().min(1),
+    capacity: z.string().min(1),
+    description: z.string().min(1),
+    price: z.string().min(1),
+    total: z.number().int().min(0),
+    reserved: z.number().int().min(0),
+    visual: reservationTierVisualSchema
+  })
+  .superRefine((value, ctx) => {
+    if (value.reserved > value.total) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Reserved sections cannot exceed total inventory',
+        path: ['reserved']
+      });
+    }
+  });
+
+const reservationSchema = z.object({
   title: z.string().min(1),
   subtitle: z.string().min(1),
   intro: z.string().min(1),
-  bullets: z.array(z.string().min(1)).min(1),
-  emailCta: z.object({ label: z.string().min(1), href: z.string().min(1) }),
-  hotlineLabel: z.string().min(1)
+  availabilityNote: z.string().min(1),
+  paymentSteps: z.array(z.string().min(1)).min(1),
+  confirmationHeadline: z.string().min(1),
+  confirmationSubtext: z.string().min(1),
+  tableTiers: z.array(reservationTierSchema).min(1)
 });
 
 const ticketsSchema = z.object({
@@ -83,9 +113,9 @@ export const siteContentSchema = z.object({
       icon: z.enum(['instagram', 'facebook', 'tiktok', 'x']).optional()
     }))
   }),
+  reservation: reservationSchema,
   overlays: z.object({
     about: aboutSchema,
-    reserve: reserveSchema,
     tickets: ticketsSchema,
     contact: contactSchema,
     legal: legalSchema

@@ -7,6 +7,8 @@ export interface BackgroundImage {
   };
 }
 
+export type HeroBackground = BackgroundImage;
+
 export interface HeroContent {
   name: string;
   tagline: string;
@@ -22,6 +24,7 @@ export interface EventContent {
   description: string;
   requiresTicket: boolean;
   tableHotline: string;
+  headliners?: string[];
 }
 
 export interface FooterContent {
@@ -32,6 +35,8 @@ export interface FooterContent {
   }>;
 }
 
+export type FooterLink = FooterContent['socials'][number];
+
 export interface AboutOverlayContent {
   title: string;
   subtitle: string;
@@ -39,13 +44,35 @@ export interface AboutOverlayContent {
   hours: Array<{ label: string; value: string }>;
 }
 
-export interface ReserveOverlayContent {
+export type ReservationTierPattern = 'grid' | 'halo' | 'pillars';
+
+export interface ReservationTierVisual {
+  pattern: ReservationTierPattern;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+}
+
+export interface ReservationTableTier {
+  id: string;
+  label: string;
+  capacity: string;
+  description: string;
+  price: string;
+  total: number;
+  reserved: number;
+  visual: ReservationTierVisual;
+}
+
+export interface ReservationContent {
   title: string;
   subtitle: string;
   intro: string;
-  bullets: string[];
-  emailCta: { label: string; href: string };
-  hotlineLabel: string;
+  availabilityNote: string;
+  paymentSteps: string[];
+  confirmationHeadline: string;
+  confirmationSubtext: string;
+  tableTiers: ReservationTableTier[];
 }
 
 export interface TicketsOverlayContent {
@@ -75,7 +102,6 @@ export interface LegalOverlayContent {
 
 export interface OverlaysContent {
   about: AboutOverlayContent;
-  reserve: ReserveOverlayContent;
   tickets: TicketsOverlayContent;
   contact: ContactOverlayContent;
   legal: LegalOverlayContent;
@@ -85,5 +111,6 @@ export interface SiteContent {
   hero: HeroContent;
   event: EventContent;
   footer: FooterContent;
+  reservation: ReservationContent;
   overlays: OverlaysContent;
 }

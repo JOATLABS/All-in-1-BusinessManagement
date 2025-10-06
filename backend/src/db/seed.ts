@@ -33,6 +33,34 @@ const ensureSiteContent = async (db: Database): Promise<void> => {
     .where(eq(siteContentTable.id, DEFAULT_SITE_CONTENT_ID));
 
   if (existing.length > 0) {
+    const [record] = existing;
+    const reservation = record.reservation as Partial<SiteContent['reservation']> | null;
+    const hasTableTiers = Boolean(
+      reservation &&
+      Array.isArray(reservation.tableTiers) &&
+      reservation.tableTiers.length > 0 &&
+      reservation.tableTiers.every((tier) =>
+        tier &&
+        typeof tier === 'object' &&
+        'price' in tier &&
+        'visual' in tier &&
+        'total' in tier &&
+        'reserved' in tier
+      )
+    );
+
+    if (!hasTableTiers) {
+      const seed = await readSeedFile<SiteContent>('siteContent.json');
+      if (!seed) {
+        throw new Error('Site content seed data is required to bootstrap the database.');
+      }
+
+      await db
+        .update(siteContentTable)
+        .set({ reservation: seed.reservation, updatedAt: new Date() })
+        .where(eq(siteContentTable.id, DEFAULT_SITE_CONTENT_ID));
+    }
+
     return;
   }
 
@@ -46,6 +74,7 @@ const ensureSiteContent = async (db: Database): Promise<void> => {
     hero: seed.hero,
     event: seed.event,
     footer: seed.footer,
+    reservation: seed.reservation,
     overlays: seed.overlays,
     updatedAt: new Date()
   });
