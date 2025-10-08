@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="title desc">
+  <title id="title">Contract, Payment, and Notification Flow</title>
+  <desc id="desc">Sequence diagram showing how admins generate contracts, capture signatures, collect payments, issue QR tickets, and notify staff.</desc>
+  <defs>
+    <style type="text/css"><![CDATA[
+      .lane { fill:#f3f4f6; stroke:#9ca3af; stroke-width:1.5; }
+      .actor { font-family:'Inter', 'Segoe UI', Arial, sans-serif; font-size:18px; font-weight:700; fill:#111827; }
+      .event { fill:#ffffff; stroke:#2563eb; stroke-width:2; rx:10; ry:10; }
+      .event-text { font-family:'Inter', 'Segoe UI', Arial, sans-serif; font-size:14px; fill:#1f2937; }
+      .arrow { stroke:#2563eb; stroke-width:2.5; marker-end:url(#arrowhead); fill:none; }
+      .note { fill:#ecfdf5; stroke:#10b981; stroke-width:1.5; rx:10; ry:10; }
+      .note-text { font-family:'Inter', 'Segoe UI', Arial, sans-serif; font-size:13px; fill:#065f46; }
+    ]]></style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb" />
+    </marker>
+  </defs>
+
+  <rect x="40" y="60" width="200" height="500" class="lane" />
+  <text x="90" y="40" class="actor">Admin</text>
+  <rect x="260" y="60" width="200" height="500" class="lane" />
+  <text x="295" y="40" class="actor">Platform API</text>
+  <rect x="480" y="60" width="200" height="500" class="lane" />
+  <text x="515" y="40" class="actor">eSignature</text>
+  <rect x="700" y="60" width="220" height="500" class="lane" />
+  <text x="735" y="40" class="actor">Stripe &amp; Notifications</text>
+
+  <rect x="70" y="100" width="160" height="70" class="event" />
+  <text x="80" y="130" class="event-text">Draft contract
+  template</text>
+
+  <rect x="290" y="150" width="160" height="70" class="event" />
+  <text x="300" y="180" class="event-text">Store versioned
+  template + files</text>
+
+  <line x1="230" y1="135" x2="290" y2="185" class="arrow" />
+
+  <rect x="70" y="220" width="160" height="70" class="event" />
+  <text x="80" y="250" class="event-text">Launch embedded
+  signing session</text>
+
+  <line x1="230" y1="255" x2="290" y2="255" class="arrow" />
+
+  <rect x="290" y="220" width="160" height="70" class="event" />
+  <text x="300" y="250" class="event-text">Create envelope
+  + callback hooks</text>
+
+  <line x1="450" y1="255" x2="510" y2="255" class="arrow" />
+
+  <rect x="510" y="220" width="160" height="70" class="event" />
+  <text x="520" y="250" class="event-text">Signer completes
+  contract</text>
+
+  <line x1="670" y1="255" x2="730" y2="255" class="arrow" />
+
+  <rect x="730" y="220" width="160" height="70" class="event" />
+  <text x="740" y="250" class="event-text">Notify admin
+  success</text>
+
+  <rect x="510" y="310" width="160" height="70" class="note" />
+  <text x="520" y="340" class="note-text">Webhook pushes status
+  into Redis queue</text>
+
+  <line x1="450" y1="345" x2="510" y2="345" class="arrow" />
+  <line x1="510" y1="345" x2="450" y2="410" class="arrow" />
+
+  <rect x="290" y="390" width="160" height="70" class="event" />
+  <text x="300" y="420" class="event-text">Generate Stripe
+  Checkout Session</text>
+
+  <line x1="230" y1="425" x2="290" y2="425" class="arrow" />
+  <line x1="450" y1="425" x2="730" y2="425" class="arrow" />
+
+  <rect x="730" y="390" width="160" height="70" class="event" />
+  <text x="740" y="420" class="event-text">Collect payment &amp;
+  confirm webhook</text>
+
+  <rect x="290" y="480" width="160" height="70" class="event" />
+  <text x="300" y="510" class="event-text">Mint QR ticket &amp;
+  persist ledger</text>
+
+  <line x1="450" y1="515" x2="730" y2="515" class="arrow" />
+  <line x1="230" y1="515" x2="290" y2="515" class="arrow" />
+
+  <rect x="730" y="480" width="160" height="70" class="event" />
+  <text x="740" y="510" class="event-text">Send Slack/SMS
+  notifications</text>
+
+  <rect x="70" y="480" width="160" height="70" class="note" />
+  <text x="80" y="510" class="note-text">Door staff receives
+  updated QR list</text>
+</svg>
