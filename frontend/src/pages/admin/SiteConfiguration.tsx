@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { useSiteContentContext } from '../../content/SiteContentProvider';
+import { useUnsavedChangesPrompt } from '../../hooks/useUnsavedChangesPrompt';
 import { updateSiteContent, type SiteContentResponse } from '../../services/contentService';
 import type { EventContent, HeroContent, OverlaysContent, ReservationContent } from '../../types/content';
 
@@ -99,6 +100,8 @@ export const SiteConfiguration = () => {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [hasChanges, setHasChanges] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useUnsavedChangesPrompt(hasChanges);
 
   const markDirty = useCallback(() => {
     setHasChanges(true);
