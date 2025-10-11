@@ -159,3 +159,6 @@ yarn.lock
 backend/dist/
 backend/storage/
 backend/.env
+frontend/.env.local
+frontend/dist/
+backend/data/adminUsers.json
