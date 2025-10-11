@@ -2,6 +2,12 @@
 
 This guide explains how the admin console is wired to the backend so developers can configure the public website and manage VIP reservations with the production-ready endpoints that already exist in the project.
 
+**Single-Tenant Simplifications:**
+- No tenant resolution middleware—all routes operate on the single lounge's data
+- Authentication distinguishes admin vs. public access only (no multi-tenant isolation)
+- Database queries omit tenant_id filters, improving performance and reducing complexity
+- Configuration changes apply immediately to the entire system without tenant context switching
+
 ## 1. Running the Admin Experience
 
 1. **Seed the database** – The seed script provisions default site content, reservation tiers, and an administrator account. The credentials can be supplied via environment variables or read from the seed JSON fixtures.
@@ -18,22 +24,22 @@ This guide explains how the admin console is wired to the backend so developers 
    ```
 4. **Sign in** – Visit `http://127.0.0.1:4173/admin/login` and authenticate with the seeded credentials. After login you are redirected to the admin dashboard and can open the **Site Configuration** panel to edit live copy, reservation tiers, and modal messaging.
 
-## 2. Configuration API Surface
+## 2. Configuration API Surface (Single-Tenant)
 
-The backend already exposes the endpoints the admin UI relies on. They are mounted under the `/api/v1` router inside `backend/src/app.ts`.
+The backend exposes straightforward endpoints without tenant resolution logic. All routes are mounted under `/api/v1` in `backend/src/app.ts`.
 
-| Method | Path | Description | Auth |
-| ------ | ---- | ----------- | ---- |
-| `POST` | `/api/v1/auth/login` | Exchanges admin credentials for a session token used by the frontend. | No |
-| `POST` | `/api/v1/auth/logout` | Revokes the active admin session token. | Bearer token |
-| `GET` | `/api/v1/site-content` | Returns the full site content payload (hero, overlays, reservation copy, etc.). | No |
-| `PUT` | `/api/v1/site-content` | Persists site configuration updates made in the admin dashboard. | Bearer token |
-| `GET` | `/api/v1/reservations/availability` | Aggregates live VIP tier availability for the reserve page. | No |
-| `POST` | `/api/v1/reservations` | Creates a paid reservation, decrements availability, and returns a confirmation code payload. | No |
-| `GET` | `/api/v1/admin/reservations` | Lists recent reservations with tier metadata for the admin console. | Bearer token |
-| `PATCH` | `/api/v1/admin/reservations/:id` | Updates a reservation status (e.g., cancel or reinstate) and immediately frees or restores availability. | Bearer token |
+| Method | Path | Description | Auth | Single-Tenant Notes |
+| ------ | ---- | ----------- | ---- | ------------------- |
+| `POST` | `/api/v1/auth/login` | Exchanges admin credentials for a session token. | No | No org_id needed—single admin account |
+| `POST` | `/api/v1/auth/logout` | Revokes the active admin session token. | Bearer | No tenant context to clear |
+| `GET` | `/api/v1/site-content` | Returns the full site content payload. | No | Always returns the one lounge's content |
+| `PUT` | `/api/v1/site-content` | Persists site configuration updates. | Bearer | Updates apply to entire system immediately |
+| `GET` | `/api/v1/reservations/availability` | Aggregates live VIP tier availability. | No | No tenant filtering in queries |
+| `POST` | `/api/v1/reservations` | Creates a paid reservation, decrements availability. | No | All reservations belong to the one venue |
+| `GET` | `/api/v1/admin/reservations` | Lists recent reservations. | Bearer | Returns all reservations—no scoping needed |
+| `PATCH` | `/api/v1/admin/reservations/:id` | Updates reservation status. | Bearer | Direct record updates without tenant checks |
 
-All configuration saves are validated against the shared Zod schema in `backend/src/validation/siteContent.ts`, keeping the admin UI, backend, and public bundle in sync.
+All configuration saves are validated against the shared Zod schema in `backend/src/validation/siteContent.ts`, keeping the admin UI, backend, and public bundle in sync. **No tenant validation or context injection is required.**
 
 ## 3. Admin Dashboard Structure
 

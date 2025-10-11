@@ -5,6 +5,8 @@ import { registerAuthRoutes } from './routes/auth.js';
 import { registerSiteContentRoutes } from './routes/siteContent.js';
 import { registerReservationRoutes } from './routes/reservations.js';
 import { registerAdminReservationRoutes } from './routes/adminReservations.js';
+import { eventsRouter } from './routes/events.js';
+import { ticketsRouter } from './routes/tickets.js';
 
 export const createApp = () => {
   const app = express();
@@ -23,6 +25,10 @@ export const createApp = () => {
   registerSiteContentRoutes(router);
   registerReservationRoutes(router);
   registerAdminReservationRoutes(router);
+
+  // Single-tenant event and ticketing routes (no club_id in URLs)
+  router.use('/events', eventsRouter);
+  router.use('/tickets', ticketsRouter);
 
   app.use('/api/v1', router);
 

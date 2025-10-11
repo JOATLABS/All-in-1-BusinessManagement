@@ -40,7 +40,75 @@ const schemaStatements = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
-  `CREATE INDEX IF NOT EXISTS reservations_tier_status_idx ON reservations (tier_id, status)`
+  `CREATE INDEX IF NOT EXISTS reservations_tier_status_idx ON reservations (tier_id, status)`,
+  // Single-tenant events table - no club_id
+  `CREATE TABLE IF NOT EXISTS events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    description TEXT,
+    starts_at TIMESTAMPTZ NOT NULL,
+    ends_at TIMESTAMPTZ NOT NULL,
+    is_free_entry BOOLEAN NOT NULL DEFAULT true,
+    requires_rsvp BOOLEAN NOT NULL DEFAULT false,
+    capacity INTEGER,
+    is_featured BOOLEAN NOT NULL DEFAULT false,
+    flyer_url TEXT,
+    ticket_url TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS events_starts_at_idx ON events (starts_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS events_featured_idx ON events (is_featured, starts_at DESC)`,
+  // Customers table for forecasting
+  `CREATE TABLE IF NOT EXISTS customers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT NOT NULL UNIQUE,
+    name TEXT,
+    phone TEXT,
+    first_visit_date TIMESTAMPTZ,
+    total_visits INTEGER NOT NULL DEFAULT 0,
+    total_no_shows INTEGER NOT NULL DEFAULT 0,
+    last_visit_date TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS customers_email_idx ON customers (email)`,
+  // Tickets table for both free RSVPs and paid tickets
+  `CREATE TABLE IF NOT EXISTS tickets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    customer_id UUID REFERENCES customers(id),
+    guest_name TEXT NOT NULL,
+    guest_email TEXT NOT NULL,
+    guest_phone TEXT,
+    ticket_type TEXT NOT NULL,
+    qr_code TEXT NOT NULL UNIQUE,
+    qr_code_image_url TEXT,
+    status TEXT NOT NULL DEFAULT 'issued',
+    redeemed_at TIMESTAMPTZ,
+    redeemed_by TEXT,
+    payment_intent_id TEXT,
+    amount_paid NUMERIC(10, 2) DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS tickets_event_status_idx ON tickets (event_id, status)`,
+  `CREATE INDEX IF NOT EXISTS tickets_qr_code_idx ON tickets (qr_code)`,
+  `CREATE INDEX IF NOT EXISTS tickets_customer_idx ON tickets (customer_id)`,
+  // Attendance events for forecasting models
+  `CREATE TABLE IF NOT EXISTS attendance_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL REFERENCES customers(id),
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    ticket_id UUID REFERENCES tickets(id),
+    rsvp_timestamp TIMESTAMPTZ NOT NULL,
+    attended BOOLEAN DEFAULT false,
+    scan_timestamp TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS attendance_events_customer_idx ON attendance_events (customer_id)`,
+  `CREATE INDEX IF NOT EXISTS attendance_events_event_idx ON attendance_events (event_id)`
 ];
 
 const ensureSchema = async (client: PoolClient): Promise<void> => {

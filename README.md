@@ -4,7 +4,15 @@ System Architecture and Roadmap for the Customer Website & Business‑Management
 
 ## Introduction
 
-The Afrobeat lounge requires a tightly integrated public web experience and a single‑administrator operations dashboard. The customer site needs to showcase events, enable table reservations, sell digital experiences, and distribute QR tickets. Behind the scenes the owner must manage agreements, collect signatures, receive payment notifications, and trigger reminders without juggling third‑party spreadsheets or email threads. This document summarises current UX research, outlines the core capabilities, describes the supporting architecture, and provides an implementation roadmap for the unified platform.
+**This is a single-tenant system designed for one Afrobeat lounge.** The platform provides a tightly integrated public web experience and a single‑administrator operations dashboard. The customer site showcases events, enables table reservations, sells digital experiences, and distributes QR tickets. Behind the scenes, the owner manages agreements, collects signatures, receives payment notifications, and triggers reminders without juggling third‑party spreadsheets or email threads.
+
+**Single-Tenant Architecture Benefits:**
+- **Simplified schema**: No tenant_id columns or row-level security policies needed across tables
+- **Streamlined routes**: All API endpoints operate on a single data set without tenant resolution middleware
+- **Reduced guardrails**: Authentication checks focus on admin vs. public access, not multi-tenant isolation
+- **Faster development**: No need to build or maintain tenant provisioning, billing, or white-labeling infrastructure
+
+This document summarises current UX research, outlines the core capabilities, describes the supporting architecture, and provides an implementation roadmap for the unified platform.
 
 ## Developer Guides
 
@@ -56,11 +64,11 @@ Modern UX guidelines emphasise personalised experiences and a mobile‑first app
 
 ### Data and integrations
 
-- **PostgreSQL** serves as the primary datastore. Tables are scoped by functional domains (events, reservations, agreements, notifications). Row‑level policies restrict access to the single admin user and service accounts but no longer require tenant filters.
+- **PostgreSQL** serves as the primary datastore. Tables are organized by functional domains (events, reservations, agreements, notifications). **Single-tenant design means no tenant_id columns or tenant-scoped queries**—all data belongs to the one lounge, simplifying schema design and query logic.
 - **Redis** delivers caching for frequently accessed event listings and powers the notification queue. It also supports rate limiting on the signature submission page.
-- **Object storage (e.g., Cloudinary or S3)** retains signed agreements, uploaded IDs, and promotional media. Signed URLs secure document downloads.
-- **Stripe** processes all payments and sends webhook events for payment success, expiration, and refunds. Metadata links payments to reservations and digital upsells.
-- **Email/SMS (SendGrid, Twilio)** distribute receipts, QR codes, reminders, and notifications.
+- **Object storage (e.g., Cloudinary or S3)** retains signed agreements, uploaded IDs, and promotional media. Signed URLs secure document downloads without tenant-level bucketing.
+- **Stripe** processes all payments and sends webhook events for payment success, expiration, and refunds. Metadata links payments to reservations and digital upsells without needing organization identifiers.
+- **Email/SMS (SendGrid, Twilio)** distribute receipts, QR codes, reminders, and notifications using a single sender identity.
 
 ## Security posture
 

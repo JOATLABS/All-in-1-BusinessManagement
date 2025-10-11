@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { Request, Response, NextFunction } from 'express';
 import type { Session } from '../types.js';
 import { config } from '../config.js';
 
@@ -33,4 +34,27 @@ export const getSession = (token: string): Session | null => {
 
 export const revokeSession = (token: string): void => {
   sessions.delete(token);
+};
+
+/**
+ * Express middleware to require authentication
+ * Single-tenant: validates session token only (no tenant context)
+ */
+export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const token = authHeader.substring(7);
+  const session = getSession(token);
+
+  if (!session) {
+    return res.status(401).json({ error: 'Invalid or expired session' });
+  }
+
+  // Attach session to request for use in route handlers
+  (req as any).session = session;
+  next();
 };

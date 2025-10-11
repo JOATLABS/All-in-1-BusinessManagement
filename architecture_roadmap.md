@@ -3,8 +3,13 @@
 ## Overview
 This platform supports a **single Afrobeat lounge** with one central operations team. Guests browse the public site for upcoming
 events, request VIP reservations, and purchase experiences (prepaid sections, shout-outs, tickets) through Stripe Checkout. The
-internal admin console gives staff end-to-end control of content, contracts, payments, and event logistics without exposing the
-system as a multi-tenant SaaS product.
+internal admin console gives staff end-to-end control of content, contracts, payments, and event logistics.
+
+**Single-Tenant Design Principles:**
+- All database tables operate without tenant_id columns—every record belongs to the one lounge
+- API routes require no tenant resolution middleware; authentication distinguishes admin from public access only
+- Payment flows, contract workflows, and notification queues assume a single organization context
+- Simplified deployment with one application instance, one database, and one set of credentials
 
 ## Diagrams
 The images below are included in this repository and referenced by relative paths so they render locally.
@@ -12,16 +17,16 @@ The images below are included in this repository and referenced by relative path
 ![Single-admin architecture](public/single_admin_architecture.svg)
 ![Contract, payment, and notification flow](public/contract_payment_flow.svg)
 
-## Tech Stack (recommended)
+## Tech Stack (recommended for single-tenant deployment)
 - **Next.js 15 + TypeScript** (App Router), **Tailwind CSS**, **shadcn/ui** for the customer site and admin console.
-- **Auth.js or Clerk** for role-based access with session hardening (WebAuthn MFA, rotation, inactivity timeout).
-- **PostgreSQL** with strict schemas for contracts, reservations, ticketing, and audit logs; **Prisma** or **Drizzle ORM**.
+- **Auth.js or Clerk** for simple role-based access (admin vs. public)—no multi-tenant isolation needed.
+- **PostgreSQL** with straightforward schemas (no tenant_id columns); **Prisma** or **Drizzle ORM** for type-safe queries.
 - **Redis** for queues (reminders, notification fan-out) and caching (event schedule, ticket status).
-- **Stripe Checkout** for prepaid experiences with Apple Pay / Google Pay support out of the box.【f43e8f†L1-L2】
-- **Cloud storage** (S3-compatible) for contract documents with lifecycle rules and server-side encryption.
-- **DocuSign or similar eSignature provider** embedded in the admin UI for templated signature capture.
-- **Twilio SendGrid / SMS**, **Slack webhooks**, and **email** for internal notifications.
-- Deploy on **Vercel (frontend)** + **Fly.io or Render (API)** with managed **Postgres (Neon/Supabase)** and **Cloudflare CDN**.
+- **Stripe Checkout** for prepaid experiences with Apple Pay / Google Pay support out of the box—single Stripe account.
+- **Cloud storage** (S3-compatible) for contract documents with lifecycle rules and server-side encryption—single bucket.
+- **DocuSign or similar eSignature provider** embedded in the admin UI for templated signature capture—single API credential.
+- **Twilio SendGrid / SMS**, **Slack webhooks**, and **email** for internal notifications—single sender configuration.
+- Deploy on **Vercel (frontend)** + **Fly.io or Render (API)** with managed **Postgres (Neon/Supabase)** and **Cloudflare CDN**—single deployment target.
 
 ### Deployment model recommendation (single lounge)
 - **Frontend**: deploy the Next.js static output to **Vercel** with ISR for marketing pages and authenticated server actions for
