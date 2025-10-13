@@ -122,7 +122,181 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
 - Automated checks: `npm run lint`, `npm run build`, component tests for forms, integration tests for login → dashboard → update flow.
 - Performance guardrail: run Lighthouse/WebPageTest to confirm smooth background loop across devices, respecting reduced-motion.
 
-## 9. Security & Reliability Hardening (Single-Tenant Focused)
+## 9. Admin User Management & Role-Based Access Control
+**Timing**: Implement after Customer-Site Configuration Workspace (Section 5) but before Reservation & Inventory (Section 11) to establish proper access controls.
+
+**Overview**: Enable the root admin (owner) to create and manage sub-admin accounts with role-based permissions. This ensures operational flexibility while maintaining security boundaries.
+
+**Roles & Permissions**:
+1. **Owner (superadmin)** - Root account with full system access
+   - Create/edit/delete admin users
+   - Access all admin features
+   - Change system configuration
+   - View audit logs
+
+2. **Manager (admin)** - Operational management role
+   - View and manage reservations
+   - Create and edit events
+   - Access analytics and reports
+   - Cannot manage admin users
+   - Cannot change system configuration
+
+3. **Staff (staff)** - Limited access for door personnel
+   - View reservations (read-only)
+   - Scan and validate QR codes
+   - Mark guests as checked-in
+   - Cannot edit reservations or access configuration
+
+**Implementation Tasks**:
+
+### 9.1. Backend API - Admin User Management
+- Create admin user CRUD endpoints under `/api/admin/users`:
+  - `GET /admin/users` - List all admin users (owner only)
+  - `POST /admin/users` - Create new admin user (owner only)
+  - `GET /admin/users/:id` - Get admin user details
+  - `PATCH /admin/users/:id` - Update admin user (owner only, or self for profile updates)
+  - `DELETE /admin/users/:id` - Soft delete admin user (owner only, cannot delete self)
+  - `POST /admin/users/:id/reset-password` - Trigger password reset email
+- Add role validation middleware:
+  - `requireRole(['superadmin'])` - Owner-only routes
+  - `requireRole(['superadmin', 'admin'])` - Manager+ routes
+  - `requireRole(['superadmin', 'admin', 'staff'])` - All authenticated routes
+- Implement password requirements validation (minimum length, complexity)
+- Add email uniqueness checks and validation
+- Create audit logging for admin user actions (create, update, delete, password reset)
+
+### 9.2. Database Schema Updates
+- Verify `admin_users` table schema supports required fields:
+  ```sql
+  admin_users(
+    id UUID PK,
+    email CITEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('superadmin', 'admin', 'staff')),
+    first_name TEXT,
+    last_name TEXT,
+    is_active BOOLEAN DEFAULT true,
+    last_login_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    created_by UUID FK(admin_users.id)
+  )
+  ```
+- Add `admin_user_sessions` table for session management:
+  ```sql
+  admin_user_sessions(
+    id UUID PK,
+    admin_user_id UUID FK NOT NULL,
+    token_hash TEXT NOT NULL,
+    ip_address TEXT,
+    user_agent TEXT,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL
+  )
+  ```
+- Create indexes: `admin_users(email)`, `admin_user_sessions(token_hash)`, `admin_user_sessions(admin_user_id, expires_at)`
+
+### 9.3. Frontend - Admin User Management UI
+- Create "Team Management" page in admin dashboard (`/admin/team`)
+- Add navigation link in admin sidebar (visible to owners only)
+- Build admin user list table:
+  - Display: name, email, role, last login, status (active/inactive)
+  - Actions: edit, reset password, deactivate/activate
+  - Sort by: name, role, last login, created date
+  - Filter by: role, status
+- Create "Add Admin User" modal/form:
+  - Fields: first name, last name, email, role (dropdown)
+  - Auto-generate temporary password or send invitation email
+  - Validation: email format, role selection required
+- Create "Edit Admin User" modal/form:
+  - Allow updating: name, email, role, active status
+  - Restrict role changes: owners cannot demote themselves
+  - Show last login timestamp and created date
+- Add password reset flow:
+  - Admin-initiated: Send reset email to user
+  - User-initiated: "Forgot password" on login page
+- Add confirmation dialogs for destructive actions (deactivate, delete)
+
+### 9.4. Role-Based UI Components
+- Create permission helper utilities:
+  - `hasPermission(user, permission)` - Check if user has specific permission
+  - `canAccess(user, route)` - Check if user can access route
+  - `<ProtectedRoute roles={['superadmin', 'admin']} />` - Route guard component
+  - `<IfRole roles={['superadmin']}>...</IfRole>` - Conditional rendering component
+- Apply role-based visibility:
+  - Hide "Team Management" navigation for non-owners
+  - Hide "Site Configuration" for staff role
+  - Show read-only views for staff in reservations
+  - Disable edit/delete buttons based on permissions
+- Add role badges in UI (Owner, Manager, Staff) with color coding
+- Display current user role in header/profile dropdown
+
+### 9.5. Authentication & Session Management
+- Extend JWT payload to include:
+  - `userId`, `email`, `role`, `permissions`, `sessionId`
+- Implement session tracking:
+  - Record active sessions in database
+  - Allow users to view active sessions
+  - Implement "logout all other sessions" feature
+- Add session expiration handling:
+  - Short-lived access tokens (15 minutes)
+  - Long-lived refresh tokens (7 days)
+  - Automatic token refresh on activity
+- Implement "remember me" option on login (30-day refresh token)
+
+### 9.6. Security & Audit
+- Log all admin user management actions:
+  - Who created/modified/deleted which user
+  - Role changes with before/after values
+  - Failed login attempts (track by email and IP)
+  - Password reset requests and completions
+- Implement rate limiting:
+  - Login attempts: 5 attempts per 15 minutes per IP
+  - Password reset: 3 requests per hour per email
+  - Admin user creation: 10 per hour per owner
+- Add admin user activity dashboard:
+  - Recent login history
+  - Active sessions count
+  - Role distribution chart
+  - Recent admin actions timeline
+- Email notifications:
+  - New admin user created → send welcome email with login instructions
+  - Password reset requested → send reset link
+  - Role changed → notify user of permission changes
+  - Account deactivated → send notification
+
+### 9.7. Testing & Validation
+- Unit tests:
+  - Role validation middleware
+  - Permission checking utilities
+  - Password hashing and validation
+- Integration tests:
+  - Full CRUD operations for admin users
+  - Role-based access control enforcement
+  - Session management workflows
+- E2E tests:
+  - Owner creates manager account → manager logs in → verify limited access
+  - Staff user attempts to access restricted route → verify redirect/403
+  - Owner changes user role → verify permission updates take effect
+- Manual testing checklist:
+  - Create admin users with different roles
+  - Verify role-based UI visibility
+  - Test password reset flow
+  - Verify audit log entries
+  - Test session timeout and refresh
+
+**Single-Tenant Benefits**:
+- No organization context needed in permissions—all admins manage the same lounge
+- Simplified role hierarchy: just three roles without complex permission trees
+- No tenant-scoping in admin user queries
+- Single set of authentication credentials and session storage
+
+**Dependencies**:
+- Requires completed Customer-Site Configuration (Section 5) for navigation foundation
+- Should be implemented before Reservation & Inventory (Section 11) to establish proper access controls
+- Can be developed in parallel with Background Media Management (Section 6)
+
+## 10. Security & Reliability Hardening (Single-Tenant Focused)
 - Introduce configurable CORS allowlists, request rate limiting, and structured logging before exposing the API publicly
   - **Single-tenant benefit**: Rate limiting configuration is simpler without per-tenant quotas
 - Replace in-memory sessions with signed JWT or Redis-backed tokens, add refresh/rotation workflows
@@ -133,7 +307,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
 - Implement centralized error middleware plus correlation IDs; ship logs to observability stack
   - **Single-tenant benefit**: All logs belong to one system—no tenant filtering in log aggregation queries
 
-## 10. Customer ↔ Admin Data Synchronisation (Single-Tenant)
+## 11. Customer ↔ Admin Data Synchronisation (Single-Tenant)
 - Replace static site-content fetch with API-backed responses
   - **Single-tenant benefit**: Direct `SELECT * FROM site_content WHERE id = 'default'`—no tenant filtering
   - No need for service-to-service authentication between tenant contexts
@@ -145,7 +319,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
   - **Single-tenant benefit**: Dashboard queries without tenant joins or filters
   - Example: `SELECT COUNT(*), status FROM reservations GROUP BY status`
 
-## 11. Reservation & Inventory Experience (Single-Tenant)
+## 12. Reservation & Inventory Experience (Single-Tenant)
 - Build reservation intake forms validating party size against table capacity, deposits, VIP contract requirements
   - **Single-tenant benefit**: Form validation logic without tenant-specific rules or configurations
   - Direct table lookup: `SELECT * FROM tables WHERE capacity >= ? AND status = 'active'`
@@ -158,7 +332,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
   - **Single-tenant benefit**: Aggregate queries without GROUP BY club_id
   - Example: `SELECT DATE(created_at), COUNT(*), AVG(deposit_amount) FROM reservations WHERE status = 'confirmed' GROUP BY DATE(created_at)`
 
-## 12. Advanced Analytics & Optimisation Enablement (Single-Tenant)
+## 13. Advanced Analytics & Optimisation Enablement (Single-Tenant)
 - Stand up event-stream pipeline emitting reservations, table state changes, POS orders, staffing updates
   - **Single-tenant benefit**: No tenant routing in event streams—all events flow to single analytics warehouse
   - Simplified Kafka/Redpanda topics: `reservations`, `tables`, `pos_orders` (no club_id partitioning)
@@ -174,7 +348,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
 - Establish governance gates for AI/optimization outputs with review queues and rollback capability
   - **Single-tenant benefit**: Single approval workflow—no per-tenant governance policies or controls
 
-## 13. Google Analytics Integration (Customer Forecasting)
+## 14. Google Analytics Integration (Customer Forecasting)
 - ✅ **Completed**: Google Analytics tracking script added to customer-facing pages
   - Configured via `VITE_GA_MEASUREMENT_ID` environment variable
   - Tracks landing page (`/`) and reservation page (`/reserve`)
