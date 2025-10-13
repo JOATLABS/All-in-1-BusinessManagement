@@ -1,3 +1,17 @@
+/**
+ * Background media type - supports both images and video
+ * Single-tenant: all media belongs to the one venue
+ */
+export type BackgroundMediaType = 'image' | 'video';
+
+/**
+ * Playback depth for parallax effect
+ * - shallow: minimal movement (0.2x)
+ * - medium: moderate movement (0.5x)
+ * - deep: significant movement (1.0x)
+ */
+export type PlaybackDepth = 'shallow' | 'medium' | 'deep';
+
 export interface BackgroundImage {
   src: string;
   alt: string;
@@ -5,6 +19,22 @@ export interface BackgroundImage {
     x: number;
     y: number;
   };
+  /** Media type: image (JPG/PNG/WebP) or video (MP4/WebM) */
+  mediaType?: BackgroundMediaType;
+  /** Whether this background is active/visible */
+  isActive?: boolean;
+  /** Playback depth for parallax scrolling effect */
+  playbackDepth?: PlaybackDepth;
+  /** Order/position in the background stack (lower = behind) */
+  order?: number;
+  /** Video-specific: fallback image for reduced-motion or video load failure */
+  fallbackImage?: string;
+  /** Video-specific: whether to loop the video */
+  loop?: boolean;
+  /** Video-specific: whether to autoplay */
+  autoplay?: boolean;
+  /** Video-specific: whether to mute by default */
+  muted?: boolean;
 }
 
 export type HeroBackground = BackgroundImage;

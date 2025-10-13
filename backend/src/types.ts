@@ -1,3 +1,14 @@
+/**
+ * Background media type - supports both images and video
+ * Single-tenant: all media belongs to the one venue
+ */
+export type BackgroundMediaType = 'image' | 'video';
+
+/**
+ * Playback depth for parallax effect
+ */
+export type PlaybackDepth = 'shallow' | 'medium' | 'deep';
+
 export interface BackgroundImage {
   src: string;
   alt: string;
@@ -5,6 +16,14 @@ export interface BackgroundImage {
     x: number;
     y: number;
   };
+  mediaType?: BackgroundMediaType;
+  isActive?: boolean;
+  playbackDepth?: PlaybackDepth;
+  order?: number;
+  fallbackImage?: string;
+  loop?: boolean;
+  autoplay?: boolean;
+  muted?: boolean;
 }
 
 export interface HeroContent {

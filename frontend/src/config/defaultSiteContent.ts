@@ -9,7 +9,11 @@ export const defaultSiteContent: SiteContent = {
       {
         src: 'https://images.unsplash.com/photo-1604079628040-94301bb21b11?auto=format&fit=crop&w=1600&q=80',
         alt: 'Crowd dancing under neon lights',
-        focalPoint: { x: 50, y: 50 }
+        focalPoint: { x: 50, y: 50 },
+        mediaType: 'image',
+        isActive: true,
+        playbackDepth: 'medium',
+        order: 0
       }
     ]
   },
