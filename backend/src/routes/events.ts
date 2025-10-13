@@ -58,11 +58,11 @@ router.get('/:slug', async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/v1/admin/events
+ * POST /api/v1/events (admin route)
  * Create new event (admin only)
  * Single-tenant: no club_id needed
  */
-router.post('/admin/events', requireAuth, async (req: Request, res: Response) => {
+router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const {
       title,

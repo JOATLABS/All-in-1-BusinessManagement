@@ -4,6 +4,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute';
 import { SiteContentProvider } from './content/SiteContentProvider';
 import { LandingPage } from './pages/LandingPage';
 import ReserveTablePage from './pages/ReserveTablePage';
+import { EventsPage } from './pages/EventsPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminLogin } from './pages/admin/AdminLogin';
@@ -17,6 +18,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/reserve" element={<ReserveTablePage />} />
+          <Route path="/events" element={<EventsPage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"

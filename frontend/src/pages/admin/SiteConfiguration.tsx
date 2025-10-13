@@ -90,7 +90,7 @@ const eventToDraft = (event: EventContent): EventDraftState => ({
 });
 
 export const SiteConfiguration = () => {
-  const { content, refresh } = useSiteContentContext();
+  const { content, isReady, refresh } = useSiteContentContext();
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('hero');
   const [heroDraft, setHeroDraft] = useState(() => heroToDraft(content.hero));
@@ -563,6 +563,16 @@ export const SiteConfiguration = () => {
 
     return hasChanges ? 'Unsaved changes' : 'All changes saved';
   }, [errorMessage, hasChanges, status]);
+
+  if (!isReady) {
+    return (
+      <section>
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+          <p>Loading configuration...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section>

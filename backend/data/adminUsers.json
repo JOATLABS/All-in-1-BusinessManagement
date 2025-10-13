@@ -2,7 +2,7 @@
   {
     "id": "3d3f0317-0db6-4c9a-8b28-6291a079927d",
     "email": "admin@rhythmplusroot.com",
-    "passwordHash": "$2a$10$GNh1sWWNyXWM9hlt1LfQ0eH6eojLOrnC.Pn8TXyntlnDU8FKjekbG",
+    "passwordHash": "$2a$10$vzb31yIRhfYCBmtwQwn/DOboQvlJF9oCFmuQ3/s5l49R7Nvu.1v.q",
     "role": "superadmin",
     "createdAt": "2025-10-01T00:00:00.000Z",
     "updatedAt": "2025-10-01T00:00:00.000Z"
