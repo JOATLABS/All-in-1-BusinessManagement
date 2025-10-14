@@ -151,12 +151,9 @@
   margin: 0;
   font-size: 1.75rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #f5c36b 0%, #ffd89b 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 10px rgba(245, 195, 107, 0.3);
+  color: #f5c36b;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 12px rgba(245, 195, 107, 0.4);
 }
 
 .bg-media-manager__actions {
@@ -522,19 +519,148 @@
 }
 
 /* ========================================
+   MODAL OVERLAY AND PANEL
+   ======================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.modal-panel {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  max-height: calc(100vh - 2rem);
+  background: linear-gradient(135deg, rgba(18, 18, 22, 0.95), rgba(8, 8, 11, 0.98));
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  border: 1px solid rgba(245, 195, 107, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding: 1.75rem 1.75rem 1.5rem;
+  border-bottom: 1px solid rgba(245, 195, 107, 0.15);
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f5c36b, #ffd89b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.modal-header p {
+  margin: 0.5rem 0 0 0;
+  color: rgba(246, 241, 230, 0.6);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  max-width: 400px;
+}
+
+.modal-close {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(246, 241, 230, 0.8);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+  transform: scale(1.05);
+}
+
+.modal-close:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.modal-body {
+  padding: 1.75rem;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 195, 107, 0.3) transparent;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(245, 195, 107, 0.3);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 195, 107, 0.5);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem 1.75rem 1.75rem;
+  border-top: 1px solid rgba(245, 195, 107, 0.15);
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.modal-footer .btn {
+  flex: 1;
+}
+
+/* ========================================
    UPLOAD MODAL
    Glassmorphism Design
    ======================================== */
 
 .upload-dropzone {
-  padding: 3.5rem 2.5rem;
+  padding: 2.5rem 2rem;
   background: linear-gradient(135deg, rgba(245, 195, 107, 0.05), rgba(139, 92, 246, 0.05));
   border: 2px dashed rgba(245, 195, 107, 0.4);
-  border-radius: 16px;
+  border-radius: 12px;
   text-align: center;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-bottom: 2rem;
   position: relative;
   overflow: hidden;
 }
@@ -622,7 +748,7 @@
 
 .upload-preview__media {
   width: 100%;
-  max-height: 320px;
+  max-height: 200px;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 12px;
   overflow: hidden;
@@ -633,7 +759,7 @@
 .upload-preview__video {
   width: 100%;
   height: 100%;
-  max-height: 320px;
+  max-height: 200px;
   object-fit: contain;
   display: block;
 }
@@ -1069,12 +1195,58 @@
     gap: 1rem;
   }
 
+  /* Modal responsive */
+  .modal-panel {
+    max-width: 95%;
+  }
+
+  .modal-header {
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+
+  .modal-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .modal-header p {
+    font-size: 0.8rem;
+  }
+
+  .modal-close {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.5rem;
+  }
+
+  .modal-body {
+    padding: 1.25rem;
+  }
+
+  .modal-footer {
+    padding: 1.25rem;
+    flex-direction: column;
+  }
+
   .upload-dropzone {
-    padding: 2.5rem 1.5rem;
+    padding: 2rem 1.25rem;
   }
 
   .upload-dropzone__icon {
-    font-size: 3rem;
+    font-size: 2.5rem;
+  }
+
+  .upload-dropzone__text {
+    font-size: 1rem;
+  }
+
+  .upload-preview__media {
+    max-height: 160px;
+  }
+
+  .upload-preview__image,
+  .upload-preview__video {
+    max-height: 160px;
   }
 
   .modal--library {

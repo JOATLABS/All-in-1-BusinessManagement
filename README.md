@@ -18,6 +18,7 @@ This document summarises current UX research, outlines the core capabilities, de
 
 - [Admin Dashboard & Configuration API](docs/admin_dashboard.md) – how to run the admin console, authenticate, and update the content powering the public site.
 - [Reservation Workflow Overview](docs/reservation_workflow.md) – how availability, payment, and QR confirmations flow through the stack.
+- [Feature Specifications](docs/features/) – detailed specifications for implemented and planned features, including deferred enhancements.
 
 ## UX research and design guidance
 

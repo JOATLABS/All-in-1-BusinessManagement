@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { config } from '../config/api';
 import { useAuth } from '../auth/AuthContext';
 import type { BackgroundImage, BackgroundMediaType } from '../types/content';
+import '../styles/components/upload-modal.css';
 
 interface MediaUploadModalProps {
   isOpen: boolean;
@@ -201,35 +202,34 @@ export const MediaUploadModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-        <header className="modal-header">
-          <div>
-            <h2>Upload Background Media</h2>
-            <p style={{ margin: '0.5rem 0 0 0', color: 'rgba(245, 195, 107, 0.7)', fontSize: '0.9rem' }}>
-              Upload images or videos to Cloudflare R2 ({folder}/ folder)
-            </p>
+    <div className="upload-modal-overlay" onClick={handleClose}>
+      <div className="upload-modal" onClick={(e) => e.stopPropagation()}>
+        <header className="upload-modal__header">
+          <div className="upload-modal__header-content">
+            <h2 className="upload-modal__title">Upload Media</h2>
+            <p className="upload-modal__subtitle">Upload to {folder}/ folder</p>
           </div>
-          <button className="modal-close" onClick={handleClose} disabled={uploading}>
+          <button className="upload-modal__close" onClick={handleClose} disabled={uploading}>
             ×
           </button>
         </header>
 
-        {/* Drop Zone */}
-        {!selectedFile && (
+        <div className="upload-modal__body">
+          {/* Drop Zone */}
+          {!selectedFile && (
           <div
-            className={`upload-dropzone ${isDragging ? 'upload-dropzone--dragging' : ''}`}
+            className={`upload-dropzone-modern ${isDragging ? 'upload-dropzone-modern--dragging' : ''}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={handleBrowseClick}
           >
-            <div className="upload-dropzone__icon">📤</div>
-            <p className="upload-dropzone__text">
+            <div className="upload-dropzone-modern__icon">📤</div>
+            <p className="upload-dropzone-modern__text">
               <strong>Drag and drop</strong> your file here
             </p>
-            <p className="upload-dropzone__subtext">or click to browse</p>
-            <p className="upload-dropzone__hint">
+            <p className="upload-dropzone-modern__subtext">or click to browse</p>
+            <p className="upload-dropzone-modern__hint">
               Images: JPEG, PNG, WebP, GIF • Videos: MP4, WebM • Max 50MB
             </p>
           </div>
@@ -246,31 +246,33 @@ export const MediaUploadModal = ({
 
         {/* Preview */}
         {selectedFile && previewUrl && (
-          <div className="upload-preview">
-            <div className="upload-preview__media">
+          <div className="upload-preview-modern">
+            <div className="upload-preview-modern__media-wrapper">
               {mediaType === 'video' ? (
                 <video
                   src={previewUrl}
                   controls
                   muted
-                  className="upload-preview__video"
+                  className="upload-preview-modern__media"
                 />
               ) : (
                 <img
                   src={previewUrl}
                   alt="Upload preview"
-                  className="upload-preview__image"
+                  className="upload-preview-modern__media"
                 />
               )}
             </div>
 
-            <div className="upload-preview__info">
-              <p className="upload-preview__filename">
-                {selectedFile.name}
-              </p>
-              <p className="upload-preview__details">
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
-              </p>
+            <div className="upload-preview-modern__info">
+              <div className="upload-preview-modern__details">
+                <p className="upload-preview-modern__filename">
+                  {selectedFile.name}
+                </p>
+                <p className="upload-preview-modern__meta">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
+                </p>
+              </div>
 
               {!uploading && (
                 <button
@@ -282,7 +284,7 @@ export const MediaUploadModal = ({
                     setPreviewUrl(null);
                   }}
                 >
-                  Change File
+                  Change
                 </button>
               )}
             </div>
@@ -291,32 +293,33 @@ export const MediaUploadModal = ({
 
         {/* Progress Bar */}
         {uploading && (
-          <div className="upload-progress">
-            <div className="upload-progress__bar">
+          <div className="upload-progress-modern">
+            <div className="upload-progress-modern__bar">
               <div
-                className="upload-progress__fill"
+                className="upload-progress-modern__fill"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="upload-progress__text">
+            <p className="upload-progress-modern__text">
               Uploading to Cloudflare R2... {progress}%
             </p>
           </div>
         )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="upload-error" role="alert">
-            <span className="upload-error__icon">⚠️</span>
-            {error}
-          </div>
-        )}
+          {/* Error Message */}
+          {error && (
+            <div className="upload-alert upload-alert--error" role="alert">
+              <span className="upload-alert__icon">⚠️</span>
+              <p className="upload-alert__message">{error}</p>
+            </div>
+          )}
+        </div>
 
         {/* Actions */}
-        <div className="modal-actions">
+        <footer className="upload-modal__footer">
           <button
             type="button"
-            className="modal-button modal-button--secondary"
+            className="btn btn--ghost"
             onClick={handleClose}
             disabled={uploading}
           >
@@ -324,13 +327,13 @@ export const MediaUploadModal = ({
           </button>
           <button
             type="button"
-            className="admin-config__save"
+            className="btn btn--primary"
             onClick={handleUpload}
             disabled={!selectedFile || uploading}
           >
             {uploading ? 'Uploading...' : 'Upload to R2'}
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

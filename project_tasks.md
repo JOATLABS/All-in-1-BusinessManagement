@@ -399,3 +399,429 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
   - Export GA4 data to BigQuery for ML model training
   - Build prediction models for: nightly reservation demand, tier preferences, conversion rates
   - **Single-tenant benefit**: All historical data belongs to one venue—simpler feature engineering and model training
+
+---
+
+## 15. Club Layout & Services (Interactive Floor Plan)
+
+**Status**: DEFERRED — Validate business need after core operations launch
+**Priority**: Enhancement (Nice-to-have)
+**Decision Date**: 2025-10-14
+**Estimated Effort**: Full implementation 40-60 hours | MVP "Layout Lite" 15-20 hours
+**Dependencies**:
+- Section 5 (Site Configuration) — Complete
+- Section 9 (Admin User Management) — Schema complete, UI needed
+- Section 10 (Security Hardening) — BLOCKER — Must complete first
+- Section 11 (Reservations Backend) — Partially complete, needs Stripe integration
+- Section 12 (Inventory Tooling) — Not started
+
+**Deferral Rationale**:
+1. **Business validation first**: Launch reservations without floor plans, measure conversion rates via GA4, gather staff feedback on operational needs
+2. **Foundation gaps**: Security hardening (JWT, CORS, rate limiting) and complete payment flow are higher priority
+3. **Scope management**: 40-60 hours represents significant investment for unvalidated feature
+4. **Phased approach available**: Can start with simpler "Layout Lite" MVP (image upload + click-to-tag) before full CAD editor
+
+**Validation Criteria Before Implementation**:
+- [ ] Reservations launched and stable for 4+ weeks
+- [ ] Conversion rate baseline established via Google Analytics
+- [ ] Staff feedback collected: "Do you need visual layouts?"
+- [ ] Competitor analysis: Are floor plans industry-standard?
+- [ ] At least 50 confirmed reservations to validate tier structure
+
+**Implementation Path (When Validated)**:
+1. **Phase 1: Layout Lite MVP** (15-20 hours) — Simple image upload + coordinate tagging
+2. **Phase 2: Full CAD Editor** (40-60 hours) — If Phase 1 proves valuable
+
+Detailed Specification: See `docs/features/club_layout_services.md`
+
+### Overview
+
+Extend the platform with an interactive floor plan editor and visual layout management system. This feature provides a CAD-like interface for configuring club geometry, mapping reservable sections to existing reservation tiers, and assigning services/staff to floor zones.
+
+**Business Value:**
+- Visual floor plan increases reservation conversion rates
+- Operational efficiency for staff (know where guests are seated)
+- Service upsells (bottle service, VIP packages) mapped directly to layout
+- Professional presentation matching high-end nightclub expectations
+
+**Single-Tenant Benefits:**
+- No tenant scoping complexity in layout tables
+- Direct linking to existing `tierId` in reservations without cross-org isolation
+- Single floor plan for the venue (no multi-location management)
+- Simplified audit trail without tenant filtering
+
+---
+
+### 15.1. Domain Model & Storage
+
+#### New Database Tables
+
+```sql
+-- Global floor plan metadata
+club_layouts (
+  id UUID PK DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,  -- e.g., "Main Floor", "Rooftop"
+  default_arrival_route JSONB,  -- Staff navigation hints
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP NOT NULL DEFAULT now()
+)
+
+-- Zones: stage, dance floor, bar, VIP hallway, etc.
+layout_zones (
+  id UUID PK DEFAULT gen_random_uuid(),
+  layout_id UUID FK REFERENCES club_layouts(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,  -- "Main Stage", "VIP Lounge", "Bar Area"
+  zone_type TEXT NOT NULL,  -- 'stage', 'dance_floor', 'bar', 'vip', 'entrance'
+  polygon_coordinates JSONB NOT NULL,  -- [[x,y], [x,y], ...] for SVG path
+  display_order INT NOT NULL DEFAULT 0,
+  color_hex TEXT,  -- For visual differentiation
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP NOT NULL DEFAULT now()
+)
+
+-- Sections: reservable tables/booths linked to reservation tiers
+layout_sections (
+  id UUID PK DEFAULT gen_random_uuid(),
+  zone_id UUID FK REFERENCES layout_zones(id) ON DELETE CASCADE,
+  reservation_tier_id TEXT NOT NULL,  -- Links to existing siteContent.reservation.tiers[].id
+  label TEXT NOT NULL,  -- "Table 1", "VIP Booth A"
+  coordinates JSONB NOT NULL,  -- {x, y, width, height} or polygon
+  capacity_override INT,  -- Override tier default capacity if needed
+  minimum_spend_override NUMERIC(10,2),  -- Override tier pricing
+  is_available BOOLEAN DEFAULT true,
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP NOT NULL DEFAULT now()
+)
+
+-- Services linked to sections (bottle service, hookah, photography)
+section_services (
+  id UUID PK DEFAULT gen_random_uuid(),
+  section_id UUID FK REFERENCES layout_sections(id) ON DELETE CASCADE,
+  service_name TEXT NOT NULL,  -- "Premium Bottle Service", "Hookah Setup"
+  service_type TEXT,  -- 'beverage', 'amenity', 'photo', 'vip_entrance'
+  default_price NUMERIC(10,2),
+  staff_role TEXT,  -- 'vip_host', 'server', 'photographer'
+  is_default BOOLEAN DEFAULT false,  -- Auto-include with section
+  created_at TIMESTAMP NOT NULL DEFAULT now()
+)
+```
+
+**Indexes:**
+- `CREATE INDEX idx_layout_zones_layout_id ON layout_zones(layout_id)`
+- `CREATE INDEX idx_layout_sections_zone_id ON layout_sections(zone_id)`
+- `CREATE INDEX idx_layout_sections_tier_id ON layout_sections(reservation_tier_id)`
+- `CREATE INDEX idx_section_services_section_id ON section_services(section_id)`
+
+#### Shared TypeScript Types
+
+Add to `frontend/src/types/content.ts`:
+
+```typescript
+export interface ClubLayout {
+  id: string;
+  name: string;
+  defaultArrivalRoute?: object;
+  isActive: boolean;
+}
+
+export interface LayoutZone {
+  id: string;
+  layoutId: string;
+  name: string;
+  zoneType: 'stage' | 'dance_floor' | 'bar' | 'vip' | 'entrance' | 'other';
+  polygonCoordinates: [number, number][];
+  displayOrder: number;
+  colorHex?: string;
+}
+
+export interface LayoutSection {
+  id: string;
+  zoneId: string;
+  reservationTierId: string;
+  label: string;
+  coordinates: { x: number; y: number; width: number; height: number };
+  capacityOverride?: number;
+  minimumSpendOverride?: number;
+  isAvailable: boolean;
+}
+
+export interface SectionService {
+  id: string;
+  sectionId: string;
+  serviceName: string;
+  serviceType: 'beverage' | 'amenity' | 'photo' | 'vip_entrance';
+  defaultPrice?: number;
+  staffRole?: 'vip_host' | 'server' | 'photographer';
+  isDefault: boolean;
+}
+```
+
+---
+
+### 15.2. Backend API
+
+#### Routes
+
+**Public Routes:**
+- `GET /api/v1/layout` - Fetch active floor plan for guest reservation flow
+- `GET /api/v1/layout/sections/:tierId` - Get sections for a reservation tier
+
+**Admin Routes (require auth):**
+- `GET /api/v1/admin/layout` - Full layout with zones, sections, services
+- `POST /api/v1/admin/layout` - Create new layout
+- `PATCH /api/v1/admin/layout/:id` - Update layout metadata
+- `POST /api/v1/admin/layout/:layoutId/zones` - Add zone
+- `PATCH /api/v1/admin/layout/zones/:id` - Update zone geometry
+- `DELETE /api/v1/admin/layout/zones/:id` - Remove zone
+- `POST /api/v1/admin/layout/zones/:zoneId/sections` - Add section
+- `PATCH /api/v1/admin/layout/sections/:id` - Update section
+- `DELETE /api/v1/admin/layout/sections/:id` - Remove section
+- `POST /api/v1/admin/layout/sections/:sectionId/services` - Assign service
+- `DELETE /api/v1/admin/layout/services/:id` - Remove service
+
+#### Validation (Zod Schemas)
+
+```typescript
+const layoutZoneSchema = z.object({
+  name: z.string().min(1).max(100),
+  zoneType: z.enum(['stage', 'dance_floor', 'bar', 'vip', 'entrance', 'other']),
+  polygonCoordinates: z.array(z.tuple([z.number(), z.number()])).min(3),
+  colorHex: z.string().regex(/^#[0-9A-F]{6}$/i).optional()
+});
+
+const layoutSectionSchema = z.object({
+  reservationTierId: z.string().min(1),
+  label: z.string().min(1).max(50),
+  coordinates: z.object({
+    x: z.number().min(0),
+    y: z.number().min(0),
+    width: z.number().positive(),
+    height: z.number().positive()
+  }),
+  capacityOverride: z.number().int().positive().optional(),
+  minimumSpendOverride: z.number().positive().optional()
+});
+```
+
+#### Service Integration
+
+**Reservation Enrichment:**
+When creating reservations, join layout sections to provide:
+- Visual floor position for staff
+- Assigned services to prep (bottle, hookah, etc.)
+- Staff role assignments (VIP host, server)
+
+Update `reservationRepository.ts` to:
+```typescript
+async getReservationWithLayout(reservationId: string) {
+  const reservation = await getReservation(reservationId);
+  const sections = await db.select()
+    .from(layoutSectionsTable)
+    .where(eq(layoutSectionsTable.reservationTierId, reservation.tierId));
+  const services = await db.select()
+    .from(sectionServicesTable)
+    .where(inArray(sectionServicesTable.sectionId, sections.map(s => s.id)));
+  return { ...reservation, sections, services };
+}
+```
+
+---
+
+### 15.3. Admin UI - Layout Editor
+
+#### New "Layout & Services" Workspace
+
+Add route: `/admin/layout` in admin navigation (after Site Configuration)
+
+**Tech Stack:**
+- **Canvas Rendering**: [Konva.js](https://konvajs.org/) or [Fabric.js](http://fabricjs.com/) for performant shape rendering, transformations, and drag-and-drop
+- **Node/Edge Graphing** (optional): [React Flow](https://reactflow.dev/) for service paths and staff routes
+- **Geometry Tools**: Polygon drawing, resize handles, snap-to-grid, collision detection
+
+#### Editor Features
+
+1. **Floor Grid Canvas**
+   - SVG or Canvas grid with zoom/pan controls
+   - Drag-and-drop zone creation (rectangles, polygons)
+   - Visual layer management (zones → sections → services)
+
+2. **Zone Management Panel**
+   - List of zones with color-coded chips
+   - "Add Zone" button → polygon drawing tool
+   - Edit modal: name, type, color, polygon coordinates
+   - Delete with confirmation dialog
+
+3. **Section Assignment**
+   - Click zone → add section
+   - Form: select reservation tier (dropdown from existing tiers), label, capacity override
+   - Visual representation of section on canvas with tier color
+   - Drag to reposition, resize handles
+
+4. **Service Assignment Matrix**
+   - Table view: sections (rows) × services (columns)
+   - Toggle checkboxes for default services
+   - Staff role dropdowns per section
+   - Price overrides
+
+5. **Publishing Workflow**
+   - "Save Draft" → saves to DB without activating
+   - "Publish" → sets `is_active = true` and deactivates old layout
+   - Unsaved changes prompt (reuse `useUnsavedChangesPrompt`)
+   - Validation before publish (ensure all sections link to valid tiers)
+
+#### Example Component Structure
+
+```tsx
+<LayoutEditor>
+  <LayoutCanvas onZoneClick={handleZoneSelect}>
+    {zones.map(zone => (
+      <Zone key={zone.id} {...zone}>
+        {sections.filter(s => s.zoneId === zone.id).map(section => (
+          <Section key={section.id} {...section} />
+        ))}
+      </Zone>
+    ))}
+  </LayoutCanvas>
+  
+  <LayoutSidebar>
+    <ZoneList zones={zones} onAddZone={handleAddZone} />
+    <SectionList sections={selectedZoneSections} onAddSection={handleAddSection} />
+    <ServiceMatrix sections={sections} services={allServices} />
+  </LayoutSidebar>
+</LayoutEditor>
+```
+
+---
+
+### 15.4. Guest & Staff Surfaces
+
+#### Public Reservation Flow
+
+**Integration Point:** `/reserve` page
+
+Add floor plan visualization next to tier carousel:
+- Render active layout with highlighted sections for selected tier
+- Show service icons overlaid on sections
+- Click section → auto-select that tier + show services
+- Mobile: collapsible floor plan view
+
+**Technical Approach:**
+- Fetch layout via `GET /api/v1/layout`
+- Filter sections by `reservationTierId === selectedTier.id`
+- Render static SVG (non-interactive for guests)
+- Use existing availability logic (no changes to reservation math)
+
+#### Operational Dashboard
+
+**Integration Point:** `/admin/reservations` page
+
+Enhance reservation list with:
+- Column: "Section" showing layout section label
+- Filter by zone: "Show VIP area only"
+- Map view: visual floor plan with reservation status overlays
+  - Green: confirmed
+  - Yellow: pending
+  - Red: cancelled
+  - Gray: empty
+
+**Staff Prep View:**
+- Print-friendly PDF export of tonight's floor plan
+- Service checklist per section (bottle service, hookah setup)
+- Low-connectivity fallback (cached PNG)
+
+---
+
+### 15.5. Implementation Sequencing
+
+**Phase 1: Schema & Data Layer** (8-12 hours)
+1. Create migration: `backend/src/db/migrations/015_club_layout.sql`
+2. Add Drizzle models to `schema.ts`
+3. Seed baseline layout: one zone, three sections mapped to existing tiers
+4. Create layout repository (`backend/src/repositories/layoutRepository.ts`)
+
+**Phase 2: API & Validation** (8-12 hours)
+1. Add routes: `/api/v1/layout` (public) and `/api/v1/admin/layout/*` (admin)
+2. Implement Zod schemas for validation
+3. Write integration tests for CRUD operations
+4. Update reservation service to join section data
+
+**Phase 3: Shared Types & Providers** (4-6 hours)
+1. Add TypeScript types to `frontend/src/types/layout.ts`
+2. Create `useLayout()` hook similar to `useSiteContentContext`
+3. Extend `apiClient.ts` with layout fetch functions
+
+**Phase 4: Admin Editor UI** (16-24 hours)
+1. Install Konva/Fabric.js: `npm install konva react-konva`
+2. Build `LayoutCanvas` component with drag-and-drop
+3. Implement zone/section CRUD modals
+4. Add service assignment matrix
+5. Integrate save/publish workflow with validation
+6. Test on desktop and tablet
+
+**Phase 5: Guest & Staff Integration** (8-12 hours)
+1. Add static floor plan SVG to `/reserve` page
+2. Highlight sections when tier is selected
+3. Extend admin reservations table with section column
+4. Build print/export view (PDF or PNG)
+5. Add mobile-responsive floor plan view
+
+**Phase 6: Testing & QA** (6-10 hours)
+1. Unit tests: layout validation, coordinate math
+2. E2E tests: create zone → add section → assign to reservation
+3. Visual regression tests for canvas rendering
+4. Manual testing: drag-and-drop UX, mobile gestures
+5. Performance testing: large layouts (50+ sections)
+
+---
+
+### 15.6. Technical Risks & Mitigations
+
+**Risk**: Complex geometry management (polygon intersections, collision detection)  
+**Mitigation**: Use proven libraries (Turf.js for geometry), start with simple rectangles before polygons
+
+**Risk**: Mobile UX for drag-and-drop editor  
+**Mitigation**: Admin editor is desktop-first (staff use laptops); guests get static SVG view
+
+**Risk**: Canvas performance with 50+ sections  
+**Mitigation**: Konva handles this well; use virtualization for large layouts; implement zoom levels
+
+**Risk**: Breaking existing reservations if tiers change  
+**Mitigation**: Soft delete old sections, maintain backward compatibility via `tierId` references
+
+---
+
+### 15.7. Success Metrics
+
+**Business Impact:**
+- 📈 Reservation conversion rate increase (visual floor plan = higher trust)
+- ⏱️ Staff prep time reduction (know exact guest locations)
+- 💰 Service upsell rate (in-context service offerings)
+
+**Technical Metrics:**
+- Layout editor load time < 2 seconds
+- Canvas interactions at 60fps
+- Floor plan rendering on `/reserve` < 500ms
+- Zero reservation flow regressions
+
+---
+
+### 15.8. Future Enhancements (Post-MVP)
+
+- **Real-time Occupancy**: WebSocket updates showing live section status
+- **3D Floor Plans**: Three.js for immersive guest preview
+- **Heatmaps**: Analyze popular sections over time
+- **Dynamic Pricing**: Surge pricing for high-demand sections
+- **Guest Preferences**: Remember favorite sections per guest profile
+
+---
+
+**Dependencies Before Starting:**
+- ✅ Section 9: Admin User Management (multiple staff need access)
+- ✅ Section 11: Complete reservation flow (tier system finalized)
+- ✅ Section 8: Testing infrastructure (E2E coverage critical)
+
+**Estimated Total Effort:** 40-60 hours  
+**Recommended Team Size:** 1 full-stack developer  
+**Timeline:** 2-3 weeks of focused work
+
