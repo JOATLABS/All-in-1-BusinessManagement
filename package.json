@@ -18,10 +18,10 @@
   },
   "lint-staged": {
     "backend/**/*.ts": [
-      "cd backend && npm run lint:fix"
+      "npm run lint:fix --prefix backend"
     ],
     "frontend/**/*.{ts,tsx}": [
-      "cd frontend && npm run lint -- --fix"
+      "npm run lint --prefix frontend -- --fix"
     ]
   }
 }

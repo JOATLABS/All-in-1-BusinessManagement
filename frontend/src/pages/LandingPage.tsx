@@ -145,6 +145,9 @@ const HeroContent = ({ hero, event, isReady }: HeroContentProps) => {
           <button onClick={() => openOverlay('events')} className="hero__nav-link">
             Events
           </button>
+          <Link to="/mobile-app" className="hero__nav-link">
+            Mobile App
+          </Link>
           <Link to="/reserve" className="hero__nav-link">
             Reserve
           </Link>

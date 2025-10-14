@@ -5,6 +5,7 @@ import { SiteContentProvider } from './content/SiteContentProvider';
 import { LandingPage } from './pages/LandingPage';
 import ReserveTablePage from './pages/ReserveTablePage';
 import { EventsPage } from './pages/EventsPage';
+import { MobileAppLandingPage } from './pages/MobileAppLandingPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminLogin } from './pages/admin/AdminLogin';
@@ -17,6 +18,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/mobile-app" element={<MobileAppLandingPage />} />
           <Route path="/reserve" element={<ReserveTablePage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
