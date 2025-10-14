@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { config } from '../config/api';
+import { useAuth } from '../auth/AuthContext';
 import type { BackgroundImage, BackgroundMediaType } from '../types/content';
 
 interface MediaLibraryModalProps {
@@ -28,6 +29,7 @@ export const MediaLibraryModal = ({
   onSelectMedia,
   folder = 'all'
 }: MediaLibraryModalProps) => {
+  const { token } = useAuth();
   const [media, setMedia] = useState<R2MediaItem[]>([]);
   const [filteredMedia, setFilteredMedia] = useState<R2MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,7 +62,6 @@ export const MediaLibraryModal = ({
     setError(null);
 
     try {
-      const token = localStorage.getItem('authToken');
       if (!token) {
         throw new Error('Not authenticated');
       }

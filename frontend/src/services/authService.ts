@@ -3,6 +3,7 @@ import { apiFetch } from './apiClient';
 export interface AuthResponse {
   token: string;
   email: string;
+  role: 'superadmin' | 'admin' | 'staff';
 }
 
 interface LoginPayload {
@@ -12,7 +13,7 @@ interface LoginPayload {
 
 interface LoginResponse {
   token: string;
-  user: { email: string };
+  user: { email: string; role: 'superadmin' | 'admin' | 'staff' };
 }
 
 export const login = async (email: string, password: string): Promise<AuthResponse> => {
@@ -21,7 +22,7 @@ export const login = async (email: string, password: string): Promise<AuthRespon
     body: { email, password }
   });
 
-  return { token: result.token, email: result.user.email };
+  return { token: result.token, email: result.user.email, role: result.user.role };
 };
 
 export const logout = async (token: string | null) => {

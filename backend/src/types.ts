@@ -183,7 +183,11 @@ export interface AdminUser {
   id: string;
   email: string;
   passwordHash: string;
-  role: 'superadmin' | 'admin';
+  role: 'superadmin' | 'admin' | 'staff';
+  firstName?: string | null;
+  lastName?: string | null;
+  isActive: boolean;
+  createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string | null;

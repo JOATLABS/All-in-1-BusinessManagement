@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
+import { RoleGuard } from '../../auth/RoleGuard';
+import { getRoleLabel, getRoleColor } from '../../auth/permissions';
 
 export const AdminLayout = () => {
   const { logout, user } = useAuth();
@@ -63,6 +65,17 @@ export const AdminLayout = () => {
           >
             Site Configuration
           </NavLink>
+          <RoleGuard roles={['superadmin']}>
+            <NavLink
+              to="/admin/team"
+              className={({ isActive }: { isActive: boolean }) =>
+                `admin-shell__link${isActive ? ' admin-shell__link--active' : ''}`
+              }
+              onClick={handleCloseNav}
+            >
+              Team Management
+            </NavLink>
+          </RoleGuard>
         </nav>
       </aside>
 
@@ -72,7 +85,25 @@ export const AdminLayout = () => {
             {navOpen ? 'Close menu' : 'Menu'}
           </button>
           <div className="admin-shell__header-right">
-            <span className="admin-shell__user">{user?.email}</span>
+            <span className="admin-shell__user">
+              {user?.email}
+              {user?.role && (
+                <span
+                  className="admin-shell__role-badge"
+                  style={{
+                    backgroundColor: getRoleColor(user.role),
+                    color: '#fff',
+                    padding: '0.125rem 0.5rem',
+                    borderRadius: '0.25rem',
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    marginLeft: '0.5rem'
+                  }}
+                >
+                  {getRoleLabel(user.role)}
+                </span>
+              )}
+            </span>
             <button className="admin-shell__signout" type="button" onClick={handleLogout}>
               Sign out
             </button>

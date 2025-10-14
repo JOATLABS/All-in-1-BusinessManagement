@@ -29,8 +29,12 @@ export const adminUsersTable = pgTable('admin_users', {
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   role: text('role').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true })
 });
 

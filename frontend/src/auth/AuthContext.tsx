@@ -3,6 +3,7 @@ import { login as authenticate, logout as signOut } from '../services/authServic
 
 interface AuthUser {
   email: string;
+  role: 'superadmin' | 'admin' | 'staff';
 }
 
 interface AuthState {
@@ -63,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const result = await authenticate(email, password);
-      persistState({ token: result.token, user: { email: result.email } });
+      persistState({ token: result.token, user: { email: result.email, role: result.role } });
     } catch (authError) {
       const message = authError instanceof Error ? authError.message : 'Unable to authenticate';
       setError(message);
