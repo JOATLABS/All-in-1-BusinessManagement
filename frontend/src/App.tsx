@@ -11,6 +11,7 @@ import { AdminLogin } from './pages/admin/AdminLogin';
 import { SiteConfiguration } from './pages/admin/SiteConfiguration';
 import { Reservations } from './pages/admin/Reservations';
 import { AdminEventsPage } from './pages/admin/AdminEventsPage';
+import { TeamManagement } from './pages/admin/TeamManagement';
 
 const App = () => (
   <AuthProvider>
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="reservations" element={<Reservations />} />
             <Route path="events" element={<AdminEventsPage />} />
             <Route path="site-configuration" element={<SiteConfiguration />} />
+            <Route path="team" element={<TeamManagement />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
