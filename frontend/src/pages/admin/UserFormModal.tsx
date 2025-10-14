@@ -87,17 +87,18 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
     >
       <div
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: '#1f2937',
           borderRadius: '0.5rem',
           padding: '1.5rem',
           maxWidth: '32rem',
           width: '90%',
           maxHeight: '90vh',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          color: '#e5e7eb'
         }}
       >
-        <h2 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '600' }}>
-          {isCreating ? 'Add Admin User' : 'Edit Admin User'}
+        <h2 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.25rem', fontWeight: '600', color: '#f3f4f6' }}>
+          {isCreating ? 'Add User' : 'Edit User'}
         </h2>
 
         <form onSubmit={handleSubmit}>
@@ -105,7 +106,7 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
             {isCreating && (
               <>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+                  <span style={{ fontSize: '0.875rem', fontWeight: '500', color: '#f3f4f6' }}>
                     Email <span style={{ color: '#ef4444' }}>*</span>
                   </span>
                   <input
@@ -116,14 +117,16 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
                     style={{
                       padding: '0.5rem',
                       borderRadius: '0.25rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid #4b5563',
+                      backgroundColor: '#374151',
+                      color: '#e5e7eb',
                       fontSize: '0.875rem'
                     }}
                   />
                 </label>
 
                 <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+                  <span style={{ fontSize: '0.875rem', fontWeight: '500', color: '#f3f4f6' }}>
                     Password <span style={{ color: '#ef4444' }}>*</span>
                   </span>
                   <input
@@ -135,11 +138,13 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
                     style={{
                       padding: '0.5rem',
                       borderRadius: '0.25rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid #4b5563',
+                      backgroundColor: '#374151',
+                      color: '#e5e7eb',
                       fontSize: '0.875rem'
                     }}
                   />
-                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
                     Minimum 8 characters, must include uppercase, lowercase, and number
                   </span>
                 </label>
@@ -147,7 +152,7 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
             )}
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>First Name</span>
+              <span style={{ fontSize: '0.875rem', fontWeight: '500', color: '#f3f4f6' }}>First Name</span>
               <input
                 type="text"
                 value={formData.firstName}
@@ -155,14 +160,16 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
                 style={{
                   padding: '0.5rem',
                   borderRadius: '0.25rem',
-                  border: '1px solid #d1d5db',
+                  border: '1px solid #4b5563',
+                  backgroundColor: '#374151',
+                  color: '#e5e7eb',
                   fontSize: '0.875rem'
                 }}
               />
             </label>
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>Last Name</span>
+              <span style={{ fontSize: '0.875rem', fontWeight: '500', color: '#f3f4f6' }}>Last Name</span>
               <input
                 type="text"
                 value={formData.lastName}
@@ -170,14 +177,16 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
                 style={{
                   padding: '0.5rem',
                   borderRadius: '0.25rem',
-                  border: '1px solid #d1d5db',
+                  border: '1px solid #4b5563',
+                  backgroundColor: '#374151',
+                  color: '#e5e7eb',
                   fontSize: '0.875rem'
                 }}
               />
             </label>
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: '500', color: '#f3f4f6' }}>
                 Role <span style={{ color: '#ef4444' }}>*</span>
               </span>
               <select
@@ -187,7 +196,9 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
                 style={{
                   padding: '0.5rem',
                   borderRadius: '0.25rem',
-                  border: '1px solid #d1d5db',
+                  border: '1px solid #4b5563',
+                  backgroundColor: '#374151',
+                  color: '#e5e7eb',
                   fontSize: '0.875rem'
                 }}
               >
@@ -205,7 +216,7 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                   style={{ width: '1rem', height: '1rem' }}
                 />
-                <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>Active</span>
+                <span style={{ fontSize: '0.875rem', fontWeight: '500', color: '#f3f4f6' }}>Active</span>
               </label>
             )}
 
@@ -230,9 +241,9 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
                 disabled={isSubmitting}
                 style={{
                   padding: '0.5rem 1rem',
-                  backgroundColor: '#fff',
-                  color: '#374151',
-                  border: '1px solid #d1d5db',
+                  backgroundColor: '#374151',
+                  color: '#e5e7eb',
+                  border: '1px solid #4b5563',
                   borderRadius: '0.25rem',
                   fontSize: '0.875rem',
                   fontWeight: '600',

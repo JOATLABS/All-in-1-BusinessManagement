@@ -189,43 +189,44 @@ export const TeamManagement = () => {
             style={{
               width: '100%',
               borderCollapse: 'collapse',
-              backgroundColor: '#fff',
+              backgroundColor: '#1f2937',
               borderRadius: '0.5rem',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              color: '#e5e7eb'
             }}
           >
             <thead>
-              <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600' }}>
+              <tr style={{ backgroundColor: '#374151', borderBottom: '1px solid #4b5563' }}>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#f3f4f6' }}>
                   Name
                 </th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600' }}>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#f3f4f6' }}>
                   Email
                 </th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600' }}>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#f3f4f6' }}>
                   Role
                 </th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600' }}>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#f3f4f6' }}>
                   Last Login
                 </th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600' }}>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#f3f4f6' }}>
                   Status
                 </th>
-                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: '600' }}>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: '600', color: '#f3f4f6' }}>
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>
+                <tr key={user.id} style={{ borderBottom: '1px solid #4b5563' }}>
+                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#e5e7eb' }}>
                     {user.firstName || user.lastName
                       ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
                       : '-'}
                   </td>
-                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>{user.email}</td>
-                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>
+                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#e5e7eb' }}>{user.email}</td>
+                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#e5e7eb' }}>
                     <span
                       style={{
                         padding: '0.25rem 0.5rem',
@@ -239,10 +240,10 @@ export const TeamManagement = () => {
                       {getRoleLabel(user.role)}
                     </span>
                   </td>
-                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>
+                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#e5e7eb' }}>
                     {user.lastLoginAt ? formatDate(user.lastLoginAt) : 'Never'}
                   </td>
-                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>
+                  <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#e5e7eb' }}>
                     <span
                       style={{
                         padding: '0.25rem 0.5rem',
@@ -263,9 +264,9 @@ export const TeamManagement = () => {
                       style={{
                         padding: '0.25rem 0.75rem',
                         marginRight: '0.5rem',
-                        backgroundColor: '#fff',
-                        color: '#3b82f6',
-                        border: '1px solid #3b82f6',
+                        backgroundColor: 'transparent',
+                        color: '#60a5fa',
+                        border: '1px solid #60a5fa',
                         borderRadius: '0.25rem',
                         fontSize: '0.75rem',
                         cursor: 'pointer'
@@ -279,9 +280,9 @@ export const TeamManagement = () => {
                         onClick={() => handleDeactivateUser(user)}
                         style={{
                           padding: '0.25rem 0.75rem',
-                          backgroundColor: '#fff',
-                          color: '#ef4444',
-                          border: '1px solid #ef4444',
+                          backgroundColor: 'transparent',
+                          color: '#f87171',
+                          border: '1px solid #f87171',
                           borderRadius: '0.25rem',
                           fontSize: '0.75rem',
                           cursor: 'pointer'

@@ -218,7 +218,9 @@ const HeroContent = ({ hero, isReady }: HeroContentProps) => {
 
       <div className="hero__title-wrap hero__layer">
         <h1 id="club-name" className="hero__title">
-          {hero.name}
+          {hero.logoUrl && <img src={hero.logoUrl} alt="" className="hero__logo hero__logo--left" />}
+          <span>{hero.name}</span>
+          {hero.logoUrl && <img src={hero.logoUrl} alt="" className="hero__logo hero__logo--right" />}
         </h1>
         <p className="hero__subtitle">{hero.tagline}</p>
       </div>

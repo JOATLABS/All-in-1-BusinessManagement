@@ -5,6 +5,7 @@ export const defaultSiteContent: SiteContent = {
     name: 'OjaPlus Nightclub',
     tagline: 'Drink. Dine. Dance.',
     words: ['DRINK.', 'DINE.', 'DANCE.', 'REPEAT.'],
+    logoUrl: undefined,
     backgrounds: [
       {
         src: 'https://images.unsplash.com/photo-1604079628040-94301bb21b11?auto=format&fit=crop&w=1600&q=80',

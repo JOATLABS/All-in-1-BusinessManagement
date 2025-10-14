@@ -605,6 +605,16 @@ export const SiteConfiguration = () => {
                 />
               </label>
               <label>
+                Logo URL (displayed beside club name)
+                <input
+                  type="url"
+                  placeholder="https://example.com/logo.png"
+                  value={heroDraft.logoUrl || ''}
+                  onChange={(event) => handleHeroChange('logoUrl', event.target.value || undefined)}
+                />
+                <span className="admin-config__hint">Small logo image (max 80px tall recommended) shown on left and right of club name</span>
+              </label>
+              <label>
                 Marquee words
                 <textarea
                   rows={3}

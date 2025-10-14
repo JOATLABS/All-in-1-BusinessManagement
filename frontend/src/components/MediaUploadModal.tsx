@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { config } from '../config/api';
 import { useAuth } from '../auth/AuthContext';
 import type { BackgroundImage, BackgroundMediaType } from '../types/content';
-import '../styles/components/upload-modal.css';
+import '../styles/components/upload-modal-mobile.css';
 
 interface MediaUploadModalProps {
   isOpen: boolean;
@@ -201,38 +202,34 @@ export const MediaUploadModal = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="upload-modal-overlay" onClick={handleClose}>
-      <div className="upload-modal" onClick={(e) => e.stopPropagation()}>
-        <header className="upload-modal__header">
-          <div className="upload-modal__header-content">
-            <h2 className="upload-modal__title">Upload Media</h2>
-            <p className="upload-modal__subtitle">Upload to {folder}/ folder</p>
-          </div>
-          <button className="upload-modal__close" onClick={handleClose} disabled={uploading}>
-            ×
-          </button>
+  // Use Portal to render modal at document root level, breaking out of parent stacking context
+  return createPortal(
+    <div className="upload-modal-mobile" onClick={handleClose}>
+      <div className="upload-modal-mobile__panel" onClick={(e) => e.stopPropagation()}>
+        <header className="upload-modal-mobile__header">
+          <div className="upload-modal-mobile__handle"></div>
+          <h2 className="upload-modal-mobile__title">Upload Media</h2>
+          <p className="upload-modal-mobile__subtitle">Upload to {folder}/ folder</p>
         </header>
 
-        <div className="upload-modal__body">
-          {/* Drop Zone */}
+        <div className="upload-modal-mobile__body">
+          {/* File Select Button (NO drag-drop text on mobile) */}
           {!selectedFile && (
-          <div
-            className={`upload-dropzone-modern ${isDragging ? 'upload-dropzone-modern--dragging' : ''}`}
+          <button
+            type="button"
+            className={`upload-file-button ${isDragging ? 'upload-file-button--dragging' : ''}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={handleBrowseClick}
           >
-            <div className="upload-dropzone-modern__icon">📤</div>
-            <p className="upload-dropzone-modern__text">
-              <strong>Drag and drop</strong> your file here
+            <div className="upload-file-button__icon">📤</div>
+            <p className="upload-file-button__text">Tap to select file</p>
+            <p className="upload-file-button__hint">
+              Images: JPEG, PNG, WebP, GIF<br/>
+              Videos: MP4, WebM • Max 50MB
             </p>
-            <p className="upload-dropzone-modern__subtext">or click to browse</p>
-            <p className="upload-dropzone-modern__hint">
-              Images: JPEG, PNG, WebP, GIF • Videos: MP4, WebM • Max 50MB
-            </p>
-          </div>
+          </button>
         )}
 
         {/* Hidden file input */}
@@ -244,32 +241,32 @@ export const MediaUploadModal = ({
           style={{ display: 'none' }}
         />
 
-        {/* Preview */}
+        {/* Preview (shows BELOW button) */}
         {selectedFile && previewUrl && (
-          <div className="upload-preview-modern">
-            <div className="upload-preview-modern__media-wrapper">
+          <div className="upload-preview-mobile">
+            <div className="upload-preview-mobile__thumbnail">
               {mediaType === 'video' ? (
                 <video
                   src={previewUrl}
                   controls
                   muted
-                  className="upload-preview-modern__media"
+                  className="upload-preview-mobile__video"
                 />
               ) : (
                 <img
                   src={previewUrl}
                   alt="Upload preview"
-                  className="upload-preview-modern__media"
+                  className="upload-preview-mobile__image"
                 />
               )}
             </div>
 
-            <div className="upload-preview-modern__info">
-              <div className="upload-preview-modern__details">
-                <p className="upload-preview-modern__filename">
+            <div className="upload-preview-mobile__info">
+              <div className="upload-preview-mobile__details">
+                <p className="upload-preview-mobile__filename">
                   {selectedFile.name}
                 </p>
-                <p className="upload-preview-modern__meta">
+                <p className="upload-preview-mobile__meta">
                   {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
                 </p>
               </div>
@@ -277,7 +274,8 @@ export const MediaUploadModal = ({
               {!uploading && (
                 <button
                   type="button"
-                  className="btn btn--ghost btn--small"
+                  className="btn btn--secondary"
+                  style={{ minHeight: '44px', padding: '0 1rem' }}
                   onClick={() => {
                     if (previewUrl) URL.revokeObjectURL(previewUrl);
                     setSelectedFile(null);
@@ -293,33 +291,33 @@ export const MediaUploadModal = ({
 
         {/* Progress Bar */}
         {uploading && (
-          <div className="upload-progress-modern">
-            <div className="upload-progress-modern__bar">
+          <div className="upload-progress-mobile">
+            <div className="upload-progress-mobile__bar">
               <div
-                className="upload-progress-modern__fill"
+                className="upload-progress-mobile__fill"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="upload-progress-modern__text">
-              Uploading to Cloudflare R2... {progress}%
+            <p className="upload-progress-mobile__text">
+              Uploading... {progress}%
             </p>
           </div>
         )}
 
           {/* Error Message */}
           {error && (
-            <div className="upload-alert upload-alert--error" role="alert">
-              <span className="upload-alert__icon">⚠️</span>
-              <p className="upload-alert__message">{error}</p>
+            <div className="upload-alert-mobile" role="alert">
+              <span className="upload-alert-mobile__icon">⚠️</span>
+              <p className="upload-alert-mobile__message">{error}</p>
             </div>
           )}
         </div>
 
         {/* Actions */}
-        <footer className="upload-modal__footer">
+        <footer className="upload-modal-mobile__footer">
           <button
             type="button"
-            className="btn btn--ghost"
+            className="btn btn--secondary"
             onClick={handleClose}
             disabled={uploading}
           >
@@ -335,6 +333,7 @@ export const MediaUploadModal = ({
           </button>
         </footer>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

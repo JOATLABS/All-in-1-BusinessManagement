@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { config } from '../config/api';
 import { useAuth } from '../auth/AuthContext';
 import type { BackgroundImage, BackgroundMediaType } from '../types/content';
@@ -183,7 +184,7 @@ export const MediaLibraryModal = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal modal--library" onClick={(e) => e.stopPropagation()}>
         <button className="modal__close" onClick={handleClose}>×</button>
@@ -350,6 +351,7 @@ export const MediaLibraryModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

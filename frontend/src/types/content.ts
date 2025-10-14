@@ -44,6 +44,8 @@ export interface HeroContent {
   tagline: string;
   words: string[];
   backgrounds: BackgroundImage[];
+  /** URL to logo image displayed beside the nightclub name */
+  logoUrl?: string;
 }
 
 export interface EventContent {
