@@ -35,8 +35,6 @@ export const MediaLibraryModal = ({
   const [filterType, setFilterType] = useState<'all' | 'image' | 'video'>('all');
   const [selectedItem, setSelectedItem] = useState<R2MediaItem | null>(null);
 
-  if (!isOpen) return null;
-
   /**
    * Load media from R2
    */
@@ -181,6 +179,8 @@ export const MediaLibraryModal = ({
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" onClick={handleClose}>

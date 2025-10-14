@@ -43,8 +43,6 @@ export const MediaUploadModal = ({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  if (!isOpen) return null;
-
   /**
    * Handle file selection
    */
@@ -199,6 +197,8 @@ export const MediaUploadModal = ({
   };
 
   const mediaType = selectedFile?.type.startsWith('video/') ? 'video' : 'image';
+
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
