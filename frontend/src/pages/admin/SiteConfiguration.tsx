@@ -3,15 +3,18 @@ import { useAuth } from '../../auth/AuthContext';
 import { useSiteContentContext } from '../../content/SiteContentProvider';
 import { useUnsavedChangesPrompt } from '../../hooks/useUnsavedChangesPrompt';
 import { updateSiteContent, type SiteContentResponse } from '../../services/contentService';
-import type { EventContent, HeroContent, OverlaysContent, ReservationContent } from '../../types/content';
+import type { EventContent, FooterContent, HeroContent, OverlaysContent, ReservationContent, BackgroundImage } from '../../types/content';
+import { BackgroundMediaManager } from '../../components/BackgroundMediaManager';
 
-type TabId = 'hero' | 'about' | 'events' | 'contact' | 'legal';
+type TabId = 'hero' | 'about' | 'tickets' | 'reservations' | 'contact' | 'footer' | 'legal';
 
 const tabs: Array<{ id: TabId; label: string }> = [
   { id: 'hero', label: 'Landing Hero' },
   { id: 'about', label: 'About Modal' },
-  { id: 'events', label: 'Events & Reservations' },
+  { id: 'tickets', label: 'Tickets Overlay' },
+  { id: 'reservations', label: 'Reservations' },
   { id: 'contact', label: 'Contact Modal' },
+  { id: 'footer', label: 'Footer & Social' },
   { id: 'legal', label: 'Legal Footer' }
 ];
 
@@ -46,14 +49,14 @@ const cloneReservation = (reservation: ReservationContent) => ({
   }))
 });
 
-type EventDraftState = {
-  name: string;
-  description: string;
-  flyer: string;
-  start: string;
-  end: string;
-  requiresTicket: boolean;
-  tableHotline: string;
+type FooterIcon = NonNullable<FooterContent['socials'][number]['icon']>;
+
+type FooterDraftState = {
+  socials: Array<{
+    name: string;
+    icon?: FooterIcon;
+    url: string;
+  }>;
 };
 
 const heroToDraft = (hero: HeroContent) => ({
@@ -63,30 +66,8 @@ const heroToDraft = (hero: HeroContent) => ({
   backgrounds: hero.backgrounds.map((background) => ({ ...background }))
 });
 
-const formatDateTimeLocal = (value: Date): string => {
-  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
-    return '';
-  }
-
-  const pad = (segment: number) => segment.toString().padStart(2, '0');
-
-  const year = value.getFullYear();
-  const month = pad(value.getMonth() + 1);
-  const day = pad(value.getDate());
-  const hours = pad(value.getHours());
-  const minutes = pad(value.getMinutes());
-
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
-
-const eventToDraft = (event: EventContent): EventDraftState => ({
-  name: event.name,
-  description: event.description,
-  flyer: event.flyer,
-  start: formatDateTimeLocal(event.start),
-  end: formatDateTimeLocal(event.end),
-  requiresTicket: event.requiresTicket,
-  tableHotline: event.tableHotline
+const footerToDraft = (footer: FooterContent): FooterDraftState => ({
+  socials: footer.socials.map((social) => ({ ...social }))
 });
 
 export const SiteConfiguration = () => {
@@ -94,9 +75,9 @@ export const SiteConfiguration = () => {
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('hero');
   const [heroDraft, setHeroDraft] = useState(() => heroToDraft(content.hero));
-  const [eventDraft, setEventDraft] = useState<EventDraftState>(() => eventToDraft(content.event));
   const [overlayDraft, setOverlayDraft] = useState<OverlayDraftState>(() => cloneOverlays(content.overlays));
   const [reservationDraft, setReservationDraft] = useState(() => cloneReservation(content.reservation));
+  const [footerDraft, setFooterDraft] = useState<FooterDraftState>(() => footerToDraft(content.footer));
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [hasChanges, setHasChanges] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -130,9 +111,9 @@ export const SiteConfiguration = () => {
     }
 
     setHeroDraft(heroToDraft(content.hero));
-    setEventDraft(eventToDraft(content.event));
     setOverlayDraft(cloneOverlays(content.overlays));
     setReservationDraft(cloneReservation(content.reservation));
+    setFooterDraft(footerToDraft(content.footer));
   }, [content, hasChanges, status]);
 
   const handleHeroBackgroundChange = (
@@ -164,11 +145,6 @@ export const SiteConfiguration = () => {
 
   const handleHeroChange = (field: 'name' | 'tagline' | 'words', value: string) => {
     setHeroDraft((prev) => ({ ...prev, [field]: value }));
-    markDirty();
-  };
-
-  const handleEventChange = (field: keyof EventDraftState, value: string | boolean) => {
-    setEventDraft((prev) => ({ ...prev, [field]: value }));
     markDirty();
   };
 
@@ -420,19 +396,39 @@ export const SiteConfiguration = () => {
     });
   };
 
-  const parseEventDate = useCallback((value: string, label: string) => {
-    if (!value) {
-      throw new Error(`${label} is required.`);
-    }
+  const handleAddSocial = () => {
+    setFooterDraft((prev) => ({
+      socials: [
+        ...prev.socials,
+        { name: 'New link', icon: 'instagram', url: '' }
+      ]
+    }));
+    markDirty();
+  };
 
-    const parsed = new Date(value);
+  const handleRemoveSocial = (index: number) => {
+    setFooterDraft((prev) => ({
+      socials: prev.socials.filter((_, socialIndex) => socialIndex !== index)
+    }));
+    markDirty();
+  };
 
-    if (Number.isNaN(parsed.getTime())) {
-      throw new Error(`${label} must be a valid date and time.`);
-    }
+  const handleSocialChange = (
+    index: number,
+    field: 'name' | 'icon' | 'url',
+    value: string
+  ) => {
+    setFooterDraft((prev) => ({
+      socials: prev.socials.map((social, socialIndex) => {
+        if (socialIndex !== index) {
+          return social;
+        }
 
-    return parsed;
-  }, []);
+        return { ...social, [field]: value };
+      })
+    }));
+    markDirty();
+  };
 
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -454,24 +450,6 @@ export const SiteConfiguration = () => {
       ...background,
       focalPoint: background.focalPoint ?? { x: 50, y: 50 }
     }));
-
-    let startDate: Date;
-    let endDate: Date;
-
-    try {
-      startDate = parseEventDate(eventDraft.start, 'Event start');
-      endDate = parseEventDate(eventDraft.end, 'Event end');
-
-      if (endDate.getTime() <= startDate.getTime()) {
-        throw new Error('Event end must be after the start time.');
-      }
-    } catch (validationError) {
-      const message =
-        validationError instanceof Error ? validationError.message : 'Please correct the event schedule.';
-      setErrorMessage(message);
-      setStatus('error');
-      return;
-    }
 
     const reservationPayload: ReservationContent = {
       title: reservationDraft.title,
@@ -521,16 +499,20 @@ export const SiteConfiguration = () => {
         backgrounds: heroBackgrounds
       },
       event: {
-        name: eventDraft.name,
-        description: eventDraft.description,
-        flyer: eventDraft.flyer,
-        start: startDate.toISOString(),
-        end: endDate.toISOString(),
-        requiresTicket: eventDraft.requiresTicket,
-        tableHotline: eventDraft.tableHotline
+        name: content.event.name,
+        description: content.event.description,
+        flyer: content.event.flyer,
+        start: content.event.start instanceof Date ? content.event.start.toISOString() : content.event.start,
+        end: content.event.end instanceof Date ? content.event.end.toISOString() : content.event.end,
+        requiresTicket: content.event.requiresTicket,
+        tableHotline: content.event.tableHotline
       },
       footer: {
-        socials: content.footer.socials.map((social) => ({ ...social }))
+        socials: footerDraft.socials.map((social) => {
+          const allowedIcons: FooterIcon[] = ['instagram', 'facebook', 'tiktok', 'x'];
+          const icon = social.icon && allowedIcons.includes(social.icon) ? social.icon : undefined;
+          return { name: social.name, url: social.url, icon };
+        })
       },
       reservation: reservationPayload,
       overlays: overlayDraft
@@ -635,53 +617,12 @@ export const SiteConfiguration = () => {
 
             <fieldset>
               <legend>Background gallery</legend>
-              <div className="admin-config__grid">
-                {heroDraft.backgrounds.map((background, index) => (
-                  <div key={`background-${index}`} className="admin-config__background">
-                    <h3>Layer {index + 1}</h3>
-                    <label>
-                      Media URL
-                      <input
-                        value={background.src}
-                        onChange={(event) => handleHeroBackgroundChange(index, 'src', event.target.value)}
-                        placeholder="https://"
-                      />
-                    </label>
-                    <label>
-                      Alt text
-                      <input
-                        value={background.alt}
-                        onChange={(event) => handleHeroBackgroundChange(index, 'alt', event.target.value)}
-                      />
-                    </label>
-                    <div className="admin-config__focal">
-                      <label>
-                        Focal X (%)
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={background.focalPoint?.x ?? 50}
-                          onChange={(event) => handleHeroBackgroundChange(index, 'focalPointX', event.target.value)}
-                        />
-                      </label>
-                      <label>
-                        Focal Y (%)
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={background.focalPoint?.y ?? 50}
-                          onChange={(event) => handleHeroBackgroundChange(index, 'focalPointY', event.target.value)}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button type="button" className="admin-config__add" onClick={handleAddBackground}>
-                Add background
-              </button>
+              <BackgroundMediaManager
+                backgrounds={heroDraft.backgrounds}
+                onChange={(updatedBackgrounds: BackgroundImage[]) => {
+                  setHeroDraft((prev) => ({ ...prev, backgrounds: updatedBackgrounds }));
+                }}
+              />
             </fieldset>
 
             <div className="admin-config__actions">
@@ -695,61 +636,80 @@ export const SiteConfiguration = () => {
           </form>
         )}
 
-        {activeTab === 'events' && (
+        {activeTab === 'tickets' && (
           <form className="admin-config__form" onSubmit={handleSave}>
             <fieldset>
-              <legend>Featured event</legend>
+              <legend>Ticket overlay content</legend>
+              <p className="admin-config__hint">
+                Configure the tickets overlay that appears when users click the "Ticket Pre-Sale" button. This shows ticket information for events.
+              </p>
               <label>
-                Event name
-                <input value={eventDraft.name} onChange={(event) => handleEventChange('name', event.target.value)} />
+                Title
+                <input
+                  value={overlayDraft.tickets.title}
+                  onChange={(event) => handleTicketsChange('title', event.target.value)}
+                />
               </label>
               <label>
-                Description
+                Subtitle
+                <input
+                  value={overlayDraft.tickets.subtitle}
+                  onChange={(event) => handleTicketsChange('subtitle', event.target.value)}
+                />
+              </label>
+              <label>
+                Ticket copy (when event requires tickets)
                 <textarea
-                  rows={3}
-                  value={eventDraft.description}
-                  onChange={(event) => handleEventChange('description', event.target.value)}
+                  rows={2}
+                  value={overlayDraft.tickets.ticketCopy}
+                  onChange={(event) => handleTicketsChange('ticketCopy', event.target.value)}
+                />
+                <span className="admin-config__hint">Shown when the event requires paid tickets.</span>
+              </label>
+              <label>
+                Complimentary copy (free entry)
+                <textarea
+                  rows={2}
+                  value={overlayDraft.tickets.fallbackCopy}
+                  onChange={(event) => handleTicketsChange('fallbackCopy', event.target.value)}
+                />
+                <span className="admin-config__hint">Shown when entry is free.</span>
+              </label>
+              <label>
+                CTA button label
+                <input
+                  value={overlayDraft.tickets.ctaLabel}
+                  onChange={(event) => handleTicketsChange('ctaLabel', event.target.value)}
                 />
               </label>
               <label>
-                Flyer URL
-                <input value={eventDraft.flyer} onChange={(event) => handleEventChange('flyer', event.target.value)} />
-              </label>
-              <label>
-                Starts at
+                Default ticket URL
                 <input
-                  type="datetime-local"
-                  value={eventDraft.start}
-                  onChange={(event) => handleEventChange('start', event.target.value)}
+                  value={overlayDraft.tickets.ctaUrl}
+                  onChange={(event) => handleTicketsChange('ctaUrl', event.target.value)}
                 />
-              </label>
-              <label>
-                Ends at
-                <input
-                  type="datetime-local"
-                  value={eventDraft.end}
-                  onChange={(event) => handleEventChange('end', event.target.value)}
-                />
-              </label>
-              <label className="admin-config__toggle">
-                <input
-                  type="checkbox"
-                  checked={eventDraft.requiresTicket}
-                  onChange={(event) => handleEventChange('requiresTicket', event.target.checked)}
-                />
-                Requires ticket presale
-              </label>
-              <label>
-                Table hotline
-                <input
-                  value={eventDraft.tableHotline}
-                  onChange={(event) => handleEventChange('tableHotline', event.target.value)}
-                />
+                <span className="admin-config__hint">Used if event doesn't have a specific ticket URL.</span>
               </label>
             </fieldset>
 
+            <div className="admin-config__actions">
+              {status === 'error' && errorMessage ? (
+                <p className="admin-config__error" role="alert">{errorMessage}</p>
+              ) : null}
+              <button type="submit" className="admin-config__save" disabled={!hasChanges || status === 'saving'}>
+                {status === 'saving' ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {activeTab === 'reservations' && (
+          <form className="admin-config__form" onSubmit={handleSave}>
             <fieldset>
               <legend>Reservation experience</legend>
+              <p className="admin-config__hint">
+                Configure the VIP table reservation flow and content. Events are managed separately in the Events page.
+              </p>
               <label>
                 Title
                 <input
@@ -1146,54 +1106,6 @@ export const SiteConfiguration = () => {
               </button>
             </fieldset>
 
-            <fieldset>
-              <legend>Ticket overlay</legend>
-              <label>
-                Title
-                <input
-                  value={overlayDraft.tickets.title}
-                  onChange={(event) => handleTicketsChange('title', event.target.value)}
-                />
-              </label>
-              <label>
-                Subtitle
-                <input
-                  value={overlayDraft.tickets.subtitle}
-                  onChange={(event) => handleTicketsChange('subtitle', event.target.value)}
-                />
-              </label>
-              <label>
-                Ticket copy
-                <textarea
-                  rows={2}
-                  value={overlayDraft.tickets.ticketCopy}
-                  onChange={(event) => handleTicketsChange('ticketCopy', event.target.value)}
-                />
-              </label>
-              <label>
-                Complimentary copy
-                <textarea
-                  rows={2}
-                  value={overlayDraft.tickets.fallbackCopy}
-                  onChange={(event) => handleTicketsChange('fallbackCopy', event.target.value)}
-                />
-              </label>
-              <label>
-                CTA label
-                <input
-                  value={overlayDraft.tickets.ctaLabel}
-                  onChange={(event) => handleTicketsChange('ctaLabel', event.target.value)}
-                />
-              </label>
-              <label>
-                CTA URL
-                <input
-                  value={overlayDraft.tickets.ctaUrl}
-                  onChange={(event) => handleTicketsChange('ctaUrl', event.target.value)}
-                />
-              </label>
-            </fieldset>
-
             <div className="admin-config__actions">
               {status === 'error' && errorMessage ? (
                 <p className="admin-config__error" role="alert">{errorMessage}</p>
@@ -1302,6 +1214,77 @@ export const SiteConfiguration = () => {
                   onChange={(event) => handleContactChange('submitLabel', event.target.value)}
                 />
               </label>
+            </fieldset>
+
+            <div className="admin-config__actions">
+              {status === 'error' && errorMessage ? (
+                <p className="admin-config__error" role="alert">{errorMessage}</p>
+              ) : null}
+              <button type="submit" className="admin-config__save" disabled={!hasChanges || status === 'saving'}>
+                {status === 'saving' ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {activeTab === 'footer' && (
+          <form className="admin-config__form" onSubmit={handleSave}>
+            <fieldset>
+              <legend>Social media links</legend>
+              <p className="admin-config__hint">
+                Configure social media links that appear in the footer. Choose an icon, add a label, and provide the full URL.
+              </p>
+              {footerDraft.socials.map((social, index) => (
+                <div key={`social-${index}`} className="admin-config__tier">
+                  <div className="admin-config__tier-header">
+                    <h4>{social.name || `Link ${index + 1}`}</h4>
+                    <button
+                      type="button"
+                      className="admin-config__remove"
+                      onClick={() => handleRemoveSocial(index)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="admin-config__grid">
+                    <label>
+                      Name/Label
+                      <input
+                        value={social.name}
+                        onChange={(event) => handleSocialChange(index, 'name', event.target.value)}
+                        placeholder="Instagram"
+                      />
+                    </label>
+                    <label>
+                      Icon
+                      <select
+                        value={social.icon}
+                        onChange={(event) => handleSocialChange(index, 'icon', event.target.value)}
+                      >
+                        <option value="instagram">Instagram</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="facebook">Facebook</option>
+                        <option value="x">X</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    URL
+                    <input
+                      value={social.url}
+                      onChange={(event) => handleSocialChange(index, 'url', event.target.value)}
+                      placeholder="https://"
+                    />
+                  </label>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="admin-config__add"
+                onClick={handleAddSocial}
+              >
+                Add social link
+              </button>
             </fieldset>
 
             <div className="admin-config__actions">

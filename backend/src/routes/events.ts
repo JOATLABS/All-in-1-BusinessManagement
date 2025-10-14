@@ -128,7 +128,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  * Update event (admin only)
  * Single-tenant: direct update, no tenant checks
  */
-router.patch('/admin/events/:id', requireAuth, async (req: Request, res: Response) => {
+router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -163,7 +163,7 @@ router.patch('/admin/events/:id', requireAuth, async (req: Request, res: Respons
  * Delete event (admin only)
  * Single-tenant: direct delete, no tenant authorization
  */
-router.delete('/admin/events/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const db = getDb();

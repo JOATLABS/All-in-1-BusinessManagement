@@ -10,6 +10,7 @@ import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { SiteConfiguration } from './pages/admin/SiteConfiguration';
 import { Reservations } from './pages/admin/Reservations';
+import { AdminEventsPage } from './pages/admin/AdminEventsPage';
 
 const App = () => (
   <AuthProvider>
@@ -30,6 +31,7 @@ const App = () => (
           >
             <Route index element={<AdminDashboard />} />
             <Route path="reservations" element={<Reservations />} />
+            <Route path="events" element={<AdminEventsPage />} />
             <Route path="site-configuration" element={<SiteConfiguration />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

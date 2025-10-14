@@ -7,6 +7,7 @@ import { OverlayContextProvider, useOverlay } from '../components/OverlayContext
 import { UpcomingEventPanel } from '../components/UpcomingEventPanel';
 import { defaultSiteContent } from '../config/defaultSiteContent';
 import { useSiteContentContext } from '../content/SiteContentProvider';
+import { fetchEvents, type Event } from '../services/eventsService';
 import type { SiteContent } from '../types/content';
 
 const primaryRangeFormatter = new Intl.DateTimeFormat('en-US', {
@@ -36,16 +37,17 @@ const formatEventRange = (start: Date, end: Date) => {
 
 interface HeroContentProps {
   hero: SiteContent['hero'];
-  event: SiteContent['event'];
   isReady: boolean;
 }
 
-const HeroContent = ({ hero, event, isReady }: HeroContentProps) => {
+const HeroContent = ({ hero, isReady }: HeroContentProps) => {
   const { openOverlay } = useOverlay();
   const [backgroundIndex, setBackgroundIndex] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
   const [now, setNow] = useState(new Date());
   const [isFlyerActive, setIsFlyerActive] = useState(false);
+  const [featuredEvent, setFeaturedEvent] = useState<Event | null>(null);
+  const [eventsLoading, setEventsLoading] = useState(true);
 
   const backgrounds = useMemo(
     () => (hero.backgrounds.length ? hero.backgrounds : defaultSiteContent.hero.backgrounds),
@@ -95,12 +97,51 @@ const HeroContent = ({ hero, event, isReady }: HeroContentProps) => {
     };
   }, []);
 
+  // Fetch featured event on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadFeaturedEvent = async () => {
+      try {
+        const response = await fetchEvents();
+        if (cancelled) {
+          return;
+        }
+
+        // Find featured event or the next upcoming event
+        const currentTime = new Date();
+        const upcomingEvents = response.events
+          .filter((e) => new Date(e.startsAt) > currentTime)
+          .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+
+        const featured = upcomingEvents.find((e) => e.isFeatured) ?? upcomingEvents[0] ?? null;
+        setFeaturedEvent(featured);
+        setEventsLoading(false);
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load featured event:', error);
+          setEventsLoading(false);
+        }
+      }
+    };
+
+    void loadFeaturedEvent();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     setIsFlyerActive(false);
-  }, [event.name, event.flyer]);
+  }, [featuredEvent?.title, featuredEvent?.flyerUrl]);
 
   const countdown = useMemo(() => {
-    const diff = Math.max(event.start.getTime() - now.getTime(), 0);
+    if (!featuredEvent) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    }
+
+    const diff = Math.max(new Date(featuredEvent.startsAt).getTime() - now.getTime(), 0);
     const seconds = Math.floor(diff / 1000);
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
@@ -108,9 +149,15 @@ const HeroContent = ({ hero, event, isReady }: HeroContentProps) => {
     const secs = seconds % 60;
 
     return { days, hours, minutes, seconds: secs };
-  }, [event.start, now]);
+  }, [featuredEvent, now]);
 
-  const eventWindow = useMemo(() => formatEventRange(event.start, event.end), [event.end, event.start]);
+  const eventWindow = useMemo(() => {
+    if (!featuredEvent) {
+      return '';
+    }
+    return formatEventRange(new Date(featuredEvent.startsAt), new Date(featuredEvent.endsAt));
+  }, [featuredEvent]);
+
   const activeWord = heroWords.length ? heroWords[wordIndex] : '';
   const heroClassName = `hero${isFlyerActive ? ' hero--flyer-active' : ''}`;
 
@@ -176,54 +223,58 @@ const HeroContent = ({ hero, event, isReady }: HeroContentProps) => {
         <p className="hero__subtitle">{hero.tagline}</p>
       </div>
 
-      <button
-        className="hero__flyer-trigger hero__layer"
-        onClick={() => setIsFlyerActive((value) => !value)}
-        aria-expanded={isFlyerActive}
-        aria-controls="hero-event-flyer"
-        aria-label={isFlyerActive ? 'Hide upcoming event flyer' : 'Show upcoming event flyer'}
-      >
-        {event.name}
-      </button>
-
-      <AnimatePresence>
-        {isFlyerActive && (
-          <motion.div
-            id="hero-event-flyer"
-            key={event.name}
-            className="hero__flyer-card hero__layer"
-            initial={{ opacity: 0, scale: 0.9, y: 40 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 40 }}
-            transition={{ duration: 0.6, ease: 'easeInOut' }}
+      {!eventsLoading && featuredEvent && (
+        <>
+          <button
+            className="hero__flyer-trigger hero__layer"
+            onClick={() => setIsFlyerActive((value) => !value)}
+            aria-expanded={isFlyerActive}
+            aria-controls="hero-event-flyer"
+            aria-label={isFlyerActive ? 'Hide upcoming event flyer' : 'Show upcoming event flyer'}
           >
-            <div className="hero__flyer-media">
-              <img src={event.flyer} alt={`${event.name} promotional flyer`} />
-            </div>
-            <div className="hero__flyer-meta">
-              <p className="hero__flyer-eyebrow">Upcoming Experience</p>
-              <h2 className="hero__flyer-title">{event.name}</h2>
-              <p className="hero__flyer-time">{eventWindow}</p>
-              <p className="hero__flyer-copy">{event.description}</p>
-              <button type="button" className="hero__flyer-close" onClick={() => setIsFlyerActive(false)}>
-                Close Flyer
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {featuredEvent.title}
+          </button>
 
-      <div className="hero__countdown hero__layer" role="timer" aria-live="polite">
-        <div className="hero__countdown-label">Next event begins in</div>
-        <div className="hero__countdown-grid">
-          {(['days', 'hours', 'minutes', 'seconds'] as const).map((unit) => (
-            <div key={unit} className="hero__countdown-cell">
-              <span className="hero__countdown-value">{countdown[unit].toString().padStart(2, '0')}</span>
-              <span className="hero__countdown-unit">{unit}</span>
+          <AnimatePresence>
+            {isFlyerActive && featuredEvent.flyerUrl && (
+              <motion.div
+                id="hero-event-flyer"
+                key={featuredEvent.title}
+                className="hero__flyer-card hero__layer"
+                initial={{ opacity: 0, scale: 0.9, y: 40 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 40 }}
+                transition={{ duration: 0.6, ease: 'easeInOut' }}
+              >
+                <div className="hero__flyer-media">
+                  <img src={featuredEvent.flyerUrl} alt={`${featuredEvent.title} promotional flyer`} />
+                </div>
+                <div className="hero__flyer-meta">
+                  <p className="hero__flyer-eyebrow">Upcoming Experience</p>
+                  <h2 className="hero__flyer-title">{featuredEvent.title}</h2>
+                  <p className="hero__flyer-time">{eventWindow}</p>
+                  <p className="hero__flyer-copy">{featuredEvent.description || 'Join us for an unforgettable night.'}</p>
+                  <button type="button" className="hero__flyer-close" onClick={() => setIsFlyerActive(false)}>
+                    Close Flyer
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="hero__countdown hero__layer" role="timer" aria-live="polite">
+            <div className="hero__countdown-label">Next event begins in</div>
+            <div className="hero__countdown-grid">
+              {(['days', 'hours', 'minutes', 'seconds'] as const).map((unit) => (
+                <div key={unit} className="hero__countdown-cell">
+                  <span className="hero__countdown-value">{countdown[unit].toString().padStart(2, '0')}</span>
+                  <span className="hero__countdown-unit">{unit}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
       <div className="hero__cta-row hero__layer" role="navigation" aria-label="Quick actions">
         <button className="hero__cta" onClick={() => openOverlay('events')}>
@@ -293,20 +344,61 @@ const Footer = ({ clubName, socials }: FooterProps) => {
 };
 
 interface PanelsProps {
-  event: SiteContent['event'];
   overlays: SiteContent['overlays'];
 }
 
-const Panels = ({ event, overlays }: PanelsProps) => {
+const Panels = ({ overlays }: PanelsProps) => {
   const { closeOverlay, current } = useOverlay();
   const ticketsOverlay = overlays.tickets;
   const contactOverlay = overlays.contact;
   const aboutOverlay = overlays.about;
   const legalOverlay = overlays.legal;
+  const [featuredEvent, setFeaturedEvent] = useState<Event | null>(null);
+
+  // Fetch featured event for panels
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadFeaturedEvent = async () => {
+      try {
+        const response = await fetchEvents();
+        if (cancelled) {
+          return;
+        }
+
+        const currentTime = new Date();
+        const upcomingEvents = response.events
+          .filter((e) => new Date(e.startsAt) > currentTime)
+          .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+
+        const featured = upcomingEvents.find((e) => e.isFeatured) ?? upcomingEvents[0] ?? null;
+        setFeaturedEvent(featured);
+      } catch (error) {
+        console.error('Failed to load featured event for panels:', error);
+      }
+    };
+
+    void loadFeaturedEvent();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Convert Event to EventContent for UpcomingEventPanel
+  const eventContent = featuredEvent ? {
+    name: featuredEvent.title,
+    flyer: featuredEvent.flyerUrl || '',
+    start: new Date(featuredEvent.startsAt),
+    end: new Date(featuredEvent.endsAt),
+    description: featuredEvent.description || '',
+    requiresTicket: !featuredEvent.isFreeEntry,
+    tableHotline: '+1 (555) 123-4567' // TODO: This should come from site content or event
+  } : null;
 
   return (
     <AnimatePresence>
-      {current === 'events' && <UpcomingEventPanel key="events" event={event} onClose={closeOverlay} />}
+      {current === 'events' && eventContent && <UpcomingEventPanel key="events" event={eventContent} onClose={closeOverlay} />}
       {current === 'tickets' && (
         <InfoPanel
           key="tickets"
@@ -314,10 +406,10 @@ const Panels = ({ event, overlays }: PanelsProps) => {
           title={ticketsOverlay.title}
           subtitle={ticketsOverlay.subtitle}
         >
-          {event.requiresTicket ? (
+          {featuredEvent && !featuredEvent.isFreeEntry ? (
             <>
               <p>{ticketsOverlay.ticketCopy}</p>
-              <a className="panel__cta" href={ticketsOverlay.ctaUrl} target="_blank" rel="noreferrer">
+              <a className="panel__cta" href={featuredEvent.ticketUrl || ticketsOverlay.ctaUrl} target="_blank" rel="noreferrer">
                 {ticketsOverlay.ctaLabel}
               </a>
             </>
@@ -372,9 +464,9 @@ interface CustomerLandingProps {
 const CustomerLanding = ({ content, isReady }: CustomerLandingProps) => (
   <OverlayContextProvider>
     <div className="app">
-      <HeroContent hero={content.hero} event={content.event} isReady={isReady} />
+      <HeroContent hero={content.hero} isReady={isReady} />
       <Footer clubName={content.hero.name} socials={content.footer.socials} />
-      <Panels event={content.event} overlays={content.overlays} />
+      <Panels overlays={content.overlays} />
     </div>
   </OverlayContextProvider>
 );

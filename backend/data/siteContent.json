@@ -36,13 +36,13 @@
     ]
   },
   "event": {
-    "name": "Velvet Pulse",
-    "flyer": "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1200&q=80",
-    "start": "2025-10-10T21:00:00-04:00",
-    "end": "2025-10-11T04:00:00-04:00",
-    "description": "An Afrofuturist dance odyssey featuring rotating DJs, interactive visuals, and curated cocktail flights.",
-    "requiresTicket": true,
-    "tableHotline": "+1 (332) 555-0199"
+    "name": "Placeholder Event",
+    "flyer": "",
+    "start": "2025-10-20T21:00:00-04:00",
+    "end": "2025-10-21T04:00:00-04:00",
+    "description": "Events are now managed in the Events database. This field is deprecated.",
+    "requiresTicket": false,
+    "tableHotline": ""
   },
   "footer": {
     "socials": [

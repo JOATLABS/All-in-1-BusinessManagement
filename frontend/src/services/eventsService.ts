@@ -1,3 +1,4 @@
+import { apiFetch } from './apiClient';
 import { config } from '../config/api';
 
 export interface Event {
@@ -15,6 +16,34 @@ export interface Event {
   ticketUrl: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateEventData {
+  title: string;
+  slug: string;
+  description?: string;
+  startsAt: string;
+  endsAt: string;
+  isFreeEntry: boolean;
+  requiresRsvp: boolean;
+  capacity?: number;
+  isFeatured: boolean;
+  flyerUrl?: string;
+  ticketUrl?: string;
+}
+
+export interface UpdateEventData {
+  title?: string;
+  slug?: string;
+  description?: string;
+  startsAt?: string;
+  endsAt?: string;
+  isFreeEntry?: boolean;
+  requiresRsvp?: boolean;
+  capacity?: number;
+  isFeatured?: boolean;
+  flyerUrl?: string;
+  ticketUrl?: string;
 }
 
 export interface Ticket {
@@ -102,4 +131,46 @@ export const createRSVP = async (
   }
 
   return response.json();
+};
+
+/**
+ * Admin: Create new event
+ */
+export const createEvent = async (
+  token: string,
+  eventData: CreateEventData
+): Promise<{ event: Event }> => {
+  return apiFetch<{ event: Event }, CreateEventData>('/api/v1/events', {
+    method: 'POST',
+    token,
+    body: eventData
+  });
+};
+
+/**
+ * Admin: Update event
+ */
+export const updateEvent = async (
+  token: string,
+  id: string,
+  eventData: UpdateEventData
+): Promise<{ event: Event }> => {
+  return apiFetch<{ event: Event }, UpdateEventData>(`/api/v1/events/${id}`, {
+    method: 'PATCH',
+    token,
+    body: eventData
+  });
+};
+
+/**
+ * Admin: Delete event
+ */
+export const deleteEvent = async (
+  token: string,
+  id: string
+): Promise<{ message: string }> => {
+  return apiFetch<{ message: string }>(`/api/v1/events/${id}`, {
+    method: 'DELETE',
+    token
+  });
 };

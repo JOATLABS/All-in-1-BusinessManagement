@@ -3,6 +3,7 @@
 This roadmap follows the staged approach agreed upon in the vision and architecture documents for a **single-tenant nightclub management system**. The simplified architecture eliminates multi-tenant complexity (no tenant_id columns, no tenant resolution middleware, no organization-level isolation) to accelerate development and reduce operational overhead.
 
 **Single-Tenant Implementation Benefits:**
+
 - Database schema without tenant_id columns across all tables
 - API routes that operate directly on the single lounge's data without context switching
 - Authentication logic focused on admin vs. public access (not multi-tenant isolation)
@@ -11,6 +12,7 @@ This roadmap follows the staged approach agreed upon in the vision and architect
 Each section corresponds to a delivery stream the business platform must support.
 
 ## 1. Surface Every Configurable Item (Customer-Facing Site)
+
 - Hero identity: club name, marquee words, tagline, hero CTA labels, countdown copy toggle, flyer toggle label.
 - Background gallery: asset URLs, alt text, depth intensity, sequencing, reduced-motion fallback.
 - Event spotlight: event name, flyer asset, description, schedule window, ticket requirement flag, ticket URL, table hotline.
@@ -19,6 +21,7 @@ Each section corresponds to a delivery stream the business platform must support
 - Global theming: palette tokens, typography scale, animation cadence overrides.
 
 ## 2. Data Model Draft (Single-Tenant SQL Schema)
+
 **Key Change: All club_id foreign keys removed—every table contains data for the single lounge.**
 
 ```sql
@@ -53,95 +56,117 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
 ```
 
 **Query Simplification Examples:**
+
 - Multi-tenant: `SELECT * FROM events WHERE club_id = ? AND is_featured = true`
 - Single-tenant: `SELECT * FROM events WHERE is_featured = true`
-
 - Multi-tenant: `SELECT * FROM reservations WHERE club_id = ? AND status = 'confirmed'`
 - Single-tenant: `SELECT * FROM reservations WHERE status = 'confirmed'`
 
 ## 3. API Surface (Single-Tenant Routes under `/api/v1`)
+
 **Key Change: All :clubId path parameters removed—routes operate on the single lounge's data.**
 
 - **Auth**: `POST /auth/login`, `POST /auth/logout`, `POST /auth/refresh`
+
   - No organization context needed in tokens
-
 - **Site Content**: `GET /site-content`, `PUT /site-content` (admin-only)
+
   - Direct access to the single configuration record
-
 - **Pages**: `GET /pages`, `GET /pages/:slug`, `PUT /pages/:slug` (optimistic locking headers)
-  - No club_id filtering in queries
 
+  - No club_id filtering in queries
 - **Events**: `GET /events?featured=true`, `POST /events`, `GET /events/:id`, `PATCH /events/:id`, `DELETE /events/:id`
+
   - Headliners: `POST /events/:eventId/headliners`, `PATCH /headliners/:id`, `DELETE /headliners/:id`
   - Simplified queries: all events belong to the one venue
-
 - **Media**: `GET /media`, `POST /media`, `PATCH /media/:id`, `DELETE /media/:id`
+
   - Single bucket/CDN configuration
-
 - **Social Links**: `GET /social-links`, `POST /social-links`, `PATCH /social-links/:id`, `DELETE /social-links/:id`
-  - All links belong to the one organization
 
+  - All links belong to the one organization
 - **Reservations**: `POST /reservations`, `GET /reservations/:id`, `PATCH /reservations/:id`
+
   - Availability: `GET /reservations/availability`
   - Admin list: `GET /admin/reservations` (returns all reservations)
   - Status transitions without tenant checks
-
 - **Tables & Inventory**: `GET /tables`, `POST /tables`, `PATCH /tables/:id`, `DELETE /tables/:id`
+
   - Occupancy summaries: `GET /tables/occupancy`
   - Direct updates without tenant scoping
-
 - **Audit Logs**: `GET /audit-logs` (admin-only, paginated)
+
   - All audit events for the single system
 
 **Route Simplification Example:**
+
 - ❌ Multi-tenant: `PATCH /api/v1/clubs/:clubId/reservations/:reservationId`
 - ✅ Single-tenant: `PATCH /api/v1/reservations/:id`
 
-## 4. Admin Platform Foundations
-1. Branded login page matching the nightlife palette (email/password, validation, error messaging).
-2. Primary dashboard shell showing placeholders for KPIs (next featured event, pending reservations, content status).
-3. Global navigation layout with responsive collapse, user menu, and logout stub.
+## 4. Admin Platform Foundations ✅ **COMPLETED**
 
-## 5. Customer-Site Configuration Workspace
-- Create a “Site Configuration” area with tabs: Landing Hero, About Modal, Events Overlay, Contact Modal, Legal Footer.
-- Map each field to the configurable items enumerated in Section 1.
-- Provide preview snippets for hero word carousel and flyer states.
-- Include unsaved-changes prompts and validation messaging.
+1. ✅ Branded login page matching the nightlife palette (email/password, validation, error messaging).
+2. ✅ Primary dashboard shell showing placeholders for KPIs (next featured event, pending reservations, content status).
+3. ✅ Global navigation layout with responsive collapse, user menu, and logout stub.
+
+**Status**: Login, dashboard, and navigation fully implemented and working.
+
+## 5. Customer-Site Configuration Workspace ✅ **COMPLETED**
+
+- ✅ Create a "Site Configuration" area with tabs: Landing Hero, About Modal, Events Overlay, Contact Modal, Footer & Social, Legal Footer.
+- ✅ Map each field to the configurable items enumerated in Section 1.
+- ✅ Provide preview snippets for hero word carousel and flyer states.
+- ✅ Include unsaved-changes prompts and validation messaging.
+- ✅ **Added**: Footer & Social media management tab with full CRUD for social links (Instagram, TikTok, Facebook, Twitter).
+
+**Status**: Site Configuration fully functional with all tabs working, including social media link management.
+
+**Implementation Notes**:
+- Fixed `useBlocker` router compatibility issue by removing React Router data router dependency
+- All content sections editable: Hero, Events, About, Contact, Footer/Social, Legal
+- Real-time unsaved changes tracking via browser `beforeunload` event
+- Full integration with backend `/api/site-content` endpoint
 
 ## 6. Background Media Management
-- Allow ordering, activation toggles, focal point adjustments, playback depth controls.
+
+- Allow ordering, activation toggles, focal point adjustments, playback depth controlsbui.
 - Support still images and looping MP4/WebM with graceful degradation and `prefers-reduced-motion` handling.
 - Preload hero assets and record performance telemetry (LCP, dropped frames) for monitoring.
 
 ## 7. Footer & Navigation Obligations
+
 - Expose a compact footer row with operating hours (opens About modal), legal link, contact trigger, and an Admin link pointing to the login page.
 - Ensure CTA ribbon buttons trigger horizontal modal transitions without layout jitter.
 
 ## 8. Workflow Validation
+
 - Manual walkthrough: update hero copy via admin → publish → verify on customer site.
 - Automated checks: `npm run lint`, `npm run build`, component tests for forms, integration tests for login → dashboard → update flow.
 - Performance guardrail: run Lighthouse/WebPageTest to confirm smooth background loop across devices, respecting reduced-motion.
 
 ## 9. Admin User Management & Role-Based Access Control
+
 **Timing**: Implement after Customer-Site Configuration Workspace (Section 5) but before Reservation & Inventory (Section 11) to establish proper access controls.
 
 **Overview**: Enable the root admin (owner) to create and manage sub-admin accounts with role-based permissions. This ensures operational flexibility while maintaining security boundaries.
 
 **Roles & Permissions**:
+
 1. **Owner (superadmin)** - Root account with full system access
+
    - Create/edit/delete admin users
    - Access all admin features
    - Change system configuration
    - View audit logs
-
 2. **Manager (admin)** - Operational management role
+
    - View and manage reservations
    - Create and edit events
    - Access analytics and reports
    - Cannot manage admin users
    - Cannot change system configuration
-
 3. **Staff (staff)** - Limited access for door personnel
+
    - View reservations (read-only)
    - Scan and validate QR codes
    - Mark guests as checked-in
@@ -150,6 +175,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
 **Implementation Tasks**:
 
 ### 9.1. Backend API - Admin User Management
+
 - Create admin user CRUD endpoints under `/api/admin/users`:
   - `GET /admin/users` - List all admin users (owner only)
   - `POST /admin/users` - Create new admin user (owner only)
@@ -166,6 +192,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
 - Create audit logging for admin user actions (create, update, delete, password reset)
 
 ### 9.2. Database Schema Updates
+
 - Verify `admin_users` table schema supports required fields:
   ```sql
   admin_users(
@@ -197,6 +224,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
 - Create indexes: `admin_users(email)`, `admin_user_sessions(token_hash)`, `admin_user_sessions(admin_user_id, expires_at)`
 
 ### 9.3. Frontend - Admin User Management UI
+
 - Create "Team Management" page in admin dashboard (`/admin/team`)
 - Add navigation link in admin sidebar (visible to owners only)
 - Build admin user list table:
@@ -218,6 +246,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
 - Add confirmation dialogs for destructive actions (deactivate, delete)
 
 ### 9.4. Role-Based UI Components
+
 - Create permission helper utilities:
   - `hasPermission(user, permission)` - Check if user has specific permission
   - `canAccess(user, route)` - Check if user can access route
@@ -232,6 +261,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
 - Display current user role in header/profile dropdown
 
 ### 9.5. Authentication & Session Management
+
 - Extend JWT payload to include:
   - `userId`, `email`, `role`, `permissions`, `sessionId`
 - Implement session tracking:
@@ -245,6 +275,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
 - Implement "remember me" option on login (30-day refresh token)
 
 ### 9.6. Security & Audit
+
 - Log all admin user management actions:
   - Who created/modified/deleted which user
   - Role changes with before/after values
@@ -266,6 +297,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
   - Account deactivated → send notification
 
 ### 9.7. Testing & Validation
+
 - Unit tests:
   - Role validation middleware
   - Permission checking utilities
@@ -286,17 +318,20 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
   - Test session timeout and refresh
 
 **Single-Tenant Benefits**:
+
 - No organization context needed in permissions—all admins manage the same lounge
 - Simplified role hierarchy: just three roles without complex permission trees
 - No tenant-scoping in admin user queries
 - Single set of authentication credentials and session storage
 
 **Dependencies**:
+
 - Requires completed Customer-Site Configuration (Section 5) for navigation foundation
 - Should be implemented before Reservation & Inventory (Section 11) to establish proper access controls
 - Can be developed in parallel with Background Media Management (Section 6)
 
 ## 10. Security & Reliability Hardening (Single-Tenant Focused)
+
 - Introduce configurable CORS allowlists, request rate limiting, and structured logging before exposing the API publicly
   - **Single-tenant benefit**: Rate limiting configuration is simpler without per-tenant quotas
 - Replace in-memory sessions with signed JWT or Redis-backed tokens, add refresh/rotation workflows
@@ -308,6 +343,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
   - **Single-tenant benefit**: All logs belong to one system—no tenant filtering in log aggregation queries
 
 ## 11. Customer ↔ Admin Data Synchronisation (Single-Tenant)
+
 - Replace static site-content fetch with API-backed responses
   - **Single-tenant benefit**: Direct `SELECT * FROM site_content WHERE id = 'default'`—no tenant filtering
   - No need for service-to-service authentication between tenant contexts
@@ -320,6 +356,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
   - Example: `SELECT COUNT(*), status FROM reservations GROUP BY status`
 
 ## 12. Reservation & Inventory Experience (Single-Tenant)
+
 - Build reservation intake forms validating party size against table capacity, deposits, VIP contract requirements
   - **Single-tenant benefit**: Form validation logic without tenant-specific rules or configurations
   - Direct table lookup: `SELECT * FROM tables WHERE capacity >= ? AND status = 'active'`
@@ -333,6 +370,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
   - Example: `SELECT DATE(created_at), COUNT(*), AVG(deposit_amount) FROM reservations WHERE status = 'confirmed' GROUP BY DATE(created_at)`
 
 ## 13. Advanced Analytics & Optimisation Enablement (Single-Tenant)
+
 - Stand up event-stream pipeline emitting reservations, table state changes, POS orders, staffing updates
   - **Single-tenant benefit**: No tenant routing in event streams—all events flow to single analytics warehouse
   - Simplified Kafka/Redpanda topics: `reservations`, `tables`, `pos_orders` (no club_id partitioning)
@@ -349,6 +387,7 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
   - **Single-tenant benefit**: Single approval workflow—no per-tenant governance policies or controls
 
 ## 14. Google Analytics Integration (Customer Forecasting)
+
 - ✅ **Completed**: Google Analytics tracking script added to customer-facing pages
   - Configured via `VITE_GA_MEASUREMENT_ID` environment variable
   - Tracks landing page (`/`) and reservation page (`/reserve`)
@@ -360,4 +399,3 @@ tables(id UUID PK, label TEXT, capacity INT, minimum_spend NUMERIC, status TEXT,
   - Export GA4 data to BigQuery for ML model training
   - Build prediction models for: nightly reservation demand, tier preferences, conversion rates
   - **Single-tenant benefit**: All historical data belongs to one venue—simpler feature engineering and model training
-

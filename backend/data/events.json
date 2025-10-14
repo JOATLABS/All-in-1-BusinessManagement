@@ -1,0 +1,41 @@
+[
+  {
+    "title": "Rhythm+Root Grand Opening",
+    "slug": "grand-opening",
+    "description": "Join us for the grand opening of Rhythm+Root! Experience a night of incredible music, exclusive cocktails, and unforgettable vibes as we launch Baltimore's newest premier nightlife destination.",
+    "startsAt": "2025-11-01T21:00:00.000Z",
+    "endsAt": "2025-11-02T03:00:00.000Z",
+    "isFreeEntry": false,
+    "requiresRsvp": true,
+    "capacity": 300,
+    "isFeatured": true,
+    "flyerUrl": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&h=1200&fit=crop",
+    "ticketUrl": "https://example.com/tickets/grand-opening"
+  },
+  {
+    "title": "Friday Night Vibes",
+    "slug": "friday-night-vibes",
+    "description": "Every Friday night at Rhythm+Root features our resident DJs spinning the hottest tracks. Come dance the night away with complimentary entry before 11 PM.",
+    "startsAt": "2025-11-07T22:00:00.000Z",
+    "endsAt": "2025-11-08T03:00:00.000Z",
+    "isFreeEntry": true,
+    "requiresRsvp": false,
+    "capacity": 250,
+    "isFeatured": false,
+    "flyerUrl": "https://images.unsplash.com/photo-1571266028243-d220c0f06f1f?w=800&h=1200&fit=crop",
+    "ticketUrl": null
+  },
+  {
+    "title": "Underground House Sessions",
+    "slug": "underground-house-sessions",
+    "description": "A curated night of deep house and techno featuring special guest DJs from NYC and Miami. Limited capacity for an intimate experience.",
+    "startsAt": "2025-11-14T22:00:00.000Z",
+    "endsAt": "2025-11-15T04:00:00.000Z",
+    "isFreeEntry": false,
+    "requiresRsvp": true,
+    "capacity": 150,
+    "isFeatured": false,
+    "flyerUrl": "https://images.unsplash.com/photo-1571266028243-d220c0f06f1f?w=800&h=1200&fit=crop",
+    "ticketUrl": "https://example.com/tickets/house-sessions"
+  }
+]

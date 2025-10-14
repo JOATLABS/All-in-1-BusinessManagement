@@ -1,11 +1,9 @@
 import { useEffect } from 'react';
-import { useBlocker } from 'react-router-dom';
 
 const DEFAULT_MESSAGE = 'You have unsaved changes. Do you want to leave this page and discard them?';
 
 export const useUnsavedChangesPrompt = (isDirty: boolean, message = DEFAULT_MESSAGE) => {
-  const blocker = useBlocker(isDirty);
-
+  // Browser warning when trying to close tab/navigate away
   useEffect(() => {
     if (!isDirty) {
       return undefined;
@@ -23,18 +21,4 @@ export const useUnsavedChangesPrompt = (isDirty: boolean, message = DEFAULT_MESS
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [isDirty, message]);
-
-  useEffect(() => {
-    if (blocker.state !== 'blocked') {
-      return;
-    }
-
-    const shouldLeave = window.confirm(message);
-
-    if (shouldLeave) {
-      blocker.proceed();
-    } else {
-      blocker.reset();
-    }
-  }, [blocker, message]);
 };

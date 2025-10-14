@@ -46,6 +46,15 @@ export const AdminLayout = () => {
             Reservations
           </NavLink>
           <NavLink
+            to="/admin/events"
+            className={({ isActive }: { isActive: boolean }) =>
+              `admin-shell__link${isActive ? ' admin-shell__link--active' : ''}`
+            }
+            onClick={handleCloseNav}
+          >
+            Events
+          </NavLink>
+          <NavLink
             to="/admin/site-configuration"
             className={({ isActive }: { isActive: boolean }) =>
               `admin-shell__link${isActive ? ' admin-shell__link--active' : ''}`

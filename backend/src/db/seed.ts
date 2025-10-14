@@ -7,7 +7,7 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { config } from '../config.js';
 import type { AdminUser, SiteContent } from '../types.js';
 import * as schema from './schema.js';
-import { adminUsersTable, siteContentTable } from './schema.js';
+import { adminUsersTable, siteContentTable, eventsTable } from './schema.js';
 
 export const DEFAULT_SITE_CONTENT_ID = 'primary-site';
 
@@ -132,7 +132,56 @@ const ensureAdminUsers = async (db: Database): Promise<void> => {
   );
 };
 
+const ensureEvents = async (db: Database): Promise<void> => {
+  const existing = await db.select().from(eventsTable).limit(1);
+
+  if (existing.length > 0) {
+    return; // Events already seeded
+  }
+
+  const seedEvents = await readSeedFile<Array<{
+    title: string;
+    slug: string;
+    description: string;
+    startsAt: string;
+    endsAt: string;
+    isFreeEntry: boolean;
+    requiresRsvp: boolean;
+    capacity: number;
+    isFeatured: boolean;
+    flyerUrl: string | null;
+    ticketUrl: string | null;
+  }>>('events.json');
+
+  if (!seedEvents || seedEvents.length === 0) {
+    console.warn('No events seed data found. Skipping event seeding.');
+    return;
+  }
+
+  await db.insert(eventsTable).values(
+    seedEvents.map((event) => ({
+      id: randomUUID(),
+      title: event.title,
+      slug: event.slug,
+      description: event.description,
+      startsAt: new Date(event.startsAt),
+      endsAt: new Date(event.endsAt),
+      isFreeEntry: event.isFreeEntry,
+      requiresRsvp: event.requiresRsvp,
+      capacity: event.capacity,
+      isFeatured: event.isFeatured,
+      flyerUrl: event.flyerUrl,
+      ticketUrl: event.ticketUrl,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }))
+  );
+
+  console.log(`Seeded ${seedEvents.length} events`);
+};
+
 export const ensureSeedData = async (db: Database): Promise<void> => {
   await ensureSiteContent(db);
   await ensureAdminUsers(db);
+  await ensureEvents(db);
 };

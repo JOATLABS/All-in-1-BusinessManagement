@@ -7,6 +7,7 @@ import { registerReservationRoutes } from './routes/reservations.js';
 import { registerAdminReservationRoutes } from './routes/adminReservations.js';
 import { eventsRouter } from './routes/events.js';
 import { ticketsRouter } from './routes/tickets.js';
+import { mediaRouter } from './routes/media.js';
 
 export const createApp = () => {
   const app = express();
@@ -29,6 +30,7 @@ export const createApp = () => {
   // Single-tenant event and ticketing routes (no club_id in URLs)
   router.use('/events', eventsRouter);
   router.use('/tickets', ticketsRouter);
+  router.use('/media', mediaRouter); // Cloudflare R2 media uploads
 
   app.use('/api/v1', router);
 

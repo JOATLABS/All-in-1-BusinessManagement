@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSiteContentContext } from '../../content/SiteContentProvider';
 import { useAuth } from '../../auth/AuthContext';
 import { fetchAdminReservations } from '../../services/adminReservationService';
+import { fetchEvents, type Event } from '../../services/eventsService';
 import type { AdminReservation } from '../../types/reservations';
 
 const rangeFormatter = new Intl.DateTimeFormat('en-US', {
@@ -47,22 +48,68 @@ const formatReservationTimestamp = (value: string) => {
 export const AdminDashboard = () => {
   const { content } = useSiteContentContext();
   const { token } = useAuth();
-  const { event, hero, footer } = content;
+  const { hero, footer } = content;
   const [recentReservations, setRecentReservations] = useState<AdminReservation[]>([]);
   const [reservationsError, setReservationsError] = useState<string | null>(null);
+  const [featuredEvent, setFeaturedEvent] = useState<Event | null>(null);
+  const [eventsLoading, setEventsLoading] = useState(true);
+
+  // Fetch featured event on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadFeaturedEvent = async () => {
+      try {
+        const response = await fetchEvents();
+        if (cancelled) {
+          return;
+        }
+
+        // Find featured event or the next upcoming event
+        const now = new Date();
+        const upcomingEvents = response.events
+          .filter((e) => new Date(e.startsAt) > now)
+          .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+
+        const featured = upcomingEvents.find((e) => e.isFeatured) ?? upcomingEvents[0] ?? null;
+        setFeaturedEvent(featured);
+        setEventsLoading(false);
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load featured event:', error);
+          setEventsLoading(false);
+        }
+      }
+    };
+
+    void loadFeaturedEvent();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const countdown = useMemo(() => {
+    if (!featuredEvent) {
+      return { days: 0, hours: 0, minutes: 0 };
+    }
+
     const now = new Date();
-    const diff = Math.max(event.start.getTime() - now.getTime(), 0);
+    const diff = Math.max(new Date(featuredEvent.startsAt).getTime() - now.getTime(), 0);
     const seconds = Math.floor(diff / 1000);
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
 
     return { days, hours, minutes };
-  }, [event.start]);
+  }, [featuredEvent]);
 
-  const eventWindow = useMemo(() => formatEventWindow(event.start, event.end), [event.end, event.start]);
+  const eventWindow = useMemo(() => {
+    if (!featuredEvent) {
+      return '—';
+    }
+    return formatEventWindow(new Date(featuredEvent.startsAt), new Date(featuredEvent.endsAt));
+  }, [featuredEvent]);
   const backgroundsActive = hero.backgrounds.length;
   const heroWords = hero.words.length;
   const socialLinks = footer.socials.length;
@@ -123,27 +170,38 @@ export const AdminDashboard = () => {
       <div className="admin-dashboard__grid">
         <article className="admin-dashboard__card">
           <h2>Next experience</h2>
-          <p className="admin-dashboard__metric">{event.name}</p>
-          <p className="admin-dashboard__sub">{eventWindow}</p>
-          <ul className="admin-dashboard__countdown">
-            <li>
-              <span className="admin-dashboard__count">{countdown.days.toString().padStart(2, '0')}</span>
-              <span className="admin-dashboard__label">Days</span>
-            </li>
-            <li>
-              <span className="admin-dashboard__count">{countdown.hours.toString().padStart(2, '0')}</span>
-              <span className="admin-dashboard__label">Hours</span>
-            </li>
-            <li>
-              <span className="admin-dashboard__count">{countdown.minutes.toString().padStart(2, '0')}</span>
-              <span className="admin-dashboard__label">Minutes</span>
-            </li>
-          </ul>
-          <p className="admin-dashboard__hint">
-            {event.requiresTicket
-              ? 'Ticketing is enabled. Confirm the ticket URL before publishing.'
-              : 'Complimentary entry active. Update messaging if this changes.'}
-          </p>
+          {eventsLoading ? (
+            <p className="admin-dashboard__hint">Loading event...</p>
+          ) : featuredEvent ? (
+            <>
+              <p className="admin-dashboard__metric">{featuredEvent.title}</p>
+              <p className="admin-dashboard__sub">{eventWindow}</p>
+              <ul className="admin-dashboard__countdown">
+                <li>
+                  <span className="admin-dashboard__count">{countdown.days.toString().padStart(2, '0')}</span>
+                  <span className="admin-dashboard__label">Days</span>
+                </li>
+                <li>
+                  <span className="admin-dashboard__count">{countdown.hours.toString().padStart(2, '0')}</span>
+                  <span className="admin-dashboard__label">Hours</span>
+                </li>
+                <li>
+                  <span className="admin-dashboard__count">{countdown.minutes.toString().padStart(2, '0')}</span>
+                  <span className="admin-dashboard__label">Minutes</span>
+                </li>
+              </ul>
+              <p className="admin-dashboard__hint">
+                {!featuredEvent.isFreeEntry
+                  ? 'Ticketing is enabled. Confirm the ticket URL before publishing.'
+                  : 'Complimentary entry active. Update messaging if this changes.'}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="admin-dashboard__metric">No upcoming events</p>
+              <p className="admin-dashboard__hint">Create an event in the Events page to display it here.</p>
+            </>
+          )}
         </article>
 
         <article className="admin-dashboard__card">

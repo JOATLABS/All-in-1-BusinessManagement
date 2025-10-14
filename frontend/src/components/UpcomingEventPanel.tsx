@@ -21,9 +21,11 @@ export const UpcomingEventPanel = ({ event, onClose }: UpcomingEventPanelProps) 
       <CloseButton onClick={onClose} />
     </header>
     <div className="panel__body">
-      <div className="panel__flyer">
-        <img src={event.flyer} alt={`${event.name} promotional flyer`} />
-      </div>
+      {event.flyer && (
+        <div className="panel__flyer">
+          <img src={event.flyer} alt={`${event.name} promotional flyer`} />
+        </div>
+      )}
       <p>{event.description}</p>
       <p className="panel__meta">
         <span>Doors:</span> {event.start.toLocaleString()}
