@@ -1,6 +1,6 @@
-import { eq, and, lt } from 'drizzle-orm';
+import { eq, and, lt, gt } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { db } from '../db/index.js';
+import { getDb } from '../db/index.js';
 import { adminUserSessionsTable, type AdminUserSessionRow } from '../db/schema.js';
 
 /**
@@ -20,6 +20,8 @@ export class SessionRepository {
   }): Promise<AdminUserSessionRow> {
     // Hash the refresh token before storing
     const refreshTokenHash = await bcrypt.hash(data.refreshToken, 10);
+
+    const db = getDb();
 
     const [session] = await db
       .insert(adminUserSessionsTable)
@@ -44,13 +46,15 @@ export class SessionRepository {
     refreshToken: string
   ): Promise<AdminUserSessionRow | null> {
     // Get all active sessions for this user
+    const db = getDb();
+
     const sessions = await db
       .select()
       .from(adminUserSessionsTable)
       .where(
         and(
           eq(adminUserSessionsTable.adminUserId, userId),
-          lt(new Date(), adminUserSessionsTable.expiresAt) // Not expired
+          gt(adminUserSessionsTable.expiresAt, new Date()) // Not expired
         )
       );
 
@@ -69,6 +73,8 @@ export class SessionRepository {
    * Update session's last used timestamp
    */
   static async updateLastUsed(sessionId: string): Promise<void> {
+    const db = getDb();
+
     await db
       .update(adminUserSessionsTable)
       .set({ lastUsedAt: new Date() })
@@ -79,6 +85,8 @@ export class SessionRepository {
    * Delete a specific session (logout)
    */
   static async deleteSession(sessionId: string): Promise<void> {
+    const db = getDb();
+
     await db.delete(adminUserSessionsTable).where(eq(adminUserSessionsTable.id, sessionId));
   }
 
@@ -86,6 +94,8 @@ export class SessionRepository {
    * Delete all sessions for a user (logout from all devices)
    */
   static async deleteAllUserSessions(userId: string): Promise<void> {
+    const db = getDb();
+
     await db.delete(adminUserSessionsTable).where(eq(adminUserSessionsTable.adminUserId, userId));
   }
 
@@ -93,6 +103,8 @@ export class SessionRepository {
    * Delete expired sessions (cleanup task)
    */
   static async deleteExpiredSessions(): Promise<number> {
+    const db = getDb();
+
     const result = await db
       .delete(adminUserSessionsTable)
       .where(lt(adminUserSessionsTable.expiresAt, new Date()))
@@ -105,13 +117,15 @@ export class SessionRepository {
    * Get all active sessions for a user
    */
   static async getUserSessions(userId: string): Promise<AdminUserSessionRow[]> {
+    const db = getDb();
+
     return await db
       .select()
       .from(adminUserSessionsTable)
       .where(
         and(
           eq(adminUserSessionsTable.adminUserId, userId),
-          lt(new Date(), adminUserSessionsTable.expiresAt)
+          gt(adminUserSessionsTable.expiresAt, new Date())
         )
       );
   }

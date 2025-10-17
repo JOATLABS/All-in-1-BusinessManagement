@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import type { AdminUser } from '../types.js';
+import type { AuthenticatedUser } from './authenticate.js';
 
 /**
  * Role-based authorization middleware factory
@@ -10,16 +11,17 @@ import type { AdminUser } from '../types.js';
  */
 export const requireRole = (allowedRoles: AdminUser['role'][]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.adminSession) {
+    const user = req.user as AuthenticatedUser | undefined;
+
+    if (!user) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const userRole = req.adminSession.role;
-    if (!allowedRoles.includes(userRole)) {
+    if (!allowedRoles.includes(user.role)) {
       return res.status(403).json({
         message: 'Insufficient permissions',
         required: allowedRoles,
-        current: userRole
+        current: user.role,
       });
     }
 
@@ -34,9 +36,11 @@ export const requireRole = (allowedRoles: AdminUser['role'][]) => {
  * @returns boolean indicating access permission
  */
 export const canAccessOwnOrSuperadmin = (req: Request, resourceOwnerId: string): boolean => {
-  if (!req.adminSession) {
+  const user = req.user as AuthenticatedUser | undefined;
+
+  if (!user) {
     return false;
   }
 
-  return req.adminSession.adminId === resourceOwnerId || req.adminSession.role === 'superadmin';
+  return user.userId === resourceOwnerId || user.role === 'superadmin';
 };

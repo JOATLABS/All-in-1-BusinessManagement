@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type MouseEvent } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { createAdminUser, updateAdminUser, type AdminUser } from '../../services/adminUserService';
 
@@ -11,19 +11,21 @@ interface UserFormModalProps {
 
 export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormModalProps) => {
   const { token } = useAuth();
+  const isAdminRole = (role: string): role is AdminUser['role'] =>
+    role === 'superadmin' || role === 'admin' || role === 'staff';
   const [formData, setFormData] = useState({
     email: user?.email || '',
     password: '',
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
-    role: user?.role || ('admin' as 'superadmin' | 'admin' | 'staff'),
+    role: user?.role ?? 'admin',
     isActive: user?.isActive ?? true
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
     if (!token) {
       setError('Not authenticated');
@@ -66,8 +68,8 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
     }
   };
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
+  const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
       onClose();
     }
   };
@@ -191,7 +193,12 @@ export const UserFormModal = ({ user, isCreating, onClose, onSaved }: UserFormMo
               </span>
               <select
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                onChange={(event) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    role: isAdminRole(event.target.value) ? event.target.value : prev.role,
+                  }))
+                }
                 required
                 style={{
                   padding: '0.5rem',

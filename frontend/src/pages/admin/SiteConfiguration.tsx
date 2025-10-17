@@ -3,7 +3,13 @@ import { useAuth } from '../../auth/AuthContext';
 import { useSiteContentContext } from '../../content/SiteContentProvider';
 import { useUnsavedChangesPrompt } from '../../hooks/useUnsavedChangesPrompt';
 import { updateSiteContent, type SiteContentResponse } from '../../services/contentService';
-import type { EventContent, FooterContent, HeroContent, OverlaysContent, ReservationContent, BackgroundImage } from '../../types/content';
+import type {
+  FooterContent,
+  HeroContent,
+  OverlaysContent,
+  ReservationContent,
+  BackgroundImage,
+} from '../../types/content';
 import { BackgroundMediaManager } from '../../components/BackgroundMediaManager';
 import { MediaUploadModal } from '../../components/MediaUploadModal';
 import { MediaLibraryModal } from '../../components/MediaLibraryModal';
@@ -121,46 +127,8 @@ export const SiteConfiguration = () => {
     setFooterDraft(footerToDraft(content.footer));
   }, [content, hasChanges, status]);
 
-  const handleHeroBackgroundChange = (
-    index: number,
-    field: 'src' | 'alt' | 'focalPointX' | 'focalPointY',
-    value: string
-  ) => {
-    setHeroDraft((prev) => {
-      const nextBackgrounds = prev.backgrounds.map((background, backgroundIndex) => {
-        if (backgroundIndex !== index) {
-          return background;
-        }
-
-        if (field === 'focalPointX') {
-          return { ...background, focalPoint: { ...(background.focalPoint ?? { x: 50, y: 50 }), x: Number(value) } };
-        }
-
-        if (field === 'focalPointY') {
-          return { ...background, focalPoint: { ...(background.focalPoint ?? { x: 50, y: 50 }), y: Number(value) } };
-        }
-
-        return { ...background, [field]: value };
-      });
-
-      return { ...prev, backgrounds: nextBackgrounds };
-    });
-    markDirty();
-  };
-
   const handleHeroChange = (field: 'name' | 'tagline' | 'words' | 'logoUrl', value: string | undefined) => {
     setHeroDraft((prev) => ({ ...prev, [field]: value }));
-    markDirty();
-  };
-
-  const handleAddBackground = () => {
-    setHeroDraft((prev) => ({
-      ...prev,
-      backgrounds: [
-        ...prev.backgrounds,
-        { src: '', alt: '', focalPoint: { x: 50, y: 50 } }
-      ]
-    }));
     markDirty();
   };
 

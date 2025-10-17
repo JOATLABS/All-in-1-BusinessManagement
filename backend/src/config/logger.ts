@@ -78,7 +78,7 @@ export interface LogContext {
   requestId?: string;
   userId?: string;
   action?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const log = {

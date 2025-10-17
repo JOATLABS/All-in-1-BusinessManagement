@@ -95,7 +95,7 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction): v
     };
 
     next();
-  } catch (error) {
+  } catch {
     // Ignore authentication errors for optional auth
     next();
   }

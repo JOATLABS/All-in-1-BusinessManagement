@@ -9,6 +9,9 @@ import {
 } from '../../services/adminUserService';
 import { UserFormModal } from './UserFormModal';
 
+const isAdminRole = (role: string): role is AdminUser['role'] =>
+  role === 'superadmin' || role === 'admin' || role === 'staff';
+
 export const TeamManagement = () => {
   const { token } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -108,7 +111,12 @@ export const TeamManagement = () => {
           <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>Filter by role:</span>
           <select
             value={filters.role || ''}
-            onChange={(e) => setFilters({ ...filters, role: e.target.value as any || undefined })}
+            onChange={(event) =>
+              setFilters({
+                ...filters,
+                role: event.target.value === '' ? undefined : isAdminRole(event.target.value) ? event.target.value : undefined,
+              })
+            }
             style={{
               padding: '0.5rem',
               borderRadius: '0.25rem',
