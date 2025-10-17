@@ -7,8 +7,17 @@ const focalPointSchema = z.object({
 
 const backgroundSchema = z.object({
   src: z.string().url(),
-  alt: z.string().min(1),
-  focalPoint: focalPointSchema.optional()
+  alt: z.string().min(1).max(200),
+  mediaType: z.enum(['image', 'video']).optional(),
+  isActive: z.boolean().optional().default(true),
+  playbackDepth: z.enum(['shallow', 'medium', 'deep']).optional(),
+  order: z.number().int().min(0).optional(),
+  focalPoint: focalPointSchema.optional(),
+  // Video-specific properties
+  fallbackImage: z.string().url().optional(),
+  loop: z.boolean().optional().default(true),
+  autoplay: z.boolean().optional().default(true),
+  muted: z.boolean().optional().default(true)
 });
 
 const heroSchema = z.object({

@@ -10,6 +10,7 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.12",
     "framer-motion": "^12.23.22",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

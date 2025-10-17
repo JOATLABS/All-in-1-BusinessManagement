@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { BackgroundImage, PlaybackDepth } from '../types/content';
 import { MediaUploadModal } from './MediaUploadModal';
 import { MediaLibraryModal } from './MediaLibraryModal';
+import { Icon } from './Icon';
 
 interface BackgroundMediaManagerProps {
   backgrounds: BackgroundImage[];
@@ -17,6 +18,7 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [libraryModalOpen, setLibraryModalOpen] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
 
   /**
    * Toggle background active/inactive
@@ -71,6 +73,21 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
   };
 
   /**
+   * Update focal point
+   */
+  const handleFocalPointChange = (index: number, axis: 'x' | 'y', value: number) => {
+    const updated = [...backgrounds];
+    updated[index] = {
+      ...updated[index],
+      focalPoint: {
+        x: axis === 'x' ? value : updated[index].focalPoint?.x || 50,
+        y: axis === 'y' ? value : updated[index].focalPoint?.y || 50
+      }
+    };
+    onChange(updated);
+  };
+
+  /**
    * Drag and drop handlers for desktop
    */
   const handleDragStart = (index: number) => {
@@ -81,17 +98,28 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === index) return;
 
+    // Only set visual indicator, don't mutate state yet
+    setDropTargetIndex(index);
+  };
+
+  const handleDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    // Now we actually update the order
     const updated = [...backgrounds];
     const draggedItem = updated[draggedIndex];
     updated.splice(draggedIndex, 1);
     updated.splice(index, 0, draggedItem);
 
     onChange(updated);
-    setDraggedIndex(index);
+    setDraggedIndex(null);
+    setDropTargetIndex(null);
   };
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
+    setDropTargetIndex(null);
   };
 
   /**
@@ -119,22 +147,25 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
             type="button"
             className="btn btn--secondary"
             onClick={() => setLibraryModalOpen(true)}
+            aria-label="Browse media library"
           >
-            📁 Browse Library
+            <Icon name="folder" /> Browse Library
           </button>
           <button
             type="button"
             className="btn btn--secondary"
             onClick={() => setUploadModalOpen(true)}
+            aria-label="Upload new media"
           >
-            📤 Upload New
+            <Icon name="upload" /> Upload New
           </button>
           <button
             type="button"
             className="btn btn--secondary"
             onClick={handleAddBackground}
+            aria-label="Add media from URL"
           >
-            ➕ Add URL
+            <Icon name="plus" /> Add URL
           </button>
         </div>
       </div>
@@ -150,16 +181,32 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
               key={`bg-${index}`}
               className={`bg-media-card ${!background.isActive ? 'bg-media-card--inactive' : ''} ${
                 draggedIndex === index ? 'bg-media-card--dragging' : ''
-              }`}
+              } ${dropTargetIndex === index ? 'bg-media-card--drop-target' : ''}`}
               draggable
               onDragStart={() => handleDragStart(index)}
               onDragOver={(e) => handleDragOver(e, index)}
+              onDrop={(e) => handleDrop(e, index)}
               onDragEnd={handleDragEnd}
             >
               {/* Drag Handle - Desktop */}
-              <div className="bg-media-card__drag-handle" title="Drag to reorder">
-                <span>⠿</span>
-              </div>
+              <button
+                type="button"
+                className="bg-media-card__drag-handle"
+                title="Drag to reorder or use arrow keys"
+                aria-label={`Reorder background ${index + 1}. Use up and down arrow keys to move.`}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowUp' && index > 0) {
+                    e.preventDefault();
+                    handleMoveUp(index);
+                  } else if (e.key === 'ArrowDown' && index < backgrounds.length - 1) {
+                    e.preventDefault();
+                    handleMoveDown(index);
+                  }
+                }}
+              >
+                <span aria-hidden="true">⠿</span>
+              </button>
 
               {/* Preview */}
               <div className="bg-media-card__preview">
@@ -169,6 +216,8 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
                       src={background.src}
                       muted
                       loop
+                      controls
+                      preload="metadata"
                       className="bg-media-card__preview-media"
                     />
                   ) : (
@@ -186,7 +235,7 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
 
                 {/* Media Type Badge */}
                 <span className="bg-media-card__type-badge">
-                  {background.mediaType === 'video' ? '🎥' : '🖼️'}
+                  <Icon name={background.mediaType === 'video' ? 'video' : 'image'} size={16} />
                 </span>
 
                 {/* Order Badge */}
@@ -227,6 +276,44 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
                   </div>
                 </div>
 
+                {/* Focal Point Adjustment */}
+                <div className="bg-media-card__focal-point">
+                  <label>Focal Point</label>
+                  <div className="focal-point-controls">
+                    <div className="focal-point-axis">
+                      <label htmlFor={`focal-x-${index}`}>Horizontal</label>
+                      <input
+                        id={`focal-x-${index}`}
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={background.focalPoint?.x || 50}
+                        onChange={(e) => handleFocalPointChange(index, 'x', Number(e.target.value))}
+                        className="focal-point-slider"
+                        aria-label="Horizontal focal point"
+                      />
+                      <span className="focal-point-value">{background.focalPoint?.x || 50}%</span>
+                    </div>
+                    <div className="focal-point-axis">
+                      <label htmlFor={`focal-y-${index}`}>Vertical</label>
+                      <input
+                        id={`focal-y-${index}`}
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={background.focalPoint?.y || 50}
+                        onChange={(e) => handleFocalPointChange(index, 'y', Number(e.target.value))}
+                        className="focal-point-slider"
+                        aria-label="Vertical focal point"
+                      />
+                      <span className="focal-point-value">{background.focalPoint?.y || 50}%</span>
+                    </div>
+                  </div>
+                  <p className="focal-point-hint">
+                    Adjust where the image focuses when cropped on different screen sizes
+                  </p>
+                </div>
+
                 {/* Mobile Reorder Buttons */}
                 <div className="bg-media-card__mobile-reorder">
                   <button
@@ -256,9 +343,9 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
                   type="button"
                   className="btn btn--danger btn--small"
                   onClick={() => handleDelete(index)}
-                  title="Delete background"
+                  aria-label="Delete background"
                 >
-                  🗑️ Delete
+                  <Icon name="trash" size={16} /> Delete
                 </button>
               </div>
 

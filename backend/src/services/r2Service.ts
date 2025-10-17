@@ -10,11 +10,15 @@ import { randomUUID } from 'crypto';
 const accountId = process.env.R2_ACCOUNT_ID;
 const accessKeyId = process.env.R2_ACCESS_KEY_ID;
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-const bucketName = process.env.R2_MEDIA_BUCKET || 'rhythm-root';
-const publicHost = process.env.R2_MEDIA_PUBLIC_HOST || 'media.rhythmplusroot.com';
+const bucketName = process.env.R2_MEDIA_BUCKET;
+const publicHost = process.env.R2_MEDIA_PUBLIC_HOST;
 
-if (!accountId || !accessKeyId || !secretAccessKey) {
-  console.warn('⚠️  R2 credentials not configured. Media upload will not work.');
+// Fail fast if required environment variables are missing
+if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicHost) {
+  throw new Error(
+    'R2 configuration incomplete. Required environment variables: ' +
+    'R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_MEDIA_BUCKET, R2_MEDIA_PUBLIC_HOST'
+  );
 }
 
 /**
@@ -24,8 +28,8 @@ const r2Client = new S3Client({
   region: 'auto',
   endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
   credentials: {
-    accessKeyId: accessKeyId || '',
-    secretAccessKey: secretAccessKey || ''
+    accessKeyId,
+    secretAccessKey
   }
 });
 

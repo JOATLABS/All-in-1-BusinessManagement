@@ -12,6 +12,7 @@
     "db:seed": "npm run db:seed --prefix backend"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.0",
     "concurrently": "^9.2.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.3"

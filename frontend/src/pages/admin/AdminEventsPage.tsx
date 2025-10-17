@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
+import { RoleGuard } from '../../auth/RoleGuard';
 import { EventFormModal } from './EventFormModal';
 import {
   fetchEvents,
@@ -153,14 +154,16 @@ export const AdminEventsPage = () => {
             Create, edit, and manage all nightclub events. Control visibility, ticketing, and scheduling for your venue.
           </p>
         </div>
-        <button
-          type="button"
-          className="admin-config__save"
-          onClick={handleCreateClick}
-          style={{ whiteSpace: 'nowrap' }}
-        >
-          Create Event
-        </button>
+        <RoleGuard roles={['superadmin', 'admin']}>
+          <button
+            type="button"
+            className="admin-config__save"
+            onClick={handleCreateClick}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            Create Event
+          </button>
+        </RoleGuard>
       </header>
 
       {error && (
@@ -257,26 +260,28 @@ export const AdminEventsPage = () => {
                       )}
                     </td>
                     <td>
-                      <div className="admin-reservations__actions">
-                        <button
-                          type="button"
-                          onClick={() => handleEditClick(event)}
-                          disabled={deletingId === event.id}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(event)}
-                          disabled={deletingId === event.id}
-                          style={{
-                            color: '#f06a6a',
-                            borderColor: 'rgba(240, 106, 106, 0.4)'
-                          }}
-                        >
-                          {deletingId === event.id ? 'Deleting...' : 'Delete'}
-                        </button>
-                      </div>
+                      <RoleGuard roles={['superadmin', 'admin']} fallback={<span style={{ color: 'var(--text-muted)' }}>—</span>}>
+                        <div className="admin-reservations__actions">
+                          <button
+                            type="button"
+                            onClick={() => handleEditClick(event)}
+                            disabled={deletingId === event.id}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(event)}
+                            disabled={deletingId === event.id}
+                            style={{
+                              color: '#f06a6a',
+                              borderColor: 'rgba(240, 106, 106, 0.4)'
+                            }}
+                          >
+                            {deletingId === event.id ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </div>
+                      </RoleGuard>
                     </td>
                   </tr>
                 );

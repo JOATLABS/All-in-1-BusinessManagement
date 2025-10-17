@@ -2,7 +2,8 @@ import { Router, type Request, type Response } from 'express';
 import { eq, desc, and, gte } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { eventsTable } from '../db/schema.js';
-import { requireAuth } from '../services/sessionService.js';
+import { authenticateRequest } from '../middleware/authenticate.js';
+import { requireRole } from '../middleware/authorize.js';
 
 const router = Router();
 
@@ -59,10 +60,10 @@ router.get('/:slug', async (req: Request, res: Response) => {
 
 /**
  * POST /api/v1/events (admin route)
- * Create new event (admin only)
+ * Create new event (superadmin and admin only)
  * Single-tenant: no club_id needed
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post('/', authenticateRequest, requireRole(['superadmin', 'admin']), async (req: Request, res: Response) => {
   try {
     const {
       title,
@@ -125,10 +126,10 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
 
 /**
  * PATCH /api/v1/admin/events/:id
- * Update event (admin only)
+ * Update event (superadmin and admin only)
  * Single-tenant: direct update, no tenant checks
  */
-router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
+router.patch('/:id', authenticateRequest, requireRole(['superadmin', 'admin']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -160,10 +161,10 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
 
 /**
  * DELETE /api/v1/admin/events/:id
- * Delete event (admin only)
+ * Delete event (superadmin and admin only)
  * Single-tenant: direct delete, no tenant authorization
  */
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete('/:id', authenticateRequest, requireRole(['superadmin', 'admin']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const db = getDb();

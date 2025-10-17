@@ -5,6 +5,8 @@ import { useUnsavedChangesPrompt } from '../../hooks/useUnsavedChangesPrompt';
 import { updateSiteContent, type SiteContentResponse } from '../../services/contentService';
 import type { EventContent, FooterContent, HeroContent, OverlaysContent, ReservationContent, BackgroundImage } from '../../types/content';
 import { BackgroundMediaManager } from '../../components/BackgroundMediaManager';
+import { MediaUploadModal } from '../../components/MediaUploadModal';
+import { MediaLibraryModal } from '../../components/MediaLibraryModal';
 
 type TabId = 'hero' | 'about' | 'tickets' | 'reservations' | 'contact' | 'footer' | 'legal';
 
@@ -63,7 +65,8 @@ const heroToDraft = (hero: HeroContent) => ({
   name: hero.name,
   tagline: hero.tagline,
   words: hero.words.join('\n'),
-  backgrounds: hero.backgrounds.map((background) => ({ ...background }))
+  backgrounds: hero.backgrounds.map((background) => ({ ...background })),
+  logoUrl: hero.logoUrl
 });
 
 const footerToDraft = (footer: FooterContent): FooterDraftState => ({
@@ -81,6 +84,8 @@ export const SiteConfiguration = () => {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [hasChanges, setHasChanges] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [logoUploadModalOpen, setLogoUploadModalOpen] = useState(false);
+  const [logoLibraryModalOpen, setLogoLibraryModalOpen] = useState(false);
 
   useUnsavedChangesPrompt(hasChanges);
 
@@ -143,7 +148,7 @@ export const SiteConfiguration = () => {
     markDirty();
   };
 
-  const handleHeroChange = (field: 'name' | 'tagline' | 'words', value: string) => {
+  const handleHeroChange = (field: 'name' | 'tagline' | 'words' | 'logoUrl', value: string | undefined) => {
     setHeroDraft((prev) => ({ ...prev, [field]: value }));
     markDirty();
   };
@@ -496,7 +501,8 @@ export const SiteConfiguration = () => {
         name: heroDraft.name,
         tagline: heroDraft.tagline,
         words: heroWords,
-        backgrounds: heroBackgrounds
+        backgrounds: heroBackgrounds,
+        logoUrl: heroDraft.logoUrl
       },
       event: {
         name: content.event.name,
@@ -605,15 +611,50 @@ export const SiteConfiguration = () => {
                 />
               </label>
               <label>
-                Logo URL (displayed beside club name)
-                <input
-                  type="url"
-                  placeholder="https://example.com/logo.png"
-                  value={heroDraft.logoUrl || ''}
-                  onChange={(event) => handleHeroChange('logoUrl', event.target.value || undefined)}
-                />
+                Logo (displayed beside club name)
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/logo.png"
+                    value={heroDraft.logoUrl || ''}
+                    onChange={(event) => handleHeroChange('logoUrl', event.target.value || undefined)}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setLogoUploadModalOpen(true)}
+                  >
+                    Upload New
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogoLibraryModalOpen(true)}
+                  >
+                    Browse Library
+                  </button>
+                </div>
                 <span className="admin-config__hint">Small logo image (max 80px tall recommended) shown on left and right of club name</span>
               </label>
+
+              <MediaUploadModal
+                isOpen={logoUploadModalOpen}
+                onClose={() => setLogoUploadModalOpen(false)}
+                onUploadSuccess={(media) => {
+                  handleHeroChange('logoUrl', media.src);
+                  setLogoUploadModalOpen(false);
+                }}
+                folder="general"
+              />
+
+              <MediaLibraryModal
+                isOpen={logoLibraryModalOpen}
+                onClose={() => setLogoLibraryModalOpen(false)}
+                onSelectMedia={(media) => {
+                  handleHeroChange('logoUrl', media.src);
+                  setLogoLibraryModalOpen(false);
+                }}
+                folder="all"
+              />
               <label>
                 Marquee words
                 <textarea

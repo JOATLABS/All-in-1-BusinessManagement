@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticateRequest } from '../middleware/authenticate.js';
+import { requireRole } from '../middleware/authorize.js';
 import {
   listReservations,
   updateReservationStatus,
@@ -15,6 +16,7 @@ export const registerAdminReservationRoutes = (router: Router) => {
 
   adminRouter.use(authenticateRequest);
 
+  // All authenticated users (including staff) can view reservations
   adminRouter.get('/', async (req, res) => {
     const parsedQuery = adminReservationQuerySchema.safeParse(req.query);
 
@@ -34,7 +36,8 @@ export const registerAdminReservationRoutes = (router: Router) => {
     }
   });
 
-  adminRouter.patch('/:id', async (req, res) => {
+  // Only superadmin and admin can update reservation status
+  adminRouter.patch('/:id', requireRole(['superadmin', 'admin']), async (req, res) => {
     const parsedBody = updateReservationStatusSchema.safeParse(req.body);
 
     if (!parsedBody.success) {

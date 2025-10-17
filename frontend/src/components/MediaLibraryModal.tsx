@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { config } from '../config/api';
 import { useAuth } from '../auth/AuthContext';
 import type { BackgroundImage, BackgroundMediaType } from '../types/content';
+import { Icon } from './Icon';
 
 interface MediaLibraryModalProps {
   isOpen: boolean;
@@ -37,6 +39,16 @@ export const MediaLibraryModal = ({
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'image' | 'video'>('all');
   const [selectedItem, setSelectedItem] = useState<R2MediaItem | null>(null);
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
+
+  // Virtual scrolling setup
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: filteredMedia.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 200, // Estimated height of each item
+    overscan: 5 // Render 5 extra items outside viewport
+  });
 
   /**
    * Load media from R2
@@ -137,8 +149,10 @@ export const MediaLibraryModal = ({
       return;
     }
 
+    setDeletingKey(item.key);
+    setError(null);
+
     try {
-      const token = localStorage.getItem('authToken');
       if (!token) throw new Error('Not authenticated');
 
       const response = await fetch(`${config.apiBaseUrl}/api/v1/media/${encodeURIComponent(item.key)}`, {
@@ -161,7 +175,9 @@ export const MediaLibraryModal = ({
       }
 
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete media');
+      setError(err instanceof Error ? err.message : 'Failed to delete media');
+    } finally {
+      setDeletingKey(null);
     }
   };
 
@@ -210,15 +226,17 @@ export const MediaLibraryModal = ({
                 type="button"
                 className={`btn btn--small ${filterType === 'image' ? 'btn--primary' : 'btn--ghost'}`}
                 onClick={() => setFilterType('image')}
+                aria-label="Filter images"
               >
-                🖼️ Images ({media.filter(m => m.mediaType === 'image').length})
+                <Icon name="image" size={16} /> Images ({media.filter(m => m.mediaType === 'image').length})
               </button>
               <button
                 type="button"
                 className={`btn btn--small ${filterType === 'video' ? 'btn--primary' : 'btn--ghost'}`}
                 onClick={() => setFilterType('video')}
+                aria-label="Filter videos"
               >
-                🎥 Videos ({media.filter(m => m.mediaType === 'video').length})
+                <Icon name="video" size={16} /> Videos ({media.filter(m => m.mediaType === 'video').length})
               </button>
             </div>
           </div>
@@ -228,8 +246,9 @@ export const MediaLibraryModal = ({
             className="btn btn--ghost btn--small"
             onClick={loadMedia}
             disabled={loading}
+            aria-label="Refresh media library"
           >
-            🔄 Refresh
+            <Icon name="refresh" size={16} /> Refresh
           </button>
         </div>
 
@@ -243,7 +262,7 @@ export const MediaLibraryModal = ({
         {/* Error State */}
         {error && (
           <div className="library-error" role="alert">
-            <span>⚠️</span> {error}
+            <Icon name="warning" size={16} /> {error}
           </div>
         )}
 
@@ -254,69 +273,102 @@ export const MediaLibraryModal = ({
           </div>
         )}
 
-        {/* Media Grid */}
+        {/* Media Grid with Virtual Scrolling */}
         {!loading && filteredMedia.length > 0 && (
-          <div className="library-grid">
-            {filteredMedia.map((item) => (
-              <div
-                key={item.key}
-                className={`library-item ${selectedItem?.key === item.key ? 'library-item--selected' : ''}`}
-                onClick={() => handleSelect(item)}
-              >
-                {/* Preview */}
-                <div className="library-item__preview">
-                  {item.mediaType === 'video' ? (
-                    <video
-                      src={item.url}
-                      muted
-                      className="library-item__media"
-                    />
-                  ) : (
-                    <img
-                      src={item.url}
-                      alt={item.key}
-                      className="library-item__media"
-                      loading="lazy"
-                    />
-                  )}
-
-                  {/* Type Badge */}
-                  <span className="library-item__badge">
-                    {item.mediaType === 'video' ? '🎥' : '🖼️'}
-                  </span>
-
-                  {/* Selected Checkmark */}
-                  {selectedItem?.key === item.key && (
-                    <span className="library-item__checkmark">✓</span>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="library-item__info">
-                  <p className="library-item__name" title={item.key}>
-                    {item.key.split('/').pop()}
-                  </p>
-                  <p className="library-item__size">
-                    {formatSize(item.size)}
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="library-item__actions">
-                  <button
-                    type="button"
-                    className="btn btn--icon btn--danger btn--small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(item);
+          <div
+            ref={parentRef}
+            className="library-grid-container"
+            style={{
+              height: '500px',
+              overflow: 'auto'
+            }}
+          >
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative'
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const item = filteredMedia[virtualRow.index];
+                return (
+                  <div
+                    key={virtualRow.key}
+                    data-index={virtualRow.index}
+                    ref={rowVirtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`
                     }}
-                    title="Delete from R2"
                   >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
+                    <div
+                      className={`library-item ${selectedItem?.key === item.key ? 'library-item--selected' : ''}`}
+                      onClick={() => handleSelect(item)}
+                    >
+                      {/* Preview */}
+                      <div className="library-item__preview">
+                        {item.mediaType === 'video' ? (
+                          <video
+                            src={item.url}
+                            muted
+                            className="library-item__media"
+                          />
+                        ) : (
+                          <img
+                            src={item.url}
+                            alt={item.key}
+                            className="library-item__media"
+                            loading="lazy"
+                          />
+                        )}
+
+                        {/* Type Badge */}
+                        <span className="library-item__badge">
+                          <Icon name={item.mediaType === 'video' ? 'video' : 'image'} size={14} />
+                        </span>
+
+                        {/* Selected Checkmark */}
+                        {selectedItem?.key === item.key && (
+                          <span className="library-item__checkmark">
+                            <Icon name="check" size={20} />
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="library-item__info">
+                        <p className="library-item__name" title={item.key}>
+                          {item.key.split('/').pop()}
+                        </p>
+                        <p className="library-item__size">
+                          {formatSize(item.size)}
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="library-item__actions">
+                        <button
+                          type="button"
+                          className="btn btn--icon btn--danger btn--small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(item);
+                          }}
+                          disabled={deletingKey === item.key}
+                          aria-label={deletingKey === item.key ? 'Deleting...' : 'Delete from R2'}
+                        >
+                          <Icon name={deletingKey === item.key ? 'clock' : 'trash'} size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

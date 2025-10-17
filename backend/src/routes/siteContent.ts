@@ -1,5 +1,6 @@
 import type { Router } from 'express';
 import { authenticateRequest } from '../middleware/authenticate.js';
+import { requireRole } from '../middleware/authorize.js';
 import { getSiteContent, saveSiteContent } from '../repositories/siteContentRepository.js';
 import { siteContentSchema } from '../validation/siteContent.js';
 
@@ -9,7 +10,8 @@ export const registerSiteContentRoutes = (router: Router) => {
     return res.json(content);
   });
 
-  router.put('/site-content', authenticateRequest, async (req, res) => {
+  // Only superadmin and admin can update site content
+  router.put('/site-content', authenticateRequest, requireRole(['superadmin', 'admin']), async (req, res) => {
     const parseResult = siteContentSchema.safeParse(req.body);
     if (!parseResult.success) {
       return res.status(400).json({ message: 'Invalid site content payload', errors: parseResult.error.flatten() });

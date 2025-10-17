@@ -56,15 +56,17 @@ export const AdminLayout = () => {
           >
             Events
           </NavLink>
-          <NavLink
-            to="/admin/site-configuration"
-            className={({ isActive }: { isActive: boolean }) =>
-              `admin-shell__link${isActive ? ' admin-shell__link--active' : ''}`
-            }
-            onClick={handleCloseNav}
-          >
-            Site Configuration
-          </NavLink>
+          <RoleGuard roles={['superadmin', 'admin']}>
+            <NavLink
+              to="/admin/site-configuration"
+              className={({ isActive }: { isActive: boolean }) =>
+                `admin-shell__link${isActive ? ' admin-shell__link--active' : ''}`
+              }
+              onClick={handleCloseNav}
+            >
+              Site Configuration
+            </NavLink>
+          </RoleGuard>
           <RoleGuard roles={['superadmin']}>
             <NavLink
               to="/admin/team"
