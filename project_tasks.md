@@ -360,11 +360,35 @@ export const panelMotion = {
 - Social icons pulled from `site_content.footer.socials`
 - All modal content editable via Site Configuration (Section 5)
 
-## 8. Workflow Validation
+## 8. Workflow Validation ⏸️
 
-- Manual walkthrough: update hero copy via admin → publish → verify on customer site.
-- Automated checks: `npm run lint`, `npm run build`, component tests for forms, integration tests for login → dashboard → update flow.
-- Performance guardrail: run Lighthouse/WebPageTest to confirm smooth background loop across devices, respecting reduced-motion.
+**Status**: ⏸️ Not started
+**Priority**: High - Required before production
+
+### 8.1. Manual Workflow Testing ⏸️
+
+- ⏸️ Manual walkthrough: update hero copy via admin → publish → verify on customer site
+- ⏸️ Test complete site configuration flow
+- ⏸️ Test media upload and background management
+- ⏸️ Test admin user management (create/edit/deactivate)
+
+### 8.2. Automated Testing ⏸️
+
+- ⏸️ Automated checks: `npm run lint`, `npm run build`
+- ⏸️ Component tests for forms
+- ⏸️ Integration tests for login → dashboard → update flow
+- ⏸️ Automated tests for admin user management (from Section 9.6)
+  - Unit tests for permission helper functions
+  - Integration tests for user CRUD operations
+  - E2E tests for Team Management page
+  - E2E tests for role-based access control
+
+### 8.3. Performance Validation ⏸️
+
+- ⏸️ Performance guardrail: run Lighthouse/WebPageTest
+- ⏸️ Confirm smooth background loop across devices
+- ⏸️ Test `prefers-reduced-motion` handling
+- ⏸️ Verify media virtualization performance (1000+ items)
 
 ## 9. Admin User Management & Role-Based Access Control ✅ **COMPLETED**
 
@@ -411,10 +435,6 @@ export const panelMotion = {
 - ✅ Implement password requirements validation (min 8 chars, uppercase, lowercase, number)
 - ✅ Add email uniqueness checks and validation
 
-**Deferred to Section 10**:
-- Password reset endpoint → Section 10.1
-- Audit logging → Section 10.4
-
 ### 9.2. Database Schema Updates ✅
 
 - ✅ Updated `admin_users` table schema with new fields:
@@ -435,10 +455,6 @@ export const panelMotion = {
   ```
 - ✅ Existing indexes: `admin_users(email)` unique constraint
 
-**Deferred to Section 10**:
-- `admin_user_sessions` table → Section 10.1 (JWT sessions)
-- `audit_logs` table → Section 10.4
-
 ### 9.3. Frontend - Admin User Management UI ✅
 
 - ✅ Create "Team Management" page in admin dashboard (`/admin/team`)
@@ -455,7 +471,6 @@ export const panelMotion = {
   - ✅ Allow updating: first name, last name, role, active status
   - ✅ Prevent self-demotion for superadmins
   - ✅ Show last login timestamp
-- ⏸️ Password reset flow (deferred to Section 10)
 - ✅ Confirmation dialogs for deactivate action
 
 ### 9.4. Role-Based UI Components ✅
@@ -471,29 +486,16 @@ export const panelMotion = {
 - ✅ `<RoleGuard roles={['superadmin']}>` - Conditional rendering component
 - ✅ Apply role-based visibility:
   - ✅ Hide "Team Management" navigation for non-owners
-  - ⏸️ Hide "Site Configuration" for staff (deferred - apply when needed)
-  - ⏸️ Read-only views for staff in reservations (deferred - apply when needed)
 - ✅ Add role badges in UI with color coding (purple/blue/green)
 - ✅ Display current user role badge in admin header
 
-### 9.5. Authentication & Session Management ⏸️
+### 9.5. Authentication & Session Management
 
 - ✅ Extended auth payload to include `role` field
 - ✅ Role stored in sessionStorage alongside token
 - ✅ Login endpoint returns role in user object
-- ⏸️ JWT-based sessions (deferred to Section 10 - currently in-memory)
-- ⏸️ Session tracking in database (deferred to Section 10)
-- ⏸️ Token refresh/rotation (deferred to Section 10)
-- ⏸️ "Remember me" functionality (deferred to Section 10)
 
-### 9.6. Security & Audit ⏸️
-
-- ⏸️ Audit logging (deferred to Section 10)
-- ⏸️ Rate limiting (deferred to Section 10)
-- ⏸️ Admin activity dashboard (deferred - optional enhancement)
-- ⏸️ Email notifications (deferred - requires email service setup)
-
-### 9.7. Testing & Validation ✅
+### 9.6. Testing & Validation
 
 - ✅ Manual testing completed:
   - ✅ Team Management page loads correctly
@@ -506,7 +508,6 @@ export const panelMotion = {
   - ✅ Password validation enforced (min 8 chars, complexity)
   - ✅ Cannot deactivate self as superadmin
   - ✅ Dark theme styling applied correctly
-- ⏸️ Automated tests (unit, integration, E2E) - deferred to Section 8 (Workflow Validation)
 
 **Single-Tenant Benefits**:
 
@@ -554,29 +555,39 @@ export const panelMotion = {
 **Target**: JWT tokens with refresh/rotation
 
 **Tasks**:
-- ⏸️ Replace in-memory sessions with JWT tokens
+- ⏸️ Replace in-memory sessions with JWT tokens (from Section 9.5)
   - Generate access tokens (15min expiry) and refresh tokens (7 days expiry)
   - Store refresh tokens in database (`admin_user_sessions` table)
   - Sign tokens with `JWT_SECRET` from environment
-- ⏸️ Implement token refresh endpoint (`POST /api/v1/auth/refresh`)
+- ⏸️ Implement token refresh endpoint `POST /api/v1/auth/refresh` (from Section 9.5)
   - Rotate refresh tokens on use (one-time use tokens)
   - Invalidate old refresh tokens
-- ⏸️ Add token validation middleware
+- ⏸️ Add token validation middleware (from Section 9.5)
   - Verify JWT signature and expiration
   - Extract user ID and role from token claims
   - Handle token expiration gracefully (401 with refresh instructions)
-- ⏸️ Implement "Remember me" functionality
+- ⏸️ Implement "Remember me" functionality (from Section 9.5)
   - Extended refresh token expiry (30 days) when checked
   - Store preference in token claims
-- ⏸️ Password reset flow (deferred from Section 9.1)
+- ⏸️ Session tracking in database (from Section 9.5)
+  - Create `admin_user_sessions` table
+  - Track IP address, user agent, last used timestamp
+  - Auto-cleanup expired sessions
+- ⏸️ Password reset flow - Backend (from Section 9.1)
   - Generate password reset tokens (1-hour expiry)
   - Send reset emails via SendGrid
   - Endpoint: `POST /api/v1/admin/users/:id/reset-password`
+- ⏸️ Password reset flow - Frontend (from Section 9.3)
+  - Password reset request form
+  - Reset token validation
+  - New password entry with validation
+  - Success/error messaging
 
 **Single-tenant benefit**: No tenant context in tokens—just admin/public role distinction. Session storage simplified: single Redis namespace, no tenant partitioning.
 
-**Database Schema**:
+**Database Schema** (from Section 9.2):
 ```sql
+-- JWT session tracking (from Section 9.2)
 admin_user_sessions (
   id UUID PK DEFAULT gen_random_uuid(),
   admin_user_id UUID FK REFERENCES admin_users(id) ON DELETE CASCADE,
@@ -640,9 +651,10 @@ const corsOptions = {
   - 100 requests per 15 minutes per IP (general endpoints)
   - 10 requests per 15 minutes for auth endpoints (login, password reset)
   - 50 requests per 15 minutes for admin write operations
-- ⏸️ Rate limiting for admin operations (deferred from Section 9.6)
+- ⏸️ Rate limiting for admin operations (from Section 9.6)
   - Prevent brute-force attacks on login
   - Limit user creation/deletion operations
+  - Limit password reset requests
 - ⏸️ Add rate limit headers
   - `X-RateLimit-Limit`: Total allowed
   - `X-RateLimit-Remaining`: Requests left
@@ -658,19 +670,21 @@ const corsOptions = {
 
 ### 10.4. Audit Logging ⚠️
 
-**Tasks (deferred from Section 9.1 & 9.6)**:
-- ⏸️ Implement audit logging for admin actions
+**Tasks (from Section 9.1 & 9.6)**:
+- ⏸️ Implement audit logging for admin actions (from Section 9.1)
   - Log all create/update/delete operations
   - Log login/logout events
   - Log permission changes
   - Log configuration changes (site content, events, reservations)
-- ⏸️ Create audit logs table (already defined in Section 2)
+  - Log password reset requests
+  - Log failed login attempts
+- ⏸️ Create audit logs table (from Section 9.2, already defined in Section 2)
   ```sql
   audit_logs (
     id UUID PK DEFAULT gen_random_uuid(),
     admin_user_id UUID FK REFERENCES admin_users(id),
-    action TEXT NOT NULL,  -- 'create', 'update', 'delete', 'login', 'logout'
-    entity_type TEXT NOT NULL,  -- 'admin_user', 'event', 'site_content', 'reservation'
+    action TEXT NOT NULL,  -- 'create', 'update', 'delete', 'login', 'logout', 'failed_login', 'password_reset'
+    entity_type TEXT NOT NULL,  -- 'admin_user', 'event', 'site_content', 'reservation', 'session'
     entity_id UUID,
     changes JSONB,  -- Before/after snapshots
     ip_address TEXT,
@@ -681,15 +695,18 @@ const corsOptions = {
   CREATE INDEX idx_audit_user_id ON audit_logs(admin_user_id);
   CREATE INDEX idx_audit_entity ON audit_logs(entity_type, entity_id);
   CREATE INDEX idx_audit_created ON audit_logs(created_at);
+  CREATE INDEX idx_audit_action ON audit_logs(action);
   ```
-- ⏸️ Build audit log viewer in admin dashboard (Section 9.6)
+- ⏸️ Build audit log viewer in admin dashboard (from Section 9.6)
   - Paginated table showing recent actions
   - Filter by user, action type, entity type, date range
   - Export to CSV for compliance
-- ⏸️ Add admin activity dashboard (optional enhancement from Section 9.6)
+  - Show IP address and user agent
+- ⏸️ Add admin activity dashboard (from Section 9.6 - optional)
   - Most active users
   - Recent changes timeline
-  - Failed login attempts
+  - Failed login attempts chart
+  - Login success rate
 
 **Single-tenant benefit**: All logs belong to one system—no tenant filtering in log aggregation queries.
 
@@ -781,16 +798,21 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 ### 10.7. Role-Based Access Control Enhancements ⚠️
 
-**Tasks (deferred from Section 9.4)**:
-- ⏸️ Hide "Site Configuration" for staff role
+**Tasks (from Section 9.4)**:
+- ⏸️ Hide "Site Configuration" for staff role (from Section 9.4)
   - Add RoleGuard to Site Configuration navigation item
   - Return 403 on backend if staff attempts access
-- ⏸️ Read-only views for staff in reservations
+  - Update `canEditContent()` permission check enforcement
+- ⏸️ Read-only views for staff in reservations (from Section 9.4)
   - Staff can view reservations but not edit/delete
   - Add `canModifyReservation()` permission check
-- ⏸️ Apply role restrictions to events management
+  - Disable edit/delete buttons for staff role
+  - Show read-only badges on forms
+- ⏸️ Apply role restrictions to events management (from Section 9.4)
   - Staff cannot create/edit events
   - Only Owner and Manager can manage events
+  - Add backend validation on event endpoints
+  - Hide event management UI for staff
 
 ---
 
@@ -814,16 +836,22 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 ### 10.9. Email Notifications (Optional) ⚠️
 
-**Tasks (deferred from Section 9.6)**:
-- ⏸️ Set up SendGrid integration
-  - Create email templates for:
-    - Password reset
-    - New user invitation
-    - Account deactivation notice
-- ⏸️ Implement email service
+**Tasks (from Section 9.3 & 9.6)**:
+- ⏸️ Set up SendGrid integration (from Section 9.6)
+  - Install `@sendgrid/mail` package
+  - Configure API key from environment
+  - Set up sender verification
+- ⏸️ Create email templates (from Section 9.3 & 9.6)
+  - Password reset email with secure token link
+  - New user invitation email
+  - Account deactivation notice
+  - Welcome email for new admins
+- ⏸️ Implement email service (from Section 9.6)
   - Send transactional emails
   - Track delivery status
   - Handle bounces/failures
+  - Queue emails for retry on failure
+  - Log all email events to audit log
 
 ---
 
