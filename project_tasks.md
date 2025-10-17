@@ -1380,6 +1380,461 @@ Enhance reservation list with:
 
 ---
 
+## 16. Analytics & Business Intelligence ⏸️
+
+**Status**: ⏸️ Not started - **Foundation for data-driven operations**
+**Priority**: HIGH - Enables forecasting, optimization, and competitive advantage
+**Estimated Effort**: 30-40 hours (Phases 1-2)
+**Dependencies**: Section 10 (Security), Section 12 (Reservations)
+
+**Research Document**: See `docs/research/analytics_optimization_requirements.md` for comprehensive analysis
+
+**Overview**: Build a data-driven analytics platform to forecast demand, optimize operations, and provide actionable insights for business growth. Based on industrial engineering principles and machine learning best practices.
+
+**Business Impact**:
+- **Revenue increase**: 20-30% via dynamic pricing (industry benchmark)
+- **Cost savings**: 10-15% in labor costs via optimized scheduling
+- **ROI**: 4,000-6,700% in Year 1 (research-backed projections)
+
+---
+
+### 16.1. Data Foundation & Warehouse ⏸️
+
+**Objective**: Establish data collection, storage, and ETL infrastructure
+
+**Tasks**:
+- ⏸️ Set up Google BigQuery data warehouse (or Snowflake alternative)
+  - Create production project and datasets
+  - Configure access controls and service accounts
+  - Set up cost monitoring and quotas
+- ⏸️ Build ETL pipeline with Apache Airflow
+  - Extract from operational PostgreSQL database
+  - Transform: clean, aggregate, enrich data
+  - Load to BigQuery on daily schedule
+- ⏸️ Implement Change Data Capture (CDC) for real-time sync
+  - Use Debezium or native PostgreSQL logical replication
+  - Stream changes to data warehouse within 5 minutes
+- ⏸️ Extend GA4 tracking (from Section 14)
+  - Track reservation funnel: view tier → select tier → payment → confirmed
+  - Track engagement: scroll depth, CTA clicks, video plays
+  - Set up BigQuery export for ML model training
+- ⏸️ Create data quality framework
+  - Automated validation checks (completeness, accuracy)
+  - Daily data quality reports
+  - Alerting for anomalies (sudden drops, missing data)
+
+**Data Sources**:
+- Reservations table (bookings, payments, status)
+- Tables table (capacity, type, utilization)
+- Admin users table (staff schedules, actions)
+- Events table (scheduled events, attendance)
+- GA4 (customer behavior, traffic sources)
+- External: Weather API, competitor events
+
+**Deliverables**:
+- BigQuery warehouse with 3+ months historical data
+- Automated daily ETL jobs
+- Data quality dashboard
+
+---
+
+### 16.2. Key Performance Indicators (KPIs) Dashboard ⏸️
+
+**Objective**: Real-time operational dashboards for decision-making
+
+**Tasks**:
+- ⏸️ Install and configure Metabase (open-source BI tool)
+  - Deploy on Render/Railway with PostgreSQL backend
+  - Connect to BigQuery data warehouse
+  - Set up user accounts with role-based access
+- ⏸️ Build Executive Dashboard
+  - Daily/weekly revenue vs. forecast (line chart)
+  - RevPAT (Revenue Per Available Table) trend
+  - Occupancy rate by day of week (bar chart)
+  - Top KPIs: ADT, GOPPAT, labor cost %
+- ⏸️ Build Operations Dashboard
+  - Real-time table occupancy heatmap
+  - Staff performance metrics (tables served, avg ticket)
+  - Inventory levels with reorder alerts
+  - Tonight's forecast vs. actual (live updating)
+- ⏸️ Build Marketing Dashboard
+  - Customer acquisition cost (CAC) by channel
+  - Marketing ROI (revenue / spend)
+  - Customer lifetime value (CLV) distribution
+  - Conversion funnel visualization
+- ⏸️ Build Forecasting Dashboard
+  - 7-day attendance forecast with confidence intervals
+  - Revenue projections by service type
+  - Staffing recommendations (optimal count by role)
+  - Dynamic pricing recommendations
+
+**KPIs to Track** (based on hospitality industry standards):
+- **RevPAT**: Total Revenue / (Tables × Operating Days)
+- **ADT (Average Daily Table Revenue)**: Total Table Revenue / Tables Occupied
+- **Occupancy Rate**: (Tables Occupied / Total Tables) × 100%
+- **Table Turnover Rate**: Parties Served / Tables / Hours
+- **Labor Cost %**: Labor Cost / Revenue × 100%
+- **No-Show Rate**: No-Shows / Total Reservations × 100%
+- **ASPG (Avg Spend Per Guest)**: Total Revenue / Total Guests
+- **NPS (Net Promoter Score)**: % Promoters - % Detractors
+
+**Deliverables**:
+- 4 dashboards (Executive, Operations, Marketing, Forecasting)
+- Mobile-responsive for manager access
+- Automated email reports (weekly summary)
+
+---
+
+### 16.3. Customer Segmentation & Behavior Analytics ⏸️
+
+**Objective**: Understand customer personas for targeted marketing
+
+**Tasks**:
+- ⏸️ Implement RFM Analysis (Recency, Frequency, Monetary)
+  - Segment customers into 4 tiers: VIP Whales, Regulars, Occasionals, One-Timers
+  - Calculate RFM scores for all customers
+  - Build targeting lists for campaigns
+- ⏸️ Cohort Analysis for Retention
+  - Track month-over-month retention curves
+  - Identify drop-off points
+  - Calculate customer lifetime value (CLV) by cohort
+- ⏸️ Purchase Pattern Analysis
+  - Bottle service conversion rate by table type
+  - Upsell opportunities (standard → VIP conversion)
+  - Average time-to-first-purchase after arrival
+- ⏸️ Churn Prediction Model
+  - Features: days since last visit, declining spend trend, reduced engagement
+  - Algorithm: Logistic Regression or Decision Tree
+  - Output: At-risk customer list for win-back campaigns
+
+**Deliverables**:
+- Customer segmentation report (updated monthly)
+- Churn prediction model (80%+ accuracy)
+- Automated marketing lists (sync to email/SMS platforms)
+
+---
+
+### 16.4. SQL Query Library & Analytics API ⏸️
+
+**Objective**: Reusable queries and API endpoints for common analytics
+
+**Tasks**:
+- ⏸️ Create SQL query library (stored in `backend/src/queries/analytics/`)
+  - RevPAT calculation
+  - Occupancy rate by day/week/month
+  - Customer lifetime value
+  - Staff productivity metrics
+  - Inventory turnover
+- ⏸️ Build Analytics API endpoints
+  - `GET /api/v1/analytics/kpis?date_range=last_7_days`
+  - `GET /api/v1/analytics/revenue?group_by=day`
+  - `GET /api/v1/analytics/customers/segments`
+  - `GET /api/v1/analytics/forecast?metric=attendance&days=7`
+- ⏸️ Add caching layer (Redis)
+  - Cache expensive queries for 15-60 minutes
+  - Invalidate cache on relevant data changes
+  - Reduce database load
+
+**Deliverables**:
+- 15+ reusable SQL queries
+- 10+ analytics API endpoints
+- API documentation (OpenAPI/Swagger)
+
+---
+
+### 16.5. Testing & Validation ⏸️
+
+**Tasks**:
+- ⏸️ Unit tests for analytics functions
+- ⏸️ Integration tests for ETL pipeline
+- ⏸️ Dashboard usability testing with managers
+- ⏸️ Data accuracy validation (spot checks vs. operational DB)
+
+---
+
+## 17. Advanced Optimization & Machine Learning ⏸️
+
+**Status**: ⏸️ Not started - **Requires Section 16 completion**
+**Priority**: HIGH - Unlock 30%+ profit increases
+**Estimated Effort**: 40-50 hours (Phases 3-4)
+**Dependencies**: Section 16 (Analytics Foundation)
+
+**Research Document**: See `docs/research/analytics_optimization_requirements.md`
+
+**Overview**: Implement machine learning models for demand forecasting, dynamic pricing, and operational optimization using industrial engineering techniques.
+
+---
+
+### 17.1. Demand Forecasting Models ⏸️
+
+**Objective**: Predict attendance and revenue 7-30 days in advance
+
+**Tasks**:
+- ⏸️ Set up ML development environment
+  - Google Vertex AI or AWS SageMaker (managed)
+  - Alternative: Python + scikit-learn + MLflow (self-hosted)
+  - Configure model versioning and experiment tracking
+- ⏸️ Build Attendance Forecasting Model
+  - Algorithm: Random Forest (80.6% accuracy benchmark)
+  - Features: day_of_week, month, weather, promotions, holidays, historical_attendance
+  - Target: Number of guests expected
+  - Train on 12+ months historical data
+  - Evaluate: MAPE (Mean Absolute Percentage Error) < 20%
+- ⏸️ Build Revenue Forecasting Model
+  - Algorithm: Gradient Boosting (82.3% accuracy benchmark)
+  - Features: table_bookings, bottle_service_rate, event_type, competitor_events
+  - Target: Total revenue expected
+  - Evaluate: RMSE, R² > 0.75
+- ⏸️ Build Table Demand Forecast
+  - Predict tables needed by type (VIP vs. standard)
+  - Algorithm: Logistic Regression for busy/slow classification
+  - Output: Recommended table configurations
+- ⏸️ Model deployment & monitoring
+  - Deploy via API endpoint (FastAPI or Cloud Functions)
+  - Monitor prediction accuracy weekly
+  - Retrain quarterly or when accuracy drops >10%
+  - A/B test: forecast vs. manager intuition
+
+**Deliverables**:
+- 3 forecasting models (attendance, revenue, table demand)
+- 7-day rolling forecast (updated daily)
+- Model performance dashboard
+
+---
+
+### 17.2. Dynamic Pricing Optimization ⏸️
+
+**Objective**: Maximize revenue via demand-based pricing
+
+**Tasks**:
+- ⏸️ Develop dynamic pricing algorithm
+  ```
+  Optimal Price = Base Price × Demand Factor × Time Factor × Day Factor
+  ```
+  - Demand Factor: Based on current booking rate (0.9x - 1.5x)
+  - Time Factor: Based on lead time (0.9x early bird - 1.3x last minute)
+  - Day Factor: Based on day of week (0.7x Mon/Tue - 1.5x Sat)
+- ⏸️ Build pricing recommendation engine
+  - Input: current_bookings, days_until_event, day_of_week, table_type
+  - Output: Recommended price with confidence interval
+  - API endpoint: `POST /api/v1/pricing/recommend`
+- ⏸️ Implement price floor & ceiling constraints
+  - Floor: Never below cost (minimum spend requirements)
+  - Ceiling: Maximum acceptable to market (competitor benchmarks)
+- ⏸️ A/B testing framework
+  - Split test: dynamic pricing vs. fixed pricing (50/50)
+  - Track: conversion rate, revenue per table, customer satisfaction
+  - Duration: 4 weeks minimum
+  - Decision: Roll out winner to 100%
+- ⏸️ Integration with reservation system
+  - Update pricing in real-time based on demand
+  - Display price changes transparently to customers
+  - Log all price changes for audit trail
+
+**Expected Impact**: **20-30% increase in RevPAT** (industry benchmark)
+
+**Deliverables**:
+- Dynamic pricing API
+- Pricing rules admin UI
+- A/B test results report
+
+---
+
+### 17.3. Staff Scheduling Optimization ⏸️
+
+**Objective**: Minimize labor costs while meeting service standards
+
+**Tasks**:
+- ⏸️ Build forecasting-driven scheduling model
+  - Input: Attendance forecast for next 7 days
+  - Algorithm: Integer Linear Programming (ILP) or Genetic Algorithm
+  - Objective: Minimize labor cost
+  - Constraints:
+    - Forecasted demand met (servers, bartenders, security)
+    - Minimum staff per shift (safety, service standards)
+    - Labor law compliance (breaks, max hours per week)
+    - Skill requirements (certified bartenders, experienced hosts)
+- ⏸️ Implement queueing theory for bar staffing
+  - Model bar as M/M/c queue
+  - Calculate optimal bartender count to keep wait time <5 minutes
+  - Formula: `c = λ/μ + √(λ/μ)` where λ=arrival rate, μ=service rate
+- ⏸️ Create staff scheduling UI
+  - Drag-and-drop shift builder
+  - Auto-suggest optimal schedule
+  - Conflict detection (double-bookings, overtime violations)
+  - Export to calendar (iCal format)
+- ⏸️ Track actual vs. forecasted demand
+  - Record actual guest count vs. forecast
+  - Calculate forecast accuracy
+  - Adjust staffing models based on errors
+
+**Expected Impact**: **10-15% reduction in labor costs** (research-backed)
+
+**Deliverables**:
+- Automated staff schedule (weekly)
+- Labor cost optimization report
+- Staff calendar integration
+
+---
+
+### 17.4. Inventory Optimization ⏸️
+
+**Objective**: Reduce waste and carrying costs via optimal ordering
+
+**Tasks**:
+- ⏸️ Implement Economic Order Quantity (EOQ) model
+  ```
+  EOQ = √(2 × Demand × Order Cost / Holding Cost)
+  ```
+  - Calculate EOQ for each bottle type
+  - Set par levels (high-demand: 2-week, slow-movers: 4-week)
+- ⏸️ Calculate reorder points with safety stock
+  ```
+  Reorder Point = (Avg Daily Usage × Lead Time) + Safety Stock
+  Safety Stock = Z-score × √(Lead Time) × Std Dev of Demand
+  ```
+  - Set reorder alerts in inventory system
+  - Auto-generate purchase orders
+- ⏸️ Forecast demand by bottle type
+  - ML model: Historical sales + event type + promotions
+  - Output: Bottles needed for next week/month
+- ⏸️ Build inventory dashboard
+  - Current levels vs. par levels (color-coded: green/yellow/red)
+  - Reorder alerts (visual + email)
+  - Waste tracking (expired, damaged, comp'd bottles)
+  - Supplier performance (lead time, order accuracy)
+
+**Expected Impact**:
+- Reduce waste from 8% to 3% of inventory value
+- Reduce carrying costs by 15%
+- Annual savings: $30K-50K
+
+**Deliverables**:
+- Inventory optimization model
+- Automated reorder alerts
+- Inventory dashboard
+
+---
+
+### 17.5. Table Assignment Optimization ⏸️
+
+**Objective**: Maximize revenue through optimal table allocation
+
+**Tasks**:
+- ⏸️ Build table assignment algorithm
+  - Objective: Maximize total revenue (bigger parties → bigger tables → more revenue)
+  - Algorithm: Hungarian Algorithm or Linear Programming
+  - Constraints:
+    - Party size ≤ table capacity
+    - VIP requests honored when available
+    - Minimize aisle/bar proximity for premium tables
+    - Balance server workload (tables per server)
+- ⏸️ Implement seat optimization rules
+  - Avoid under-utilizing large tables (6-top for party of 2)
+  - Combine small parties when appropriate (shared tables for walk-ins)
+  - Prioritize high-revenue parties for premium locations
+- ⏸️ Create admin UI for table assignments
+  - Drag-and-drop reservation to table
+  - Auto-suggest optimal assignment
+  - Override capability for special requests
+  - Conflict warnings (double-booking, capacity exceeded)
+
+**Expected Impact**: **10-15% increase in RevPAT** through optimal allocation
+
+**Deliverables**:
+- Table assignment algorithm
+- Admin UI for table management
+- Optimization performance metrics
+
+---
+
+### 17.6. Promoter Performance Tracking & Optimization ⏸️
+
+**Objective**: Maximize promoter ROI and commission fairness
+
+**Tasks**:
+- ⏸️ Build promoter tracking system
+  - Link reservations to promoter codes
+  - Track: head count delivered, revenue generated, commission paid
+  - Calculate promoter ROI: Revenue / Commission (target: >5:1)
+- ⏸️ Implement tiered commission structure
+  - Flat fee: $50-100 per head
+  - Percentage: 10-15% of table revenue
+  - Tiered: Higher % for VIP tables
+- ⏸️ Create promoter leaderboard
+  - Rank by: total revenue, head count, ROI
+  - Monthly/quarterly prizes for top performers
+  - Public dashboard for transparency
+- ⏸️ Optimize promoter allocation
+  - Match high-performing promoters to high-value events
+  - Limit low-performing promoters (ROI <3:1)
+  - A/B test commission structures
+
+**Deliverables**:
+- Promoter tracking dashboard
+- Automated commission calculations
+- Performance leaderboard
+
+---
+
+### 17.7. Testing & Validation ⏸️
+
+**Tasks**:
+- ⏸️ Model accuracy testing (holdout set, backtesting)
+- ⏸️ A/B test all optimizations vs. manual baseline
+- ⏸️ Load testing for ML API endpoints (1000 req/sec)
+- ⏸️ User acceptance testing with managers
+- ⏸️ Financial validation (predicted savings vs. actual)
+
+---
+
+### 17.8. Continuous Improvement & MLOps ⏸️
+
+**Objective**: Maintain and improve models over time
+
+**Tasks**:
+- ⏸️ Set up model monitoring
+  - Track prediction accuracy weekly (MAPE, RMSE)
+  - Alert when accuracy drops >10%
+  - Log all predictions for audit trail
+- ⏸️ Implement automated retraining
+  - Retrain models quarterly
+  - Use latest 12-18 months of data
+  - A/B test new model vs. old model before deployment
+- ⏸️ Establish feedback loops
+  - Manager feedback on forecast accuracy
+  - Customer feedback (NPS, reviews)
+  - Financial performance (actual vs. forecast)
+- ⏸️ Expand feature set over time
+  - Add competitor pricing data (web scraping)
+  - Integrate weather forecasts (API)
+  - Add social media sentiment analysis
+
+**Deliverables**:
+- Model monitoring dashboard
+- Automated retraining pipeline
+- Quarterly model performance reports
+
+---
+
+### 17.9. Success Metrics & ROI Tracking
+
+**Revenue Impact**:
+- Dynamic pricing: +20-30% RevPAT = **$2.4M-3.6M/year**
+- Demand forecasting: +5-10% booking conversion = **$500K-1M/year**
+- Table turnover: 9min reduction = **$1.2M/year** (20% utilization)
+
+**Cost Savings**:
+- Staff optimization: -10-15% labor = **$50K-75K/year**
+- Inventory optimization: -5% waste = **$30K-50K/year**
+
+**Total Year 1 Impact**: **$4.18M - $5.925M**
+**Investment**: ~$75K (data warehouse, ML platform, development)
+**ROI**: **5,473% - 7,800%** (55x - 79x return)
+**Payback Period**: **<3 months**
+
+---
+
 ## Long-term Development Enhancements
 
 These features represent future optimization opportunities and advanced capabilities for the platform:
