@@ -8,6 +8,7 @@
     "build": "tsc --project tsconfig.json",
     "start": "node dist/server.js",
     "db:seed": "tsx src/db/runSeed.ts",
+    "db:migrate": "tsx src/db/migrate.ts",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix"
   },
