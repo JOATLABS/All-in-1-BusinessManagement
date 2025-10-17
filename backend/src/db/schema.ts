@@ -140,3 +140,40 @@ export const attendanceEventsTable = pgTable('attendance_events', {
 });
 
 export type AttendanceEventRow = typeof attendanceEventsTable.$inferSelect;
+
+/**
+ * Admin User Sessions - JWT refresh token tracking
+ * Single-tenant: all sessions for the one venue's admin users
+ */
+export const adminUserSessionsTable = pgTable('admin_user_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  adminUserId: uuid('admin_user_id')
+    .notNull()
+    .references(() => adminUsersTable.id, { onDelete: 'cascade' }),
+  refreshTokenHash: text('refresh_token_hash').notNull(), // Hashed refresh token for security
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export type AdminUserSessionRow = typeof adminUserSessionsTable.$inferSelect;
+
+/**
+ * Audit Logs - Track all admin actions for compliance and security
+ * Single-tenant: all audit logs for the one venue
+ */
+export const auditLogsTable = pgTable('audit_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  adminUserId: uuid('admin_user_id').references(() => adminUsersTable.id),
+  action: text('action').notNull(), // 'create', 'update', 'delete', 'login', 'logout', 'failed_login', 'password_reset'
+  entityType: text('entity_type').notNull(), // 'admin_user', 'event', 'site_content', 'reservation', 'session'
+  entityId: uuid('entity_id'), // ID of the affected entity (nullable for actions like login)
+  changes: jsonb('changes'), // Before/after snapshots for update actions
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export type AuditLogRow = typeof auditLogsTable.$inferSelect;
