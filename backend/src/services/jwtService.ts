@@ -1,4 +1,5 @@
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 import { randomUUID } from 'crypto';
 import { env } from '../config/env';
 
@@ -34,41 +35,44 @@ export class JWTService {
     const tokenId = randomUUID();
 
     // Access Token (short-lived: 15 minutes)
-    const accessToken = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        tokenId,
-        type: 'access',
-      } as JWTPayload,
-      env.JWT_SECRET,
-      {
-        expiresIn: env.JWT_ACCESS_EXPIRY,
-        issuer: 'ojaplus-venture-system',
-        audience: 'ojaplus-admin',
-      }
-    );
+    const accessPayload: JWTPayload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      tokenId,
+      type: 'access',
+    };
+
+    const accessExpiry = this.normalizeExpiry(env.JWT_ACCESS_EXPIRY);
+    const refreshExpiry = this.normalizeExpiry(env.JWT_REFRESH_EXPIRY);
+
+    const accessTokenOptions: SignOptions = {
+      expiresIn: accessExpiry,
+      issuer: 'ojaplus-venture-system',
+      audience: 'ojaplus-admin',
+    };
+
+    const accessToken = jwt.sign(accessPayload, env.JWT_SECRET, accessTokenOptions);
 
     // Refresh Token (long-lived: 7 days)
-    const refreshToken = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        tokenId,
-        type: 'refresh',
-      } as JWTPayload,
-      env.JWT_REFRESH_SECRET,
-      {
-        expiresIn: env.JWT_REFRESH_EXPIRY,
-        issuer: 'ojaplus-venture-system',
-        audience: 'ojaplus-admin',
-      }
-    );
+    const refreshPayload: JWTPayload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      tokenId,
+      type: 'refresh',
+    };
+
+    const refreshTokenOptions: SignOptions = {
+      expiresIn: refreshExpiry,
+      issuer: 'ojaplus-venture-system',
+      audience: 'ojaplus-admin',
+    };
+
+    const refreshToken = jwt.sign(refreshPayload, env.JWT_REFRESH_SECRET, refreshTokenOptions);
 
     // Calculate expiry in seconds (15m = 900s)
-    const expiresIn = this.parseExpiry(env.JWT_ACCESS_EXPIRY);
+    const expiresIn = this.parseExpiry(accessExpiry);
 
     return {
       accessToken,
@@ -148,7 +152,7 @@ export class JWTService {
       {
         userId,
         email,
-        purpose: 'password_reset',
+        purpose: 'password_reset' as const,
       },
       env.JWT_SECRET,
       {
@@ -167,15 +171,19 @@ export class JWTService {
       const decoded = jwt.verify(token, env.JWT_SECRET, {
         issuer: 'ojaplus-venture-system',
         audience: 'ojaplus-password-reset',
-      }) as any;
+      });
 
-      if (decoded.purpose !== 'password_reset') {
+      if (
+        typeof decoded !== 'object' ||
+        decoded === null ||
+        (decoded as { purpose?: unknown }).purpose !== 'password_reset'
+      ) {
         throw new Error('Invalid token purpose');
       }
 
       return {
-        userId: decoded.userId,
-        email: decoded.email,
+        userId: (decoded as { userId: string }).userId,
+        email: (decoded as { email: string }).email,
       };
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
@@ -191,14 +199,14 @@ export class JWTService {
   /**
    * Parse expiry string to seconds (e.g., "15m" -> 900, "7d" -> 604800)
    */
-  private static parseExpiry(expiry: string): number {
-    const match = expiry.match(/^(\d+)([smhd])$/);
+  private static parseExpiry(expiry: StringValue): number {
+    const match = expiry.match(/^(\d+)\s*([smhd])$/i);
     if (!match) {
       throw new Error(`Invalid expiry format: ${expiry}`);
     }
 
     const value = parseInt(match[1], 10);
-    const unit = match[2];
+    const unit = match[2].toLowerCase();
 
     switch (unit) {
       case 's':
@@ -214,17 +222,32 @@ export class JWTService {
     }
   }
 
+  private static normalizeExpiry(expiry: string): StringValue {
+    const normalized = expiry.trim();
+    const match = normalized.match(/^(\d+)\s*([smhd])$/i);
+    if (!match) {
+      throw new Error(`Invalid expiry format: ${expiry}`);
+    }
+
+    return normalized as StringValue;
+  }
+
   /**
    * Check if token is expiring soon (within 5 minutes)
    */
   static isTokenExpiringSoon(token: string): boolean {
     try {
-      const decoded = jwt.decode(token) as any;
-      if (!decoded || !decoded.exp) {
+      const decoded = jwt.decode(token);
+      if (!decoded || typeof decoded !== 'object') {
         return false;
       }
 
-      const expiryTime = decoded.exp * 1000; // Convert to milliseconds
+      const exp = (decoded as { exp?: unknown }).exp;
+      if (typeof exp !== 'number') {
+        return false;
+      }
+
+      const expiryTime = exp * 1000; // Convert to milliseconds
       const now = Date.now();
       const fiveMinutes = 5 * 60 * 1000;
 

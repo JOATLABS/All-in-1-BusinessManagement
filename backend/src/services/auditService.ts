@@ -1,6 +1,7 @@
-import { db } from '../db/index.js';
+import { getDb } from '../db/index.js';
 import { auditLogsTable } from '../db/schema.js';
 import type { Request } from 'express';
+import { log } from '../config/logger.js';
 
 /**
  * Audit Action Types
@@ -37,7 +38,7 @@ export interface AuditLogEntry {
   action: AuditAction;
   entityType: EntityType;
   entityId?: string; // undefined for actions like login
-  changes?: Record<string, any>; // before/after snapshots
+  changes?: Record<string, unknown>; // before/after snapshots
   ipAddress?: string;
   userAgent?: string;
 }
@@ -52,6 +53,8 @@ export class AuditService {
    */
   static async log(entry: AuditLogEntry): Promise<void> {
     try {
+      const db = getDb();
+
       await db.insert(auditLogsTable).values({
         adminUserId: entry.adminUserId || null,
         action: entry.action,
@@ -62,8 +65,12 @@ export class AuditService {
         userAgent: entry.userAgent || null,
       });
     } catch (error) {
-      // Log to console if database logging fails (don't throw - audit shouldn't break the app)
-      console.error('Failed to write audit log:', error);
+      // Log to application logger if database logging fails (don't throw - audit shouldn't break the app)
+      log.error('Failed to write audit log', error, {
+        action: entry.action,
+        entityType: entry.entityType,
+        entityId: entry.entityId,
+      });
     }
   }
 
@@ -129,7 +136,7 @@ export class AuditService {
     userId: string,
     entityType: EntityType,
     entityId: string,
-    data: Record<string, any>,
+    data: Record<string, unknown>,
     req: Request
   ): Promise<void> {
     await this.logFromRequest(req, {
@@ -148,8 +155,8 @@ export class AuditService {
     userId: string,
     entityType: EntityType,
     entityId: string,
-    before: Record<string, any>,
-    after: Record<string, any>,
+    before: Record<string, unknown>,
+    after: Record<string, unknown>,
     req: Request
   ): Promise<void> {
     await this.logFromRequest(req, {
@@ -168,7 +175,7 @@ export class AuditService {
     userId: string,
     entityType: EntityType,
     entityId: string,
-    data: Record<string, any>,
+    data: Record<string, unknown>,
     req: Request
   ): Promise<void> {
     await this.logFromRequest(req, {

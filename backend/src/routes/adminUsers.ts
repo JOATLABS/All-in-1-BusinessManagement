@@ -1,6 +1,8 @@
 import type { Router } from 'express';
+import type { AdminUser } from '../types.js';
 import { authenticateRequest } from '../middleware/authenticate.js';
 import { requireRole, canAccessOwnOrSuperadmin } from '../middleware/authorize.js';
+import { log } from '../config/logger.js';
 import {
   listAdminUsers,
   findAdminById,
@@ -11,8 +13,14 @@ import {
 import {
   createAdminUserSchema,
   updateAdminUserSchema,
-  listAdminUsersQuerySchema
+  listAdminUsersQuerySchema,
 } from '../validation/adminUsers.js';
+
+const omitPasswordHash = <T extends { passwordHash?: string }>(user: T) => {
+  const { passwordHash: _passwordHash, ...rest } = user;
+  void _passwordHash;
+  return rest;
+};
 
 export const registerAdminUserRoutes = (router: Router) => {
   // List all admin users (superadmin only)
@@ -27,19 +35,27 @@ export const registerAdminUserRoutes = (router: Router) => {
           return res.status(400).json({ message: 'Invalid query parameters' });
         }
 
-        const filters = {
+        const filters: { role?: AdminUser['role']; isActive?: boolean } = {
           role: queryResult.data.role,
-          isActive: queryResult.data.isActive === 'true' ? true : queryResult.data.isActive === 'false' ? false : undefined
+          isActive:
+            queryResult.data.isActive === 'true'
+              ? true
+              : queryResult.data.isActive === 'false'
+              ? false
+              : undefined,
         };
 
         const users = await listAdminUsers(filters);
 
         // Exclude password hashes from response
-        const sanitizedUsers = users.map(({ passwordHash, ...user }) => user);
+        const sanitizedUsers = users.map((user) => omitPasswordHash(user));
 
         return res.json({ users: sanitizedUsers });
       } catch (error) {
-        console.error('Error listing admin users:', error);
+        log.error('Error listing admin users', error, {
+          requestId: req.requestId,
+          userId: req.user?.userId,
+        });
         return res.status(500).json({ message: 'Failed to list admin users' });
       }
     }
@@ -63,10 +79,12 @@ export const registerAdminUserRoutes = (router: Router) => {
         }
 
         // Exclude password hash
-        const { passwordHash, ...sanitizedUser } = user;
-        return res.json({ user: sanitizedUser });
+        return res.json({ user: omitPasswordHash(user) });
       } catch (error) {
-        console.error('Error fetching admin user:', error);
+        log.error('Error fetching admin user', error, {
+          requestId: req.requestId,
+          userId: req.user?.userId,
+        });
         return res.status(500).json({ message: 'Failed to fetch admin user' });
       }
     }
@@ -88,22 +106,23 @@ export const registerAdminUserRoutes = (router: Router) => {
         }
 
         const data = parseResult.data;
-        const createdBy = req.adminSession?.adminId;
+        const createdBy = req.user?.userId;
 
         const user = await createAdminUser({
           ...data,
-          createdBy
+          createdBy,
         });
 
-        // Exclude password hash
-        const { passwordHash, ...sanitizedUser } = user;
-        return res.status(201).json({ user: sanitizedUser });
+        return res.status(201).json({ user: omitPasswordHash(user) });
       } catch (error) {
         if (error instanceof Error && error.message.includes('unique')) {
           return res.status(409).json({ message: 'Admin user with this email already exists' });
         }
 
-        console.error('Error creating admin user:', error);
+        log.error('Error creating admin user', error, {
+          requestId: req.requestId,
+          userId: req.user?.userId,
+        });
         return res.status(500).json({ message: 'Failed to create admin user' });
       }
     }
@@ -118,8 +137,8 @@ export const registerAdminUserRoutes = (router: Router) => {
         const { id } = req.params;
 
         // Allow self-updates for profile, but only superadmin can change role/isActive
-        const isSelf = req.adminSession?.adminId === id;
-        const isSuperadmin = req.adminSession?.role === 'superadmin';
+        const isSelf = req.user?.userId === id;
+        const isSuperadmin = req.user?.role === 'superadmin';
 
         if (!isSelf && !isSuperadmin) {
           return res.status(403).json({ message: 'Insufficient permissions' });
@@ -153,10 +172,12 @@ export const registerAdminUserRoutes = (router: Router) => {
         }
 
         // Exclude password hash
-        const { passwordHash, ...sanitizedUser } = user;
-        return res.json({ user: sanitizedUser });
+        return res.json({ user: omitPasswordHash(user) });
       } catch (error) {
-        console.error('Error updating admin user:', error);
+        log.error('Error updating admin user', error, {
+          requestId: req.requestId,
+          userId: req.user?.userId,
+        });
         return res.status(500).json({ message: 'Failed to update admin user' });
       }
     }
@@ -172,7 +193,7 @@ export const registerAdminUserRoutes = (router: Router) => {
         const { id } = req.params;
 
         // Prevent self-deletion
-        if (req.adminSession?.adminId === id) {
+        if (req.user?.userId === id) {
           return res.status(400).json({ message: 'Cannot deactivate your own account' });
         }
 
@@ -182,10 +203,12 @@ export const registerAdminUserRoutes = (router: Router) => {
         }
 
         // Exclude password hash
-        const { passwordHash, ...sanitizedUser } = user;
-        return res.json({ user: sanitizedUser });
+        return res.json({ user: omitPasswordHash(user) });
       } catch (error) {
-        console.error('Error deactivating admin user:', error);
+        log.error('Error deactivating admin user', error, {
+          requestId: req.requestId,
+          userId: req.user?.userId,
+        });
         return res.status(500).json({ message: 'Failed to deactivate admin user' });
       }
     }

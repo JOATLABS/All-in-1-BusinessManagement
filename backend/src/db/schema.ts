@@ -1,6 +1,5 @@
 import { pgTable, jsonb, text, timestamp, uuid, integer, boolean, numeric } from 'drizzle-orm/pg-core';
 import type {
-  AdminUser,
   EventContent,
   FooterContent,
   HeroContent,
@@ -34,7 +33,7 @@ export const adminUsersTable = pgTable('admin_users', {
   isActive: boolean('is_active').notNull().default(true),
   createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true })
 });
 

@@ -3,6 +3,14 @@ import type { Request, Response, NextFunction } from 'express';
 import type { Session } from '../types.js';
 import { config } from '../config.js';
 
+declare global {
+  namespace Express {
+    interface Request {
+      session?: Session;
+    }
+  }
+}
+
 const sessions = new Map<string, Session>();
 
 const isExpired = (session: Session) => session.expiresAt <= Date.now();
@@ -55,6 +63,6 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   }
 
   // Attach session to request for use in route handlers
-  (req as any).session = session;
+  req.session = session;
   next();
 };

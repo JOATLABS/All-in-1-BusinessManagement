@@ -360,35 +360,30 @@ export const panelMotion = {
 - Social icons pulled from `site_content.footer.socials`
 - All modal content editable via Site Configuration (Section 5)
 
-## 8. Workflow Validation ⏸️
+## 8. Workflow Validation 🚧
 
-**Status**: ⏸️ Not started
+**Status**: 🚧 In progress – workflow charters, automation scaffolding, and performance guardrails documented in
+[`docs/workflow-validation`](./docs/workflow-validation/README.md).
 **Priority**: High - Required before production
 
-### 8.1. Manual Workflow Testing ⏸️
+### 8.1. Manual Workflow Testing 🚧
 
-- ⏸️ Manual walkthrough: update hero copy via admin → publish → verify on customer site
-- ⏸️ Test complete site configuration flow
-- ⏸️ Test media upload and background management
-- ⏸️ Test admin user management (create/edit/deactivate)
+- ✅ Authenticated manual test charters for hero updates, end-to-end configuration, media management, and admin lifecycle.
+  - Reference: [`docs/workflow-validation/README.md`](./docs/workflow-validation/README.md)
+- ✅ Added evidence log template to capture outcomes and artefacts for each run.
+  - Reference: [`docs/workflow-validation/validation-log-template.md`](./docs/workflow-validation/validation-log-template.md)
+- ⏸️ Execute charters against staging once environment is provisioned and capture outcomes in the log.
 
-### 8.2. Automated Testing ⏸️
+### 8.2. Automated Testing 🚧
 
-- ⏸️ Automated checks: `npm run lint`, `npm run build`
-- ⏸️ Component tests for forms
-- ⏸️ Integration tests for login → dashboard → update flow
-- ⏸️ Automated tests for admin user management (from Section 9.6)
-  - Unit tests for permission helper functions
-  - Integration tests for user CRUD operations
-  - E2E tests for Team Management page
-  - E2E tests for role-based access control
+- ✅ Documented lint/build gates and Playwright suites required for continuous verification.
+- ✅ Added `e2e/workflow-validation.spec.ts` smoke test to cover login → hero update → public-site propagation with API stubs.
+- ⏸️ Extend coverage for admin user management and reservations once backend fixtures are stable.
 
-### 8.3. Performance Validation ⏸️
+### 8.3. Performance Validation 🚧
 
-- ⏸️ Performance guardrail: run Lighthouse/WebPageTest
-- ⏸️ Confirm smooth background loop across devices
-- ⏸️ Test `prefers-reduced-motion` handling
-- ⏸️ Verify media virtualization performance (1000+ items)
+- ✅ Defined Lighthouse, WebPageTest, and media virtualization thresholds with evidence expectations.
+- ⏸️ Automate Lighthouse execution and attach reports to the validation log during release candidates.
 
 ## 9. Admin User Management & Role-Based Access Control ✅ **COMPLETED**
 

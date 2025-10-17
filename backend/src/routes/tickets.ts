@@ -1,10 +1,12 @@
 import { Router, type Request, type Response } from 'express';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, type SQL } from 'drizzle-orm';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import { ticketsTable, customersTable, eventsTable, attendanceEventsTable } from '../db/schema.js';
-import { requireAuth } from '../services/sessionService.js';
+import { authenticateRequest } from '../middleware/authenticate.js';
+import { requireRole } from '../middleware/authorize.js';
+import { log } from '../config/logger.js';
 
 const router = Router();
 
@@ -171,7 +173,9 @@ router.post('/:eventId/rsvp', async (req: Request, res: Response) => {
       message: 'RSVP confirmed! Your QR code has been generated.'
     });
   } catch (error) {
-    console.error('Error creating RSVP:', error);
+    log.error('Error creating RSVP', error, {
+      requestId: req.requestId,
+    });
     return res.status(500).json({ error: 'Failed to create RSVP' });
   }
 });
@@ -181,138 +185,150 @@ router.post('/:eventId/rsvp', async (req: Request, res: Response) => {
  * Validate and redeem QR code (door staff)
  * Single-tenant: direct query, no tenant context
  */
-router.post('/validate', requireAuth, async (req: Request, res: Response) => {
-  try {
-    const { qrCode, redeemedBy } = req.body;
+router.post(
+  '/validate',
+  authenticateRequest,
+  requireRole(['superadmin', 'admin', 'staff']),
+  async (req: Request, res: Response) => {
+    try {
+      const { qrCode, redeemedBy } = req.body;
 
-    if (!qrCode) {
-      return res.status(400).json({ error: 'QR code is required' });
-    }
+      if (!qrCode) {
+        return res.status(400).json({ error: 'QR code is required' });
+      }
 
-    const db = getDb();
+      const db = getDb();
 
-    // Find ticket by QR code (single-tenant: simple query)
-    const ticket = await db
-      .select({
-        ticket: ticketsTable,
-        event: eventsTable
-      })
-      .from(ticketsTable)
-      .innerJoin(eventsTable, eq(ticketsTable.eventId, eventsTable.id))
-      .where(eq(ticketsTable.qrCode, qrCode))
-      .limit(1);
-
-    if (ticket.length === 0) {
-      return res.status(404).json({
-        valid: false,
-        error: 'Invalid QR code'
-      });
-    }
-
-    const { ticket: ticketData, event } = ticket[0];
-
-    // Check if already redeemed
-    if (ticketData.status === 'redeemed') {
-      return res.status(409).json({
-        valid: false,
-        error: 'Ticket already redeemed',
-        redeemedAt: ticketData.redeemedAt,
-        redeemedBy: ticketData.redeemedBy
-      });
-    }
-
-    // Check if cancelled
-    if (ticketData.status === 'cancelled') {
-      return res.status(403).json({
-        valid: false,
-        error: 'Ticket has been cancelled'
-      });
-    }
-
-    // Redeem ticket
-    const redeemed = await db
-      .update(ticketsTable)
-      .set({
-        status: 'redeemed',
-        redeemedAt: new Date(),
-        redeemedBy: redeemedBy || 'door-staff',
-        updatedAt: new Date()
-      })
-      .where(eq(ticketsTable.id, ticketData.id))
-      .returning();
-
-    // Update attendance event
-    if (ticketData.customerId) {
-      await db
-        .update(attendanceEventsTable)
-        .set({
-          attended: true,
-          scanTimestamp: new Date()
+      // Find ticket by QR code (single-tenant: simple query)
+      const ticket = await db
+        .select({
+          ticket: ticketsTable,
+          event: eventsTable,
         })
-        .where(eq(attendanceEventsTable.ticketId, ticketData.id));
+        .from(ticketsTable)
+        .innerJoin(eventsTable, eq(ticketsTable.eventId, eventsTable.id))
+        .where(eq(ticketsTable.qrCode, qrCode))
+        .limit(1);
 
-      // Update customer stats
-      await db
-        .update(customersTable)
+      if (ticket.length === 0) {
+        return res.status(404).json({
+          valid: false,
+          error: 'Invalid QR code',
+        });
+      }
+
+      const { ticket: ticketData, event } = ticket[0];
+
+      // Check if already redeemed
+      if (ticketData.status === 'redeemed') {
+        return res.status(409).json({
+          valid: false,
+          error: 'Ticket already redeemed',
+          redeemedAt: ticketData.redeemedAt,
+          redeemedBy: ticketData.redeemedBy,
+        });
+      }
+
+      // Check if cancelled
+      if (ticketData.status === 'cancelled') {
+        return res.status(403).json({
+          valid: false,
+          error: 'Ticket has been cancelled',
+        });
+      }
+
+      // Redeem ticket
+      const redeemed = await db
+        .update(ticketsTable)
         .set({
-          totalVisits: sql`${customersTable.totalVisits} + 1`,
-          lastVisitDate: new Date(),
-          updatedAt: new Date()
+          status: 'redeemed',
+          redeemedAt: new Date(),
+          redeemedBy: redeemedBy || 'door-staff',
+          updatedAt: new Date(),
         })
-        .where(eq(customersTable.id, ticketData.customerId));
-    }
+        .where(eq(ticketsTable.id, ticketData.id))
+        .returning();
 
-    return res.json({
-      valid: true,
-      ticket: redeemed[0],
-      event,
-      message: `Welcome, ${ticketData.guestName}!`
-    });
-  } catch (error) {
-    console.error('Error validating ticket:', error);
-    return res.status(500).json({ error: 'Failed to validate ticket' });
+      // Update attendance event
+      if (ticketData.customerId) {
+        await db
+          .update(attendanceEventsTable)
+          .set({
+            attended: true,
+            scanTimestamp: new Date(),
+          })
+          .where(eq(attendanceEventsTable.ticketId, ticketData.id));
+
+        // Update customer stats
+        await db
+          .update(customersTable)
+          .set({
+            totalVisits: sql`${customersTable.totalVisits} + 1`,
+            lastVisitDate: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(customersTable.id, ticketData.customerId));
+      }
+
+      return res.json({
+        valid: true,
+        ticket: redeemed[0],
+        event,
+        message: `Welcome, ${ticketData.guestName}!`,
+      });
+    } catch (error) {
+      log.error('Error validating ticket', error, {
+        requestId: req.requestId,
+        userId: req.user?.userId,
+      });
+      return res.status(500).json({ error: 'Failed to validate ticket' });
+    }
   }
-});
+);
 
 /**
  * GET /api/v1/admin/tickets
  * List all tickets (admin only)
  * Single-tenant: returns all tickets for the venue
  */
-router.get('/admin/tickets', requireAuth, async (req: Request, res: Response) => {
-  try {
-    const { eventId, status } = req.query;
-    const db = getDb();
+router.get(
+  '/admin/tickets',
+  authenticateRequest,
+  requireRole(['superadmin', 'admin', 'staff']),
+  async (req: Request, res: Response) => {
+    try {
+      const { eventId, status } = req.query;
+      const db = getDb();
 
-    let query = db
-      .select({
-        ticket: ticketsTable,
-        event: eventsTable
-      })
-      .from(ticketsTable)
-      .innerJoin(eventsTable, eq(ticketsTable.eventId, eventsTable.id));
+      const baseQuery = db
+        .select({
+          ticket: ticketsTable,
+          event: eventsTable,
+        })
+        .from(ticketsTable)
+        .innerJoin(eventsTable, eq(ticketsTable.eventId, eventsTable.id));
 
-    // Apply filters
-    const conditions = [];
-    if (eventId) {
-      conditions.push(eq(ticketsTable.eventId, eventId as string));
+      const conditions: SQL[] = [];
+      if (eventId) {
+        conditions.push(eq(ticketsTable.eventId, eventId as string));
+      }
+      if (status) {
+        conditions.push(eq(ticketsTable.status, status as string));
+      }
+
+      const tickets =
+        conditions.length > 0 ? await baseQuery.where(and(...conditions)) : await baseQuery;
+
+      return res.json({ tickets });
+    } catch (error) {
+      log.error('Error fetching tickets', error, {
+        requestId: req.requestId,
+        userId: req.user?.userId,
+      });
+      return res.status(500).json({ error: 'Failed to fetch tickets' });
     }
-    if (status) {
-      conditions.push(eq(ticketsTable.status, status as string));
-    }
-
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
-    }
-
-    const tickets = await query;
-
-    return res.json({ tickets });
-  } catch (error) {
-    console.error('Error fetching tickets:', error);
-    return res.status(500).json({ error: 'Failed to fetch tickets' });
   }
-});
+);
 
 /**
  * GET /api/v1/tickets/:qrCode
@@ -343,7 +359,9 @@ router.get('/:qrCode', async (req: Request, res: Response) => {
       event: ticket[0].event
     });
   } catch (error) {
-    console.error('Error fetching ticket:', error);
+    log.error('Error fetching ticket', error, {
+      requestId: req.requestId,
+    });
     return res.status(500).json({ error: 'Failed to fetch ticket' });
   }
 });

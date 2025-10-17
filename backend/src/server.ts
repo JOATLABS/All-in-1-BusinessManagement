@@ -40,7 +40,7 @@ const start = async () => {
     });
 
     // Force shutdown after 10 seconds
-    setTimeout(() => {
+    globalThis.setTimeout(() => {
       log.error('Forced shutdown after timeout');
       process.exit(1);
     }, 10000);
@@ -51,6 +51,6 @@ const start = async () => {
 };
 
 start().catch((error) => {
-  console.error('❌ Failed to start API:', error);
+  log.error('Failed to start API', error);
   process.exit(1);
 });

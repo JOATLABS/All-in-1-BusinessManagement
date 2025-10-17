@@ -1,9 +1,10 @@
 import { Router, type Request, type Response } from 'express';
-import { eq, desc, and, gte } from 'drizzle-orm';
+import { eq, desc, gte } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { eventsTable } from '../db/schema.js';
 import { authenticateRequest } from '../middleware/authenticate.js';
 import { requireRole } from '../middleware/authorize.js';
+import { log } from '../config/logger.js';
 
 const router = Router();
 
@@ -12,7 +13,7 @@ const router = Router();
  * List all upcoming events (public route)
  * Single-tenant: no club_id filtering
  */
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const db = getDb();
     const now = new Date();
@@ -26,7 +27,9 @@ router.get('/', async (_req: Request, res: Response) => {
 
     return res.json({ events });
   } catch (error) {
-    console.error('Error fetching events:', error);
+    log.error('Error fetching events', error, {
+      path: req.path,
+    });
     return res.status(500).json({ error: 'Failed to fetch events' });
   }
 });
@@ -53,7 +56,10 @@ router.get('/:slug', async (req: Request, res: Response) => {
 
     return res.json({ event: event[0] });
   } catch (error) {
-    console.error('Error fetching event:', error);
+    log.error('Error fetching event', error, {
+      path: req.path,
+      slug: req.params.slug,
+    });
     return res.status(500).json({ error: 'Failed to fetch event' });
   }
 });
@@ -119,7 +125,10 @@ router.post('/', authenticateRequest, requireRole(['superadmin', 'admin']), asyn
 
     return res.status(201).json({ event: newEvent[0] });
   } catch (error) {
-    console.error('Error creating event:', error);
+    log.error('Error creating event', error, {
+      requestId: req.requestId,
+      userId: req.user?.userId,
+    });
     return res.status(500).json({ error: 'Failed to create event' });
   }
 });
@@ -154,7 +163,11 @@ router.patch('/:id', authenticateRequest, requireRole(['superadmin', 'admin']), 
 
     return res.json({ event: updated[0] });
   } catch (error) {
-    console.error('Error updating event:', error);
+    log.error('Error updating event', error, {
+      requestId: req.requestId,
+      userId: req.user?.userId,
+      eventId: req.params.id,
+    });
     return res.status(500).json({ error: 'Failed to update event' });
   }
 });
@@ -180,7 +193,11 @@ router.delete('/:id', authenticateRequest, requireRole(['superadmin', 'admin']),
 
     return res.json({ message: 'Event deleted successfully' });
   } catch (error) {
-    console.error('Error deleting event:', error);
+    log.error('Error deleting event', error, {
+      requestId: req.requestId,
+      userId: req.user?.userId,
+      eventId: req.params.id,
+    });
     return res.status(500).json({ error: 'Failed to delete event' });
   }
 });

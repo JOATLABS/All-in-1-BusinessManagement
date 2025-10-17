@@ -1,8 +1,12 @@
 // Google Analytics setup
+type GtagPrimitive = string | number | boolean | Date | undefined | null;
+type GtagObject = Record<string, unknown>;
+type GtagArguments = [string, ...(GtagPrimitive | GtagObject)[]];
+
 declare global {
   interface Window {
-    dataLayer: any[];
-    gtag: (...args: any[]) => void;
+    dataLayer: Array<GtagArguments>;
+    gtag: (...args: GtagArguments) => void;
   }
 }
 
@@ -17,9 +21,9 @@ if (GA_MEASUREMENT_ID) {
   document.head.appendChild(script);
 
   // Initialize dataLayer and gtag
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function gtag() {
-    window.dataLayer.push(arguments);
+  window.dataLayer = window.dataLayer ?? ([] as GtagArguments[]);
+  window.gtag = (...args: GtagArguments) => {
+    window.dataLayer.push(args);
   };
   window.gtag('js', new Date());
   window.gtag('config', GA_MEASUREMENT_ID);
@@ -28,7 +32,7 @@ if (GA_MEASUREMENT_ID) {
 // Export helper functions for tracking custom events
 export const trackEvent = (
   eventName: string,
-  eventParams?: Record<string, any>
+  eventParams?: Record<string, unknown>
 ) => {
   if (GA_MEASUREMENT_ID && window.gtag) {
     window.gtag('event', eventName, eventParams);

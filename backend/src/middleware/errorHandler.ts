@@ -6,12 +6,13 @@ import { env } from '../config/env.js';
  * Custom Application Error
  */
 export class AppError extends Error {
-  constructor(
-    public statusCode: number,
-    public message: string,
-    public isOperational = true
-  ) {
+  public readonly statusCode: number;
+  public readonly isOperational: boolean;
+
+  constructor(statusCode: number, message: string, isOperational = true) {
     super(message);
+    this.statusCode = statusCode;
+    this.isOperational = isOperational;
     Object.setPrototypeOf(this, AppError.prototype);
     Error.captureStackTrace(this, this.constructor);
   }
@@ -51,8 +52,11 @@ export class ConflictError extends AppError {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string, public errors?: any) {
+  public readonly errors?: unknown;
+
+  constructor(message: string, errors?: unknown) {
     super(422, message);
+    this.errors = errors;
   }
 }
 
@@ -67,8 +71,9 @@ export class InternalServerError extends AppError {
  * Catches all errors and returns consistent JSON responses
  */
 export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction): void {
+  void _next;
   const requestId = req.requestId || 'unknown';
-  const userId = (req as any).user?.userId;
+  const userId = req.user?.userId;
 
   // Default error values
   let statusCode = 500;
@@ -111,7 +116,7 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
   });
 
   // Send error response
-  const errorResponse: any = {
+  const errorResponse: Record<string, unknown> = {
     error: env.NODE_ENV === 'production' && !isOperational ? 'Internal server error' : message,
     requestId,
   };
@@ -140,10 +145,10 @@ export function notFoundHandler(req: Request, _res: Response, next: NextFunction
 /**
  * Async handler wrapper to catch errors in async route handlers
  */
-export function asyncHandler<T>(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<T>
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+// eslint-disable-next-line no-unused-vars
+export function asyncHandler<T>(fn: (...handlerArgs: [Request, Response, NextFunction]) => Promise<T>) {
+  return (...args: Parameters<typeof fn>) => {
+    const nextFn = args[2];
+    void fn(args[0], args[1], nextFn).catch(nextFn);
   };
 }
