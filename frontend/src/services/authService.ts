@@ -12,8 +12,16 @@ interface LoginPayload {
 }
 
 interface LoginResponse {
-  token: string;
-  user: { email: string; role: 'superadmin' | 'admin' | 'staff' };
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  user: {
+    id: string;
+    email: string;
+    role: 'superadmin' | 'admin' | 'staff';
+    firstName: string | null;
+    lastName: string | null;
+  };
 }
 
 export const login = async (email: string, password: string): Promise<AuthResponse> => {
@@ -22,7 +30,12 @@ export const login = async (email: string, password: string): Promise<AuthRespon
     body: { email, password }
   });
 
-  return { token: result.token, email: result.user.email, role: result.user.role };
+  // Store refresh token in sessionStorage for token refresh flow
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem('ojaplus-refresh-token', result.refreshToken);
+  }
+
+  return { token: result.accessToken, email: result.user.email, role: result.user.role };
 };
 
 export const logout = async (token: string | null) => {
