@@ -236,7 +236,7 @@ export const MediaUploadModal = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"
+          accept=".jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,image/*,video/*"
           onChange={handleInputChange}
           style={{ display: 'none' }}
         />

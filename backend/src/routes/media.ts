@@ -118,7 +118,10 @@ router.post(
       let optimizedBuffer = buffer;
       let finalMimeType = detectedType.mime;
 
-      if (detectedType.mime.startsWith('image/')) {
+      // Optional image optimization - only if convertToWebp=true in request body
+      const shouldConvertToWebp = req.body.convertToWebp === 'true' || req.body.convertToWebp === true;
+
+      if (detectedType.mime.startsWith('image/') && shouldConvertToWebp) {
         try {
           const image = sharp(buffer);
           const metadata = await image.metadata();
