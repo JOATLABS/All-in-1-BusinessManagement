@@ -49,10 +49,11 @@ const HeroContent = ({ hero, isReady }: HeroContentProps) => {
   const [featuredEvent, setFeaturedEvent] = useState<Event | null>(null);
   const [eventsLoading, setEventsLoading] = useState(true);
 
-  const backgrounds = useMemo(
-    () => (hero.backgrounds.length ? hero.backgrounds : defaultSiteContent.hero.backgrounds),
-    [hero.backgrounds]
-  );
+  const backgrounds = useMemo(() => {
+    // Filter to only show active backgrounds
+    const activeBackgrounds = hero.backgrounds.filter(bg => bg.isActive);
+    return activeBackgrounds.length ? activeBackgrounds : defaultSiteContent.hero.backgrounds;
+  }, [hero.backgrounds]);
 
   const heroWords = useMemo(
     () => (hero.words.length ? hero.words : defaultSiteContent.hero.words),
