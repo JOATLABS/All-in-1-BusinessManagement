@@ -48,7 +48,7 @@ export const RRHero = () => {
       }
 
       try {
-        const [{ WebGLRenderer, PerspectiveCamera, Scene, AmbientLight, DirectionalLight, Box3, Vector3, SRGBColorSpace }, gltf] = await Promise.all([
+        const [{ WebGLRenderer, PerspectiveCamera, Scene, AmbientLight, DirectionalLight, Box3, Vector3, SRGBColorSpace, Mesh, MeshPhysicalMaterial, Group }, gltf, geometries] = await Promise.all([
           import('three').then((m) => ({
             WebGLRenderer: m.WebGLRenderer,
             PerspectiveCamera: m.PerspectiveCamera,
@@ -57,9 +57,13 @@ export const RRHero = () => {
             DirectionalLight: m.DirectionalLight,
             Box3: m.Box3,
             Vector3: m.Vector3,
-            SRGBColorSpace: m.SRGBColorSpace
+            SRGBColorSpace: m.SRGBColorSpace,
+            Mesh: m.Mesh,
+            MeshPhysicalMaterial: m.MeshPhysicalMaterial,
+            Group: m.Group
           })),
-          import('three/examples/jsm/loaders/GLTFLoader.js').then((m) => m)
+          import('three/examples/jsm/loaders/GLTFLoader.js').then((m) => m),
+          import('three/examples/jsm/geometries/RoundedBoxGeometry.js').then((m) => m)
         ]);
 
         if (!mounted || !containerRef.current) return;
@@ -110,6 +114,43 @@ export const RRHero = () => {
           const center = new Vector3();
           box.getCenter(center);
           logo.position.sub(center.multiplyScalar(scale));
+
+          try {
+            const { RoundedBoxGeometry } = geometries as any;
+            const capHeight = size.y * scale;
+            const plusSize = capHeight * 0.3;
+            const thickness = plusSize * 0.22;
+            const baseDepth = Math.max(size.z * scale, thickness * 0.5);
+            const plusDepth = baseDepth * 1.2;
+            const radius = Math.max(thickness * 0.18, 0.002);
+            const segments = 4;
+
+            const material = new MeshPhysicalMaterial({
+              color: 0xd4af37,
+              metalness: 1,
+              roughness: 0.28,
+              clearcoat: 0.5,
+              envMapIntensity: 1
+            });
+
+            const vertical = new RoundedBoxGeometry(thickness, plusSize, plusDepth, segments, radius);
+            const horizontal = new RoundedBoxGeometry(plusSize, thickness, plusDepth, segments, radius);
+            const vBar = new Mesh(vertical, material);
+            const hBar = new Mesh(horizontal, material);
+            const plus = new Group();
+            plus.name = 'PlusMark';
+            plus.add(vBar);
+            plus.add(hBar);
+
+            const halfWidth = (size.x * scale) / 2;
+            const minX = -halfWidth;
+            const splitX = minX + halfWidth; // approximate right edge of left R
+            plus.position.x = splitX + (plusSize * 0.275);
+            plus.position.y = 0; // midline alignment
+            plus.position.z = plusDepth * 0.08; // cast faint edge shadow
+
+            logo.add(plus);
+          } catch {}
           resizeToText();
           animate();
         };
