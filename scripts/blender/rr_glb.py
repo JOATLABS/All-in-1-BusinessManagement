@@ -14,10 +14,10 @@ PLUS_Z_OFFSET = 0.010    # 1mm forward to create a tiny shadow line
 LOGO_TARGET   = 1.0      # normalize longest side to 1 unit
 RIGHT_R_GAP   = 0.18     # gap after plus before right R
 
-GOLD_BASE    = (0.83, 0.69, 0.29, 1.0)    # #D4AF37 approx (linear)
+GOLD_BASE    = (0.92, 0.87, 0.71, 1.0)    # champagne #EBDDB5 approx (linear)
 METALNESS    = 1.0
-ROUGHNESS    = 0.28
-CLEARCOAT    = 0.5       # used on PlusMark only
+ROUGHNESS    = 0.34
+CLEARCOAT    = 0.55      # used on PlusMark only
 # --------------------------------------------
 
 # Fresh scene objects cleanup (optional)
