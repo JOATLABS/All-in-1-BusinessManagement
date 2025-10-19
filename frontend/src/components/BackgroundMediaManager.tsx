@@ -218,6 +218,7 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
                       loop
                       controls
                       preload="metadata"
+                      poster={background.fallbackImage}
                       className="bg-media-card__preview-media"
                     />
                   ) : (

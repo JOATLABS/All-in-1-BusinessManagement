@@ -24,7 +24,8 @@ const heroSchema = z.object({
   name: z.string().min(1),
   tagline: z.string().min(1),
   words: z.array(z.string().min(1)).min(1),
-  backgrounds: z.array(backgroundSchema).min(1)
+  backgrounds: z.array(backgroundSchema).min(1),
+  logoUrl: z.string().url().optional()
 });
 
 const eventSchema = z.object({

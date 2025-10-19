@@ -22,6 +22,7 @@ interface UploadResponse {
     size: number;
     folder: string;
     originalFilename: string;
+    thumbnailUrl?: string;
   };
 }
 
@@ -50,9 +51,24 @@ export const MediaUploadModal = ({
    */
   const handleFileSelect = (file: File) => {
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'image/svg+xml',
+      'image/avif',
+      'image/heic',
+      'image/heif',
+      'video/mp4',
+      'video/webm',
+      'video/quicktime',
+      'video/x-m4v'
+    ];
     if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Only images (JPEG, PNG, WebP, GIF) and videos (MP4, WebM) are allowed.');
+      setError(
+        'Invalid file type. Only common image formats (JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC) and videos (MP4, WebM, MOV, M4V) are allowed.'
+      );
       return;
     }
 
@@ -148,7 +164,8 @@ export const MediaUploadModal = ({
         isActive: true,
         playbackDepth: 'medium',
         focalPoint: { x: 50, y: 50 },
-        order: 0
+        order: 0,
+        fallbackImage: data.media.thumbnailUrl
       };
 
       // Handle video-specific settings

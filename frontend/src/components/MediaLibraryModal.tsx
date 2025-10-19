@@ -19,6 +19,7 @@ interface R2MediaItem {
   size: number;
   lastModified: Date;
   mediaType: BackgroundMediaType;
+  thumbnailUrl?: string;
 }
 
 /**
@@ -92,7 +93,10 @@ export const MediaLibraryModal = ({
       const data = await response.json();
 
       // Filter by folder if specified
-      let mediaItems = data.media || [];
+      let mediaItems = (data.media || []).map((item: R2MediaItem) => ({
+        ...item,
+        lastModified: item.lastModified ? new Date(item.lastModified) : new Date(),
+      }));
       if (folder !== 'all') {
         mediaItems = mediaItems.filter((item: R2MediaItem) =>
           item.key.startsWith(`${folder}/`)
@@ -127,7 +131,8 @@ export const MediaLibraryModal = ({
       isActive: true,
       playbackDepth: 'medium',
       focalPoint: { x: 50, y: 50 },
-      order: 0
+      order: 0,
+      fallbackImage: selectedItem.thumbnailUrl
     };
 
     // Add video-specific settings
@@ -315,6 +320,9 @@ export const MediaLibraryModal = ({
                           <video
                             src={item.url}
                             muted
+                            playsInline
+                            preload="metadata"
+                            poster={item.thumbnailUrl}
                             className="library-item__media"
                           />
                         ) : (
