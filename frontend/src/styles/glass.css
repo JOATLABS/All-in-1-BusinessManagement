@@ -1,0 +1,76 @@
+:root {
+  --gold: #d4af37;
+  --rr-card-w: clamp(340px, 80vw, 1000px);
+  --rr-card-h: clamp(150px, 28vw, 260px);
+  --rr-text-size: clamp(32px, 6vw, 70px);
+}
+
+.rr-hero {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 40%, #0d0f14 0%, #000 80%);
+  color: #fff;
+}
+
+.rr-card {
+  width: var(--rr-card-w);
+  height: var(--rr-card-h);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 28px;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.rr-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255, 255, 255, 0.22), transparent 50%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.06), transparent 60%);
+  pointer-events: none;
+}
+
+.rr-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 3vw, 40px);
+}
+
+.rr-word {
+  font-size: var(--rr-text-size);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+.rr-logo3d {
+  width: 1px;
+  height: 1px;
+  display: inline-block;
+}
+
+.rr-logo-fallback {
+  width: 1em;
+  height: 1em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rr-logo-fallback svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--gold);
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.45));
+}
