@@ -12,6 +12,7 @@ import { SiteConfiguration } from './pages/admin/SiteConfiguration';
 import { Reservations } from './pages/admin/Reservations';
 import { AdminEventsPage } from './pages/admin/AdminEventsPage';
 import { TeamManagement } from './pages/admin/TeamManagement';
+import RRLanding from './pages/RRLanding';
 
 const App = () => (
   <AuthProvider>
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<LandingPage />} />
           <Route path="/reserve" element={<ReserveTablePage />} />
           <Route path="/events" element={<EventsPage />} />
+          <Route path="/rr" element={<RRLanding />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"
