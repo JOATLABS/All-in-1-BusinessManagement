@@ -23,11 +23,38 @@ const reservationPatterns: ReservationTierPattern[] = ['grid', 'halo', 'pillars'
 const normaliseContent = (content: SiteContent): SiteContent => ({
   hero: {
     ...content.hero,
-    backgrounds: ensureArray(content.hero.backgrounds, defaultSiteContent.hero.backgrounds).map((background) => ({
-      ...background,
-      focalPoint: background.focalPoint ?? { x: 50, y: 50 }
-    })),
+    logoUrl: (() => {
+      const trimmed = content.hero.logoUrl?.trim();
+      return trimmed || undefined;
+    })(),
+    backgrounds: ensureArray(content.hero.backgrounds, defaultSiteContent.hero.backgrounds).map((background) => {
+      const srcExt = background.src?.split('?')[0]?.split('.').pop()?.toLowerCase();
+      const derivedMediaType = srcExt && ['mp4', 'webm', 'mov', 'm4v'].includes(srcExt) ? 'video' : 'image';
+      const mediaType = background.mediaType ?? derivedMediaType;
+      const fallbackImage = background.fallbackImage?.trim() || undefined;
+
+      return {
+        ...background,
+        mediaType,
+        isActive: background.isActive ?? true,
+        focalPoint: background.focalPoint ?? { x: 50, y: 50 },
+        fallbackImage,
+        ...(mediaType === 'video'
+          ? {
+              loop: background.loop ?? true,
+              autoplay: background.autoplay ?? true,
+              muted: background.muted ?? true,
+            }
+          : {
+              loop: undefined,
+              autoplay: undefined,
+              muted: undefined,
+            }),
+      };
+    }),
     words: ensureArray(content.hero.words, defaultSiteContent.hero.words)
+      .map((word) => word.trim())
+      .filter(Boolean)
   },
   event: {
     ...content.event,

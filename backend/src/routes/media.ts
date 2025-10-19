@@ -13,6 +13,22 @@ import {
   generatePresignedUploadUrl,
 } from '../services/r2Service.js';
 import { generateVideoThumbnail } from '../services/videoThumbnailService.js';
+import { transcodeVideoToMp4 } from '../services/videoTranscodeService.js';
+
+const allowedImageMimeTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+  'image/avif',
+  'image/heic',
+  'image/heif',
+];
+
+const allowedVideoMimeTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'];
+
+const allowedMimeTypes = [...allowedImageMimeTypes, ...allowedVideoMimeTypes];
 
 const router = Router();
 
@@ -55,19 +71,14 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024,
   },
   fileFilter: (_req, file, cb) => {
-    const allowedMimes = [
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-      'image/gif',
-      'video/mp4',
-      'video/webm',
-    ];
-
-    if (allowedMimes.includes(file.mimetype)) {
+    if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images (JPEG, PNG, WebP, GIF) and videos (MP4, WebM) allowed.'));
+      cb(
+        new Error(
+          'Invalid file type. Only common image formats (JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC) and videos (MP4, WebM, MOV, M4V) are allowed.'
+        )
+      );
     }
   },
 });
@@ -86,25 +97,18 @@ router.post(
 
       const { buffer, originalname, mimetype } = req.file;
 
-      const allowedMimeTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'image/gif',
-        'video/mp4',
-        'video/webm',
-      ];
-
       const detectedType = await fileTypeFromBuffer(buffer);
+      const effectiveMimeType = detectedType?.mime ?? mimetype;
 
-      if (!detectedType || !allowedMimeTypes.includes(detectedType.mime)) {
+      if (!allowedMimeTypes.includes(effectiveMimeType)) {
         return res.status(400).json({
-          error: 'Invalid file type. Only images (JPEG, PNG, WebP, GIF) and videos (MP4, WebM) are allowed.',
-          detected: detectedType?.mime || 'unknown',
+          error:
+            'Invalid file type. Only common image formats (JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC) and videos (MP4, WebM, MOV, M4V) are allowed.',
+          detected: detectedType?.mime || mimetype || 'unknown',
         });
       }
 
-      if (detectedType.mime !== mimetype) {
+      if (detectedType && detectedType.mime !== mimetype) {
         log.warn('MIME type mismatch detected', {
           requestId: req.requestId,
           userId: req.user?.userId,
@@ -116,12 +120,17 @@ router.post(
       const folder = (req.body.folder as 'backgrounds' | 'events' | 'posters' | 'general') || 'general';
 
       let optimizedBuffer = buffer;
-      let finalMimeType = detectedType.mime;
+      let finalMimeType = effectiveMimeType;
 
       // Optional image optimization - only if convertToWebp=true in request body
-      const shouldConvertToWebp = req.body.convertToWebp === 'true' || req.body.convertToWebp === true;
+      const shouldConvertToWebp =
+        req.body.convertToWebp === 'true' ||
+        req.body.convertToWebp === true ||
+        effectiveMimeType === 'image/heic' ||
+        effectiveMimeType === 'image/heif' ||
+        effectiveMimeType === 'image/avif';
 
-      if (detectedType.mime.startsWith('image/') && shouldConvertToWebp) {
+      if (effectiveMimeType.startsWith('image/') && shouldConvertToWebp && effectiveMimeType !== 'image/svg+xml') {
         try {
           const image = sharp(buffer);
           const metadata = await image.metadata();
@@ -151,7 +160,37 @@ router.post(
             error: error instanceof Error ? error.message : 'Unknown error',
           });
           optimizedBuffer = buffer;
-          finalMimeType = detectedType.mime;
+          finalMimeType = effectiveMimeType;
+        }
+      }
+
+      if (allowedVideoMimeTypes.includes(effectiveMimeType) && effectiveMimeType !== 'video/mp4') {
+        try {
+          const { buffer: transcodedBuffer, mimetype: transcodedMime, didTranscode } = await transcodeVideoToMp4(
+            optimizedBuffer,
+            effectiveMimeType
+          );
+
+          if (didTranscode) {
+            log.info('Video transcoded for compatibility', {
+              requestId: req.requestId,
+              userId: req.user?.userId,
+              from: effectiveMimeType,
+              to: transcodedMime,
+            });
+          }
+
+          optimizedBuffer = transcodedBuffer;
+          finalMimeType = transcodedMime;
+        } catch (transcodeError) {
+          log.error('Video transcoding failed', transcodeError, {
+            requestId: req.requestId,
+            userId: req.user?.userId,
+          });
+
+          return res.status(500).json({
+            error: 'Video processing failed. Please convert the file to MP4 and try again.',
+          });
         }
       }
 
@@ -163,17 +202,18 @@ router.post(
       );
 
       let thumbnailUrl: string | undefined;
-      if (detectedType.mime.startsWith('video/')) {
+      if (finalMimeType.startsWith('video/')) {
         try {
           log.debug('Generating video thumbnail', {
             requestId: req.requestId,
             userId: req.user?.userId,
           });
 
-          const thumbnailBuffer = await generateVideoThumbnail(buffer, 1);
-          const thumbnailFilename = key.replace(/\.(mp4|webm)$/i, '.webp');
-          const thumbnailKey = `thumbnails/${thumbnailFilename.split('/').pop()}`;
-          const thumbnailUpload = await uploadToR2(thumbnailBuffer, thumbnailFilename, 'image/webp', 'general');
+          const thumbnailBuffer = await generateVideoThumbnail(optimizedBuffer, 1);
+          const thumbnailKey = `thumbnails/${key.split('/').pop()?.replace(/\.[^.]+$/, '')}.webp`;
+          const thumbnailUpload = await uploadToR2(thumbnailBuffer, `${key}.thumbnail.webp`, 'image/webp', 'thumbnails', {
+            key: thumbnailKey,
+          });
           thumbnailUrl = thumbnailUpload.url;
 
           log.info('Video thumbnail generated and uploaded', {
@@ -248,7 +288,7 @@ router.delete(
         return res.status(400).json({ error: 'Invalid key format' });
       }
 
-      const allowedFolders = ['backgrounds', 'events', 'posters', 'general'];
+      const allowedFolders = ['backgrounds', 'events', 'posters', 'general', 'thumbnails'];
       const folder = key.split('/')[0];
       if (!allowedFolders.includes(folder)) {
         return res.status(403).json({ error: 'Access to this folder is not allowed' });
@@ -284,6 +324,13 @@ router.post(
 
       if (!filename || !mimetype) {
         return res.status(400).json({ error: 'filename and mimetype are required' });
+      }
+
+      if (!allowedMimeTypes.includes(mimetype)) {
+        return res.status(400).json({
+          error:
+            'Invalid file type. Only common image formats (JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC) and videos (MP4, WebM, MOV, M4V) are allowed.',
+        });
       }
 
       const { uploadUrl, key } = await generatePresignedUploadUrl(filename, mimetype);

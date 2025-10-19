@@ -31,6 +31,7 @@ export interface HeroContent {
   tagline: string;
   words: string[];
   backgrounds: BackgroundImage[];
+  logoUrl?: string;
 }
 
 export interface EventContent {

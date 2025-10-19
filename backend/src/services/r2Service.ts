@@ -43,8 +43,14 @@ const getExtensionFromMimetype = (mimetype: string): string => {
     'image/png': 'png',
     'image/webp': 'webp',
     'image/gif': 'gif',
+    'image/svg+xml': 'svg',
+    'image/avif': 'avif',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
     'video/mp4': 'mp4',
-    'video/webm': 'webm'
+    'video/webm': 'webm',
+    'video/quicktime': 'mov',
+    'video/x-m4v': 'm4v'
   };
   return mimetypeMap[mimetype] || 'bin';
 };
@@ -60,7 +66,7 @@ const getMediaType = (mimetype: string): 'image' | 'video' => {
  * Media folder types for auto-organization
  * Single-tenant: organize files by purpose in the single bucket
  */
-export type MediaFolder = 'backgrounds' | 'events' | 'posters' | 'general';
+export type MediaFolder = 'backgrounds' | 'events' | 'posters' | 'general' | 'thumbnails';
 
 /**
  * Upload a file to Cloudflare R2 with automatic folder organization
@@ -70,13 +76,14 @@ export const uploadToR2 = async (
   buffer: Buffer,
   originalFilename: string,
   mimetype: string,
-  folder: MediaFolder = 'general'
+  folder: MediaFolder = 'general',
+  options?: { key?: string }
 ): Promise<{ url: string; key: string; mediaType: 'image' | 'video'; folder: MediaFolder }> => {
   try {
     const ext = getExtensionFromMimetype(mimetype);
     const filename = `${randomUUID()}.${ext}`;
     // Auto-create folder structure: folder/filename
-    const key = `${folder}/${filename}`;
+    const key = options?.key ?? `${folder}/${filename}`;
 
     const command = new PutObjectCommand({
       Bucket: bucketName,
@@ -113,6 +120,7 @@ export const listR2Files = async (): Promise<Array<{
   size: number;
   lastModified: Date;
   mediaType: 'image' | 'video';
+  thumbnailUrl?: string;
 }>> => {
   try {
     const command = new ListObjectsV2Command({
@@ -125,10 +133,23 @@ export const listR2Files = async (): Promise<Array<{
       return [];
     }
 
-    return response.Contents.map((object) => {
+    const thumbnailIndex = new Map<string, string>();
+
+    for (const object of response.Contents) {
+      if (!object.Key) continue;
+      if (object.Key.startsWith('thumbnails/')) {
+        const basename = object.Key.split('/').pop()?.replace(/\.[^.]+$/, '');
+        if (basename) {
+          thumbnailIndex.set(basename, `https://${publicHost}/${object.Key}`);
+        }
+      }
+    }
+
+    return response.Contents.filter((object) => object.Key && !object.Key.startsWith('thumbnails/')).map((object) => {
       const key = object.Key!;
+      const basename = key.split('/').pop()?.replace(/\.[^.]+$/, '');
       const ext = key.split('.').pop()?.toLowerCase();
-      const videoExts = ['mp4', 'webm'];
+      const videoExts = ['mp4', 'webm', 'mov', 'm4v'];
       const mediaType = videoExts.includes(ext || '') ? 'video' : 'image';
 
       return {
@@ -136,7 +157,8 @@ export const listR2Files = async (): Promise<Array<{
         url: `https://${publicHost}/${key}`,
         size: object.Size || 0,
         lastModified: object.LastModified || new Date(),
-        mediaType
+        mediaType,
+        thumbnailUrl: basename ? thumbnailIndex.get(basename) : undefined
       };
     });
   } catch (error) {
