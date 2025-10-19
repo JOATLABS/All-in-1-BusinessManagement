@@ -99,7 +99,7 @@ export const RRHero = () => {
         const animate = () => {
           if (!mounted) return;
           requestAnimationFrame(animate);
-          if (logo) logo.rotation.y += 0.0022;
+          if (logo) logo.rotation.y += 0.0035;
           renderer.render(scene, camera);
         };
 
@@ -126,10 +126,10 @@ export const RRHero = () => {
             const segments = 4;
 
             const material = new MeshPhysicalMaterial({
-              color: 0xd4af37,
+              color: 0xebddb5,
               metalness: 1,
-              roughness: 0.28,
-              clearcoat: 0.5,
+              roughness: 0.34,
+              clearcoat: 0.55,
               envMapIntensity: 1
             });
 
@@ -186,7 +186,7 @@ export const RRHero = () => {
       <div className="rr-card">
         <div className="rr-row">
           <span ref={leftWordRef} className="rr-word">Rhythm</span>
-          <div ref={containerRef} className="rr-logo3d" aria-hidden={useFallback}></div>
+          <div ref={containerRef} className="rr-logo3d" aria-label="Rhythm plus Root logo"></div>
           <span className="rr-word">Root</span>
         </div>
         {useFallback && <GoldStaticLogo />}
