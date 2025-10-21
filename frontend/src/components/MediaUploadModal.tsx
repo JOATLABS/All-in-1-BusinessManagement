@@ -264,6 +264,25 @@ export const MediaUploadModal = ({
 
       const data: UploadResponse = await response.json();
 
+      // Create BackgroundImage object
+      const newBackground: BackgroundImage = {
+        src: data.media.url,
+        alt: selectedFile.name,
+        mediaType: data.media.mediaType,
+        isActive: true,
+        playbackDepth: 'medium',
+        focalPoint: { x: 50, y: 50 },
+        order: 0,
+        fallbackImage: data.media.thumbnailUrl
+      };
+
+      // Handle video-specific settings
+      if (data.media.mediaType === 'video') {
+        newBackground.loop = true;
+        newBackground.autoplay = true;
+        newBackground.muted = true;
+      }
+
       setProgress(100);
 
       onUploadSuccess(data.media);
