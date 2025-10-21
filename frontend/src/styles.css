@@ -36,6 +36,18 @@ body::before {
   z-index: -1;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .app {
   position: relative;
   min-height: 100vh;
@@ -3198,6 +3210,37 @@ body::before {
   vertical-align: middle;
   flex-shrink: 0;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+
+.hero__logo--video {
+  height: 1em;
+  width: auto;
+  object-fit: contain;
+}
+
+.hero__logo--model {
+  position: relative;
+  width: 1em;
+  height: 1em;
+}
+
+.hero__logo--model canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.hero__logo-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 0.3s ease;
+}
+
+.hero__logo--model[data-loaded='true'] .hero__logo-poster {
+  opacity: 0;
 }
 
 .hero__logo--left {

@@ -27,8 +27,15 @@ const allowedImageMimeTypes = [
 ];
 
 const allowedVideoMimeTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'];
+const allowedModelMimeTypes = ['model/gltf-binary', 'model/gltf+json', 'model/gltf'];
 
-const allowedMimeTypes = [...allowedImageMimeTypes, ...allowedVideoMimeTypes];
+const allowedMimeTypes = [...allowedImageMimeTypes, ...allowedVideoMimeTypes, ...allowedModelMimeTypes];
+
+const isGlbBuffer = (buffer: Buffer): boolean => buffer.length >= 4 && buffer.toString('utf8', 0, 4) === 'glTF';
+
+const mediaTypeErrorMessage =
+  'Invalid file type. Only common image formats (JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC), videos (MP4, WebM, MOV, M4V), and 3D ' +
+  'models (GLB/GLTF) are allowed.';
 
 const router = Router();
 
@@ -73,12 +80,10 @@ const upload = multer({
   fileFilter: (_req, file, cb) => {
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
+    } else if (file.mimetype === 'application/octet-stream') {
+      cb(null, true);
     } else {
-      cb(
-        new Error(
-          'Invalid file type. Only common image formats (JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC) and videos (MP4, WebM, MOV, M4V) are allowed.'
-        )
-      );
+      cb(new Error(mediaTypeErrorMessage));
     }
   },
 });
@@ -98,17 +103,33 @@ router.post(
       const { buffer, originalname, mimetype } = req.file;
 
       const detectedType = await fileTypeFromBuffer(buffer);
-      const effectiveMimeType = detectedType?.mime ?? mimetype;
+      const isGlb = isGlbBuffer(buffer);
+      const effectiveMimeType = (() => {
+        if (isGlb) {
+          return 'model/gltf-binary';
+        }
 
-      if (!allowedMimeTypes.includes(effectiveMimeType)) {
+        if (detectedType?.mime) {
+          return detectedType.mime;
+        }
+
+        if (allowedModelMimeTypes.includes(mimetype) || mimetype === 'application/octet-stream') {
+          return isGlb ? 'model/gltf-binary' : mimetype;
+        }
+
+        return mimetype;
+      })();
+
+      const isAllowedMimeType = allowedMimeTypes.includes(effectiveMimeType);
+
+      if (!isAllowedMimeType) {
         return res.status(400).json({
-          error:
-            'Invalid file type. Only common image formats (JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC) and videos (MP4, WebM, MOV, M4V) are allowed.',
+          error: mediaTypeErrorMessage,
           detected: detectedType?.mime || mimetype || 'unknown',
         });
       }
 
-      if (detectedType && detectedType.mime !== mimetype) {
+      if (detectedType && detectedType.mime !== mimetype && !isGlb) {
         log.warn('MIME type mismatch detected', {
           requestId: req.requestId,
           userId: req.user?.userId,
@@ -326,10 +347,9 @@ router.post(
         return res.status(400).json({ error: 'filename and mimetype are required' });
       }
 
-      if (!allowedMimeTypes.includes(mimetype)) {
+      if (!allowedMimeTypes.includes(mimetype) && mimetype !== 'application/octet-stream') {
         return res.status(400).json({
-          error:
-            'Invalid file type. Only common image formats (JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC) and videos (MP4, WebM, MOV, M4V) are allowed.',
+          error: mediaTypeErrorMessage,
         });
       }
 

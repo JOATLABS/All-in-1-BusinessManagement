@@ -11,7 +11,13 @@ const accountId = process.env.R2_ACCOUNT_ID;
 const accessKeyId = process.env.R2_ACCESS_KEY_ID;
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 const bucketName = process.env.R2_MEDIA_BUCKET;
-const publicHost = process.env.R2_MEDIA_PUBLIC_HOST;
+const rawPublicHost = process.env.R2_MEDIA_PUBLIC_HOST;
+
+const normalizePublicHost = (host: string): string => {
+  return host.replace(/^https?:\/\//, '').replace(/\/$/, '');
+};
+
+const publicHost = rawPublicHost ? normalizePublicHost(rawPublicHost) : undefined;
 
 // Fail fast if required environment variables are missing
 if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicHost) {
@@ -27,6 +33,7 @@ if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicHost
 const r2Client = new S3Client({
   region: 'auto',
   endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+  forcePathStyle: true,
   credentials: {
     accessKeyId,
     secretAccessKey
@@ -50,7 +57,10 @@ const getExtensionFromMimetype = (mimetype: string): string => {
     'video/mp4': 'mp4',
     'video/webm': 'webm',
     'video/quicktime': 'mov',
-    'video/x-m4v': 'm4v'
+    'video/x-m4v': 'm4v',
+    'model/gltf-binary': 'glb',
+    'model/gltf+json': 'gltf',
+    'model/gltf': 'gltf'
   };
   return mimetypeMap[mimetype] || 'bin';
 };
@@ -58,8 +68,16 @@ const getExtensionFromMimetype = (mimetype: string): string => {
 /**
  * Determine media type from mimetype
  */
-const getMediaType = (mimetype: string): 'image' | 'video' => {
-  return mimetype.startsWith('video/') ? 'video' : 'image';
+const getMediaType = (mimetype: string): 'image' | 'video' | 'model' => {
+  if (mimetype.startsWith('video/')) {
+    return 'video';
+  }
+
+  if (mimetype.startsWith('model/')) {
+    return 'model';
+  }
+
+  return 'image';
 };
 
 /**
@@ -78,9 +96,20 @@ export const uploadToR2 = async (
   mimetype: string,
   folder: MediaFolder = 'general',
   options?: { key?: string }
-): Promise<{ url: string; key: string; mediaType: 'image' | 'video'; folder: MediaFolder }> => {
+): Promise<{ url: string; key: string; mediaType: 'image' | 'video' | 'model'; folder: MediaFolder }> => {
   try {
-    const ext = getExtensionFromMimetype(mimetype);
+    let ext = getExtensionFromMimetype(mimetype);
+    if (ext === 'bin') {
+      const inferredExt = originalFilename.split('.').pop();
+      if (inferredExt) {
+        ext = inferredExt.toLowerCase();
+      }
+    }
+
+    if (ext === 'gbl') {
+      ext = 'glb';
+    }
+
     const filename = `${randomUUID()}.${ext}`;
     // Auto-create folder structure: folder/filename
     const key = options?.key ?? `${folder}/${filename}`;
@@ -93,6 +122,7 @@ export const uploadToR2 = async (
       Metadata: {
         originalFilename,
         folder,
+        mimetype,
         uploadedAt: new Date().toISOString()
       }
     });
@@ -119,7 +149,7 @@ export const listR2Files = async (): Promise<Array<{
   url: string;
   size: number;
   lastModified: Date;
-  mediaType: 'image' | 'video';
+  mediaType: 'image' | 'video' | 'model';
   thumbnailUrl?: string;
 }>> => {
   try {
@@ -150,7 +180,14 @@ export const listR2Files = async (): Promise<Array<{
       const basename = key.split('/').pop()?.replace(/\.[^.]+$/, '');
       const ext = key.split('.').pop()?.toLowerCase();
       const videoExts = ['mp4', 'webm', 'mov', 'm4v'];
-      const mediaType = videoExts.includes(ext || '') ? 'video' : 'image';
+      const modelExts = ['glb', 'gltf', 'gbl'];
+      let mediaType: 'image' | 'video' | 'model' = 'image';
+
+      if (ext && videoExts.includes(ext)) {
+        mediaType = 'video';
+      } else if (ext && modelExts.includes(ext)) {
+        mediaType = 'model';
+      }
 
       return {
         key,

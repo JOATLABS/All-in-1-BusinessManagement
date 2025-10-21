@@ -6,6 +6,10 @@ import { updateSiteContent, type SiteContentResponse } from '../../services/cont
 import type {
   FooterContent,
   HeroContent,
+  HeroLogoAsset,
+  HeroLogoKind,
+  HeroLogoSource,
+  MediaType,
   OverlaysContent,
   ReservationContent,
   BackgroundImage,
@@ -67,12 +71,97 @@ type FooterDraftState = {
   }>;
 };
 
-const heroToDraft = (hero: HeroContent) => ({
+const inferHeroLogoKind = (src: string, fallback: HeroLogoKind = 'image'): HeroLogoKind => {
+  const extension = src.split('?')[0]?.split('.').pop()?.toLowerCase();
+
+  if (!extension) {
+    return fallback;
+  }
+
+  if (['mp4', 'webm', 'mov', 'm4v'].includes(extension)) {
+    return 'video';
+  }
+
+  if (['glb', 'gltf', 'gbl'].includes(extension)) {
+    return 'model';
+  }
+
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'heic', 'heif'].includes(extension)) {
+    return 'image';
+  }
+
+  return fallback;
+};
+
+const inferHeroLogoSource = (src: string, fallback: HeroLogoSource = 'remote'): HeroLogoSource => {
+  if (src.startsWith('http://') || src.startsWith('https://')) {
+    return 'remote';
+  }
+
+  if (src.startsWith('/') || src.startsWith('./')) {
+    return 'local';
+  }
+
+  return fallback;
+};
+
+type HeroLogoDraft = {
+  src: string;
+  kind: HeroLogoKind;
+  source: HeroLogoSource;
+  posterUrl?: string;
+};
+
+type HeroDraftState = {
+  name: string;
+  tagline: string;
+  words: string;
+  backgrounds: BackgroundImage[];
+  logo?: HeroLogoDraft;
+};
+
+const toHeroLogoDraft = (logo?: HeroLogoAsset, legacyUrl?: string): HeroLogoDraft | undefined => {
+  const trimmedLegacy = legacyUrl?.trim();
+
+  if (logo?.src?.trim()) {
+    const src = logo.src.trim();
+    return {
+      src,
+      kind: logo.kind ?? inferHeroLogoKind(src),
+      source: logo.source ?? inferHeroLogoSource(src),
+      posterUrl: logo.posterUrl?.trim() || undefined,
+    };
+  }
+
+  if (trimmedLegacy) {
+    return {
+      src: trimmedLegacy,
+      kind: inferHeroLogoKind(trimmedLegacy),
+      source: inferHeroLogoSource(trimmedLegacy),
+    };
+  }
+
+  return undefined;
+};
+
+const mediaTypeToHeroLogoKind = (mediaType: MediaType): HeroLogoKind => {
+  if (mediaType === 'model') {
+    return 'model';
+  }
+
+  if (mediaType === 'video') {
+    return 'video';
+  }
+
+  return 'image';
+};
+
+const heroToDraft = (hero: HeroContent): HeroDraftState => ({
   name: hero.name,
   tagline: hero.tagline,
   words: hero.words.join('\n'),
   backgrounds: hero.backgrounds.map((background) => ({ ...background })),
-  logoUrl: hero.logoUrl
+  logo: toHeroLogoDraft(hero.logo, hero.logoUrl),
 });
 
 const footerToDraft = (footer: FooterContent): FooterDraftState => ({
@@ -83,7 +172,7 @@ export const SiteConfiguration = () => {
   const { content, isReady, refresh } = useSiteContentContext();
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('hero');
-  const [heroDraft, setHeroDraft] = useState(() => heroToDraft(content.hero));
+  const [heroDraft, setHeroDraft] = useState<HeroDraftState>(() => heroToDraft(content.hero));
   const [overlayDraft, setOverlayDraft] = useState<OverlayDraftState>(() => cloneOverlays(content.overlays));
   const [reservationDraft, setReservationDraft] = useState(() => cloneReservation(content.reservation));
   const [footerDraft, setFooterDraft] = useState<FooterDraftState>(() => footerToDraft(content.footer));
@@ -92,6 +181,13 @@ export const SiteConfiguration = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [logoUploadModalOpen, setLogoUploadModalOpen] = useState(false);
   const [logoLibraryModalOpen, setLogoLibraryModalOpen] = useState(false);
+
+  const logoDraft = heroDraft.logo;
+  const logoSource = logoDraft?.source ?? 'remote';
+  const logoKind = logoDraft?.kind ?? 'image';
+  const logoSrcValue = logoDraft?.src ?? '';
+  const logoPosterValue = logoDraft?.posterUrl ?? '';
+  const showPosterField = logoKind !== 'image';
 
   useUnsavedChangesPrompt(hasChanges);
 
@@ -127,9 +223,71 @@ export const SiteConfiguration = () => {
     setFooterDraft(footerToDraft(content.footer));
   }, [content, hasChanges, status]);
 
-  const handleHeroChange = (field: 'name' | 'tagline' | 'words' | 'logoUrl', value: string | undefined) => {
+  const handleHeroFieldChange = (field: 'name' | 'tagline' | 'words', value: string) => {
     setHeroDraft((prev) => ({ ...prev, [field]: value }));
     markDirty();
+  };
+
+  const updateHeroLogo = (updater: (prev?: HeroLogoDraft) => HeroLogoDraft | undefined) => {
+    setHeroDraft((prev) => ({ ...prev, logo: updater(prev.logo) }));
+    markDirty();
+  };
+
+  const handleLogoSourceChange = (source: HeroLogoSource) => {
+    updateHeroLogo((prev) => {
+      const current: HeroLogoDraft = prev ?? {
+        src: '',
+        kind: 'image',
+        source,
+      };
+
+      return { ...current, source };
+    });
+  };
+
+  const handleLogoKindChange = (kind: HeroLogoKind) => {
+    updateHeroLogo((prev) => {
+      const current: HeroLogoDraft = prev ?? {
+        src: '',
+        kind,
+        source: 'remote',
+      };
+
+      return { ...current, kind };
+    });
+  };
+
+  const handleLogoSrcChange = (value: string) => {
+    const trimmed = value.trim();
+    updateHeroLogo((prev) => {
+      const source = trimmed ? inferHeroLogoSource(trimmed, prev?.source ?? 'remote') : prev?.source ?? 'remote';
+      const kind = trimmed ? inferHeroLogoKind(trimmed, prev?.kind ?? 'image') : prev?.kind ?? 'image';
+
+      const current: HeroLogoDraft = prev ?? {
+        src: '',
+        kind,
+        source,
+      };
+
+      return { ...current, src: trimmed, source, kind };
+    });
+  };
+
+  const handleLogoPosterChange = (value: string) => {
+    const trimmed = value.trim();
+    updateHeroLogo((prev) => {
+      const current: HeroLogoDraft = prev ?? {
+        src: '',
+        kind: 'video',
+        source: 'remote',
+      };
+
+      return { ...current, posterUrl: trimmed || undefined };
+    });
+  };
+
+  const clearHeroLogo = () => {
+    updateHeroLogo(() => undefined);
   };
 
   const updateOverlay = <Section extends keyof OverlayDraftState>(
@@ -419,10 +577,72 @@ export const SiteConfiguration = () => {
       .map((word) => word.trim())
       .filter(Boolean);
 
-    const heroBackgrounds = heroDraft.backgrounds.map((background) => ({
-      ...background,
-      focalPoint: background.focalPoint ?? { x: 50, y: 50 }
-    }));
+    const heroBackgrounds = heroDraft.backgrounds
+      .map((background, index) => {
+        const src = background.src?.trim();
+
+        if (!src) {
+          return null;
+        }
+
+        const mediaType: BackgroundImage['mediaType'] = background.mediaType === 'video' ? 'video' : 'image';
+        const focalPoint = background.focalPoint ?? { x: 50, y: 50 };
+        const fallbackImage = background.fallbackImage?.trim() || undefined;
+        const alt = background.alt?.trim() || `Background ${index + 1}`;
+        const playbackDepth = background.playbackDepth ?? 'medium';
+        const isActive = background.isActive ?? true;
+
+        const base: BackgroundImage = {
+          ...background,
+          src,
+          alt,
+          mediaType,
+          focalPoint,
+          fallbackImage,
+          playbackDepth,
+          isActive,
+          order: index
+        };
+
+        if (mediaType === 'video') {
+          return {
+            ...base,
+            loop: background.loop ?? true,
+            autoplay: background.autoplay ?? true,
+            muted: background.muted ?? true
+          };
+        }
+
+        return {
+          ...base,
+          loop: undefined,
+          autoplay: undefined,
+          muted: undefined
+        };
+      })
+      .filter((background): background is BackgroundImage => Boolean(background));
+
+    const cleanedLogo = (() => {
+      if (!heroDraft.logo || !heroDraft.logo.src.trim()) {
+        return undefined;
+      }
+
+      const src = heroDraft.logo.src.trim();
+      const posterUrl = heroDraft.logo.posterUrl?.trim() || undefined;
+
+      return {
+        src,
+        kind: heroDraft.logo.kind,
+        source: heroDraft.logo.source,
+        posterUrl,
+      } satisfies HeroLogoAsset;
+    })();
+
+    const heroLogoUrl = cleanedLogo
+      ? cleanedLogo.kind === 'image'
+        ? cleanedLogo.src
+        : cleanedLogo.posterUrl
+      : undefined;
 
     const reservationPayload: ReservationContent = {
       title: reservationDraft.title,
@@ -470,7 +690,8 @@ export const SiteConfiguration = () => {
         tagline: heroDraft.tagline,
         words: heroWords,
         backgrounds: heroBackgrounds,
-        logoUrl: heroDraft.logoUrl
+        logoUrl: heroLogoUrl,
+        logo: cleanedLogo,
       },
       event: {
         name: content.event.name,
@@ -568,47 +789,126 @@ export const SiteConfiguration = () => {
                 Club name
                 <input
                   value={heroDraft.name}
-                  onChange={(event) => handleHeroChange('name', event.target.value)}
+                  onChange={(event) => handleHeroFieldChange('name', event.target.value)}
                 />
               </label>
               <label>
                 Tagline
                 <input
                   value={heroDraft.tagline}
-                  onChange={(event) => handleHeroChange('tagline', event.target.value)}
+                  onChange={(event) => handleHeroFieldChange('tagline', event.target.value)}
                 />
               </label>
-              <label>
-                Logo (displayed beside club name)
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <input
-                    type="url"
-                    placeholder="https://example.com/logo.png"
-                    value={heroDraft.logoUrl || ''}
-                    onChange={(event) => handleHeroChange('logoUrl', event.target.value || undefined)}
-                    style={{ flex: 1 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setLogoUploadModalOpen(true)}
-                  >
-                    Upload New
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLogoLibraryModalOpen(true)}
-                  >
-                    Browse Library
-                  </button>
+              <fieldset style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '0.75rem' }}>
+                <legend style={{ fontWeight: 600 }}>Hero logo</legend>
+                <p className="admin-config__hint">Displayed on both sides of the club name.</p>
+                <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }} role="radiogroup" aria-label="Logo source">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="radio"
+                      name="hero-logo-source"
+                      value="remote"
+                      checked={logoSource === 'remote'}
+                      onChange={() => handleLogoSourceChange('remote')}
+                    />
+                    Use media library uploads
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="radio"
+                      name="hero-logo-source"
+                      value="local"
+                      checked={logoSource === 'local'}
+                      onChange={() => handleLogoSourceChange('local')}
+                    />
+                    Reference local file
+                  </label>
                 </div>
-                <span className="admin-config__hint">Small logo image (max 80px tall recommended) shown on left and right of club name</span>
-              </label>
+                <label>
+                  Asset type
+                  <select
+                    value={logoKind}
+                    onChange={(event) => handleLogoKindChange(event.target.value as HeroLogoKind)}
+                  >
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                    <option value="model">3D model</option>
+                  </select>
+                </label>
+                {logoSource === 'remote' ? (
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.75rem' }}>
+                    <input
+                      type="url"
+                      placeholder="https://media.example.com/logo.png"
+                      value={logoSrcValue}
+                      onChange={(event) => handleLogoSrcChange(event.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                    <button type="button" onClick={() => setLogoUploadModalOpen(true)}>
+                      Upload New
+                    </button>
+                    <button type="button" onClick={() => setLogoLibraryModalOpen(true)}>
+                      Browse Library
+                    </button>
+                  </div>
+                ) : (
+                  <label style={{ marginTop: '0.75rem' }}>
+                    Local file path
+                    <input
+                      type="text"
+                      placeholder="/media/logo.glb"
+                      value={logoSrcValue}
+                      onChange={(event) => handleLogoSrcChange(event.target.value)}
+                    />
+                    <span className="admin-config__hint">
+                      Provide a path relative to the deployed site (e.g. /media/hero-logo.glb).
+                    </span>
+                  </label>
+                )}
+                {showPosterField && (
+                  <label style={{ marginTop: '0.75rem' }}>
+                    Poster image (optional)
+                    <input
+                      type="url"
+                      placeholder="https://media.example.com/logo-poster.png"
+                      value={logoPosterValue}
+                      onChange={(event) => handleLogoPosterChange(event.target.value)}
+                    />
+                    <span className="admin-config__hint">
+                      Used as a fallback when the {logoKind === 'video' ? 'video' : '3D'} logo cannot render instantly.
+                    </span>
+                  </label>
+                )}
+                {logoDraft ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <span className="admin-config__hint">
+                      Currently using a {logoKind === 'model' ? '3D model' : logoKind === 'video' ? 'video' : 'static image'} sourced from {logoSource === 'local' ? 'local assets' : 'Cloudflare R2'}.
+                    </span>
+                    <button type="button" className="btn btn--ghost btn--small" onClick={clearHeroLogo}>
+                      Remove logo
+                    </button>
+                  </div>
+                ) : (
+                  <p className="admin-config__hint" style={{ marginTop: '0.75rem' }}>
+                    No logo selected — the hero will render text only.
+                  </p>
+                )}
+              </fieldset>
 
               <MediaUploadModal
                 isOpen={logoUploadModalOpen}
                 onClose={() => setLogoUploadModalOpen(false)}
+                allowedTypes={['image', 'video', 'model']}
                 onUploadSuccess={(media) => {
-                  handleHeroChange('logoUrl', media.src);
+                  updateHeroLogo(() => ({
+                    src: media.url,
+                    kind: mediaTypeToHeroLogoKind(media.mediaType),
+                    source: 'remote',
+                    posterUrl:
+                      media.mediaType === 'model' || media.mediaType === 'video'
+                        ? media.thumbnailUrl || undefined
+                        : undefined,
+                  }));
                   setLogoUploadModalOpen(false);
                 }}
                 folder="general"
@@ -617,8 +917,14 @@ export const SiteConfiguration = () => {
               <MediaLibraryModal
                 isOpen={logoLibraryModalOpen}
                 onClose={() => setLogoLibraryModalOpen(false)}
-                onSelectMedia={(media) => {
-                  handleHeroChange('logoUrl', media.src);
+                allowedTypes={['image', 'video', 'model']}
+                onSelectAsset={(media) => {
+                  updateHeroLogo(() => ({
+                    src: media.url,
+                    kind: mediaTypeToHeroLogoKind(media.mediaType),
+                    source: 'remote',
+                    posterUrl: media.thumbnailUrl,
+                  }));
                   setLogoLibraryModalOpen(false);
                 }}
                 folder="all"
@@ -628,7 +934,7 @@ export const SiteConfiguration = () => {
                 <textarea
                   rows={3}
                   value={heroDraft.words}
-                  onChange={(event) => handleHeroChange('words', event.target.value)}
+                  onChange={(event) => handleHeroFieldChange('words', event.target.value)}
                 />
                 <span className="admin-config__hint">Enter one word or phrase per line.</span>
               </label>

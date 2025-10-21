@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import type { Event, CreateEventData, UpdateEventData } from '../../services/eventsService';
-import { MediaUploadModal } from '../../components/MediaUploadModal';
+import { MediaUploadModal, UploadedMedia } from '../../components/MediaUploadModal';
 import { MediaLibraryModal } from '../../components/MediaLibraryModal';
 import type { BackgroundImage } from '../../types/content';
 
@@ -122,8 +122,8 @@ export const EventFormModal = ({ event, onClose, onSave }: EventFormModalProps) 
     }
   };
 
-  const handleUploadSuccess = (media: BackgroundImage) => {
-    setFlyerUrl(media.src);
+  const handleUploadSuccess = (media: UploadedMedia) => {
+    setFlyerUrl(media.url);
     setUploadModalOpen(false);
   };
 

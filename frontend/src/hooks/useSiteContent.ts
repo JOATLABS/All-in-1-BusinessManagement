@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ReservationTierPattern, SiteContent } from '../types/content';
+import type {
+  BackgroundImage,
+  HeroLogoAsset,
+  HeroLogoKind,
+  HeroLogoSource,
+  ReservationTierPattern,
+  SiteContent
+} from '../types/content';
 import { defaultSiteContent } from '../config/defaultSiteContent';
 import { fetchSiteContent, type SiteContentResponse } from '../services/contentService';
 
@@ -20,41 +27,132 @@ const parseNonNegativeInt = (value: unknown, fallback: number): number => {
 
 const reservationPatterns: ReservationTierPattern[] = ['grid', 'halo', 'pillars'];
 
+const inferLogoKind = (src: string, fallback?: HeroLogoKind): HeroLogoKind => {
+  const extension = src.split('?')[0]?.split('.').pop()?.toLowerCase();
+  if (!extension) {
+    return fallback ?? 'image';
+  }
+
+  if (['mp4', 'webm', 'mov', 'm4v'].includes(extension)) {
+    return 'video';
+  }
+
+  if (['glb', 'gltf', 'gbl'].includes(extension)) {
+    return 'model';
+  }
+
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'heic', 'heif'].includes(extension)) {
+    return 'image';
+  }
+
+  return fallback ?? 'image';
+};
+
+const resolveLogoSource = (src: string, explicit?: HeroLogoSource): HeroLogoSource => {
+  if (explicit) {
+    return explicit;
+  }
+
+  return src.startsWith('http://') || src.startsWith('https://') ? 'remote' : 'local';
+};
+
+const normaliseLogo = (logo: HeroLogoAsset | undefined, legacyUrl?: string): HeroLogoAsset | undefined => {
+  const trimmedLegacy = legacyUrl?.trim();
+  const trimmedSrc = logo?.src?.trim();
+
+  if (trimmedSrc) {
+    const kind = inferLogoKind(trimmedSrc, logo?.kind);
+    const posterUrl = logo?.posterUrl?.trim() || undefined;
+    const source = resolveLogoSource(trimmedSrc, logo?.source);
+
+    return {
+      src: trimmedSrc,
+      kind,
+      posterUrl,
+      source
+    };
+  }
+
+  if (trimmedLegacy) {
+    const kind = inferLogoKind(trimmedLegacy, 'image');
+    const source = resolveLogoSource(trimmedLegacy);
+
+    return {
+      src: trimmedLegacy,
+      kind,
+      source
+    };
+  }
+
+  return undefined;
+};
+
 const normaliseContent = (content: SiteContent): SiteContent => ({
   hero: {
     ...content.hero,
-    logoUrl: (() => {
-      const trimmed = content.hero.logoUrl?.trim();
-      return trimmed || undefined;
-    })(),
-    backgrounds: ensureArray(content.hero.backgrounds, defaultSiteContent.hero.backgrounds).map((background) => {
-      const srcExt = background.src?.split('?')[0]?.split('.').pop()?.toLowerCase();
-      const derivedMediaType = srcExt && ['mp4', 'webm', 'mov', 'm4v'].includes(srcExt) ? 'video' : 'image';
-      const mediaType = background.mediaType ?? derivedMediaType;
-      const fallbackImage = background.fallbackImage?.trim() || undefined;
+    backgrounds: ensureArray(content.hero.backgrounds, defaultSiteContent.hero.backgrounds)
+      .map((background, index) => ({ background, index }))
+      .sort((a, b) => {
+        const orderA = typeof a.background.order === 'number' && Number.isFinite(a.background.order)
+          ? a.background.order
+          : a.index;
+        const orderB = typeof b.background.order === 'number' && Number.isFinite(b.background.order)
+          ? b.background.order
+          : b.index;
 
-      return {
-        ...background,
-        mediaType,
-        isActive: background.isActive ?? true,
-        focalPoint: background.focalPoint ?? { x: 50, y: 50 },
-        fallbackImage,
-        ...(mediaType === 'video'
-          ? {
-              loop: background.loop ?? true,
-              autoplay: background.autoplay ?? true,
-              muted: background.muted ?? true,
-            }
-          : {
-              loop: undefined,
-              autoplay: undefined,
-              muted: undefined,
-            }),
-      };
-    }),
+        if (orderA === orderB) {
+          return a.index - b.index;
+        }
+
+        return orderA - orderB;
+      })
+      .map(({ background }, index) => {
+        const src = background.src?.trim() ?? '';
+        const srcExt = src.split('?')[0]?.split('.').pop()?.toLowerCase();
+        const derivedMediaType = srcExt && ['mp4', 'webm', 'mov', 'm4v'].includes(srcExt) ? 'video' : 'image';
+        const mediaType = background.mediaType === 'video' ? 'video' : derivedMediaType;
+        const fallbackImage = background.fallbackImage?.trim() || undefined;
+        const focalPoint = background.focalPoint ?? { x: 50, y: 50 };
+
+        const normalised: BackgroundImage = {
+          ...background,
+          src,
+          alt: background.alt?.trim() || `Background ${index + 1}`,
+          mediaType,
+          isActive: background.isActive ?? true,
+          playbackDepth: background.playbackDepth ?? 'medium',
+          focalPoint,
+          fallbackImage,
+          order: index,
+        };
+
+        if (mediaType === 'video') {
+          normalised.loop = background.loop ?? true;
+          normalised.autoplay = background.autoplay ?? true;
+          normalised.muted = background.muted ?? true;
+        } else {
+          normalised.loop = undefined;
+          normalised.autoplay = undefined;
+          normalised.muted = undefined;
+        }
+
+        return normalised;
+      }),
     words: ensureArray(content.hero.words, defaultSiteContent.hero.words)
       .map((word) => word.trim())
-      .filter(Boolean)
+      .filter(Boolean),
+    ...((): { logo?: HeroLogoAsset; logoUrl?: string } => {
+      const resolvedLogo = normaliseLogo(content.hero.logo, content.hero.logoUrl);
+
+      if (!resolvedLogo) {
+        return { logo: undefined, logoUrl: undefined };
+      }
+
+      return {
+        logo: resolvedLogo,
+        logoUrl: resolvedLogo.kind === 'image' ? resolvedLogo.src : resolvedLogo.posterUrl ?? undefined
+      };
+    })()
   },
   event: {
     ...content.event,

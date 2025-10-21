@@ -9,6 +9,7 @@ import { defaultSiteContent } from '../config/defaultSiteContent';
 import { useSiteContentContext } from '../content/SiteContentProvider';
 import { fetchEvents, type Event } from '../services/eventsService';
 import type { SiteContent } from '../types/content';
+import { HeroLogoModel } from '../components/HeroLogoModel';
 
 const primaryRangeFormatter = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
@@ -167,6 +168,69 @@ const HeroContent = ({ hero, isReady }: HeroContentProps) => {
   const activeWord = heroWords.length ? heroWords[wordIndex] : '';
   const heroClassName = `hero${isFlyerActive ? ' hero--flyer-active' : ''}`;
 
+  const renderLogo = (position: 'left' | 'right') => {
+    const logo = hero.logo;
+    if (!logo) {
+      const fallbackLogo = hero.logoUrl?.trim();
+      if (!fallbackLogo) {
+        return null;
+      }
+
+      return (
+        <img
+          key={`${fallbackLogo}-${position}`}
+          src={fallbackLogo}
+          alt=""
+          className={`hero__logo hero__logo--${position}`}
+          aria-hidden="true"
+          decoding="async"
+        />
+      );
+    }
+
+    const logoKey = `${logo.src}-${position}`;
+    const className = `hero__logo hero__logo--${position}`;
+
+    if (logo.kind === 'video') {
+      return (
+        <video
+          key={logoKey}
+          className={`${className} hero__logo--video`}
+          src={logo.src}
+          playsInline
+          muted
+          loop
+          autoPlay
+          preload="auto"
+          poster={logo.posterUrl}
+          aria-hidden="true"
+        />
+      );
+    }
+
+    if (logo.kind === 'model') {
+      return (
+        <HeroLogoModel
+          key={logoKey}
+          src={logo.src}
+          posterUrl={logo.posterUrl}
+          className={`${className} hero__logo--model`}
+        />
+      );
+    }
+
+    return (
+      <img
+        key={logoKey}
+        src={logo.src}
+        alt=""
+        className={className}
+        aria-hidden="true"
+        decoding="async"
+      />
+    );
+  };
+
   return (
     <section className={heroClassName} aria-labelledby="club-name" aria-busy={!isReady}>
       <div className="hero__media" aria-hidden="true">
@@ -254,25 +318,9 @@ const HeroContent = ({ hero, isReady }: HeroContentProps) => {
 
       <div className="hero__title-wrap hero__layer">
         <h1 id="club-name" className="hero__title">
-          {hero.logoUrl && (
-            <img
-              src={hero.logoUrl}
-              alt=""
-              className="hero__logo hero__logo--left"
-              aria-hidden="true"
-              decoding="async"
-            />
-          )}
+          {renderLogo('left')}
           <span className="hero__title-text">{hero.name}</span>
-          {hero.logoUrl && (
-            <img
-              src={hero.logoUrl}
-              alt=""
-              className="hero__logo hero__logo--right"
-              aria-hidden="true"
-              decoding="async"
-            />
-          )}
+          {renderLogo('right')}
         </h1>
         <p className="hero__subtitle">{hero.tagline}</p>
       </div>

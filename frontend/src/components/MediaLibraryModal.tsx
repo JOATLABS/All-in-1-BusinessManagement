@@ -1,16 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { config } from '../config/api';
 import { useAuth } from '../auth/AuthContext';
-import type { BackgroundImage, BackgroundMediaType } from '../types/content';
+import type { BackgroundImage, BackgroundMediaType, MediaType } from '../types/content';
 import { Icon } from './Icon';
+
+const DEFAULT_ALLOWED_TYPES: MediaType[] = ['image', 'video'];
+
+type FilterType = 'all' | MediaType;
 
 interface MediaLibraryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectMedia: (media: BackgroundImage) => void;
+  onSelectMedia?: (media: BackgroundImage) => void;
+  onSelectAsset?: (media: R2MediaItem) => void;
   folder?: 'backgrounds' | 'events' | 'posters' | 'general' | 'all';
+  allowedTypes?: MediaType[];
 }
 
 interface R2MediaItem {
@@ -18,7 +24,7 @@ interface R2MediaItem {
   url: string;
   size: number;
   lastModified: Date;
-  mediaType: BackgroundMediaType;
+  mediaType: MediaType;
   thumbnailUrl?: string;
 }
 
@@ -31,16 +37,69 @@ export const MediaLibraryModal = ({
   isOpen,
   onClose,
   onSelectMedia,
-  folder = 'all'
+  onSelectAsset,
+  folder = 'all',
+  allowedTypes
 }: MediaLibraryModalProps) => {
   const { token } = useAuth();
+  const allowedKinds = useMemo<MediaType[]>(() => {
+    const values = allowedTypes?.length ? allowedTypes : DEFAULT_ALLOWED_TYPES;
+    const unique = Array.from(new Set(values));
+    return (unique.length ? unique : DEFAULT_ALLOWED_TYPES) as MediaType[];
+  }, [allowedTypes]);
+
   const [media, setMedia] = useState<R2MediaItem[]>([]);
   const [filteredMedia, setFilteredMedia] = useState<R2MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'image' | 'video'>('all');
+  const [filterType, setFilterType] = useState<FilterType>('all');
   const [selectedItem, setSelectedItem] = useState<R2MediaItem | null>(null);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
+
+  const counts = useMemo(() => {
+    const summary: Record<MediaType, number> = { image: 0, video: 0, model: 0 };
+    media.forEach((item) => {
+      if (allowedKinds.includes(item.mediaType)) {
+        summary[item.mediaType] += 1;
+      }
+    });
+    return summary;
+  }, [media, allowedKinds]);
+
+  const totalAllowed = counts.image + counts.video + counts.model;
+
+  const describeMediaType = (type: MediaType): string => {
+    if (type === 'model') {
+      return '3D model';
+    }
+
+    if (type === 'video') {
+      return 'Video';
+    }
+
+    return 'Image';
+  };
+
+  const createBackgroundFromItem = (item: R2MediaItem): BackgroundImage => {
+    const base: BackgroundImage = {
+      src: item.url,
+      alt: item.key.split('/').pop() || '',
+      mediaType: (item.mediaType === 'video' ? 'video' : 'image') as BackgroundMediaType,
+      isActive: true,
+      playbackDepth: 'medium',
+      focalPoint: { x: 50, y: 50 },
+      order: 0,
+      fallbackImage: item.thumbnailUrl
+    };
+
+    if (item.mediaType === 'video') {
+      base.loop = true;
+      base.autoplay = true;
+      base.muted = true;
+    }
+
+    return base;
+  };
 
   // Virtual scrolling setup
   const parentRef = useRef<HTMLDivElement>(null);
@@ -64,12 +123,19 @@ export const MediaLibraryModal = ({
    * Filter media by type
    */
   useEffect(() => {
+    const allowedMedia = media.filter((item) => allowedKinds.includes(item.mediaType));
     if (filterType === 'all') {
-      setFilteredMedia(media);
+      setFilteredMedia(allowedMedia);
     } else {
-      setFilteredMedia(media.filter(item => item.mediaType === filterType));
+      setFilteredMedia(allowedMedia.filter((item) => item.mediaType === filterType));
     }
-  }, [media, filterType]);
+  }, [media, filterType, allowedKinds]);
+
+  useEffect(() => {
+    if (filterType !== 'all' && !allowedKinds.includes(filterType)) {
+      setFilterType('all');
+    }
+  }, [allowedKinds, filterType]);
 
   const loadMedia = async () => {
     setLoading(true);
@@ -103,6 +169,8 @@ export const MediaLibraryModal = ({
         );
       }
 
+      mediaItems = mediaItems.filter((item: R2MediaItem) => allowedKinds.includes(item.mediaType));
+
       setMedia(mediaItems);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load media');
@@ -124,25 +192,19 @@ export const MediaLibraryModal = ({
   const handleConfirm = () => {
     if (!selectedItem) return;
 
-    const background: BackgroundImage = {
-      src: selectedItem.url,
-      alt: selectedItem.key.split('/').pop() || '',
-      mediaType: selectedItem.mediaType,
-      isActive: true,
-      playbackDepth: 'medium',
-      focalPoint: { x: 50, y: 50 },
-      order: 0,
-      fallbackImage: selectedItem.thumbnailUrl
-    };
-
-    // Add video-specific settings
-    if (selectedItem.mediaType === 'video') {
-      background.loop = true;
-      background.autoplay = true;
-      background.muted = true;
+    if (selectedItem.mediaType === 'model' && !onSelectAsset) {
+      return;
     }
 
-    onSelectMedia(background);
+    if (onSelectAsset) {
+      onSelectAsset(selectedItem);
+    }
+
+    if (onSelectMedia && selectedItem.mediaType !== 'model') {
+      const background = createBackgroundFromItem(selectedItem);
+      onSelectMedia(background);
+    }
+
     handleClose();
   };
 
@@ -203,6 +265,12 @@ export const MediaLibraryModal = ({
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
+  const canConfirm = Boolean(
+    selectedItem && (selectedItem.mediaType !== 'model' || onSelectAsset)
+  );
+
+  const confirmLabel = selectedItem?.mediaType === 'model' ? 'Select Asset' : 'Select Media';
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -225,24 +293,38 @@ export const MediaLibraryModal = ({
                 className={`btn btn--small ${filterType === 'all' ? 'btn--primary' : 'btn--ghost'}`}
                 onClick={() => setFilterType('all')}
               >
-                All ({media.length})
+                All ({totalAllowed})
               </button>
-              <button
-                type="button"
-                className={`btn btn--small ${filterType === 'image' ? 'btn--primary' : 'btn--ghost'}`}
-                onClick={() => setFilterType('image')}
-                aria-label="Filter images"
-              >
-                <Icon name="image" size={16} /> Images ({media.filter(m => m.mediaType === 'image').length})
-              </button>
-              <button
-                type="button"
-                className={`btn btn--small ${filterType === 'video' ? 'btn--primary' : 'btn--ghost'}`}
-                onClick={() => setFilterType('video')}
-                aria-label="Filter videos"
-              >
-                <Icon name="video" size={16} /> Videos ({media.filter(m => m.mediaType === 'video').length})
-              </button>
+              {allowedKinds.includes('image') && (
+                <button
+                  type="button"
+                  className={`btn btn--small ${filterType === 'image' ? 'btn--primary' : 'btn--ghost'}`}
+                  onClick={() => setFilterType('image')}
+                  aria-label="Filter images"
+                >
+                  <Icon name="image" size={16} /> Images ({counts.image})
+                </button>
+              )}
+              {allowedKinds.includes('video') && (
+                <button
+                  type="button"
+                  className={`btn btn--small ${filterType === 'video' ? 'btn--primary' : 'btn--ghost'}`}
+                  onClick={() => setFilterType('video')}
+                  aria-label="Filter videos"
+                >
+                  <Icon name="video" size={16} /> Videos ({counts.video})
+                </button>
+              )}
+              {allowedKinds.includes('model') && (
+                <button
+                  type="button"
+                  className={`btn btn--small ${filterType === 'model' ? 'btn--primary' : 'btn--ghost'}`}
+                  onClick={() => setFilterType('model')}
+                  aria-label="Filter 3D models"
+                >
+                  <Icon name="cube" size={16} /> 3D ({counts.model})
+                </button>
+              )}
             </div>
           </div>
 
@@ -325,18 +407,25 @@ export const MediaLibraryModal = ({
                             poster={item.thumbnailUrl}
                             className="library-item__media"
                           />
-                        ) : (
+                        ) : item.mediaType === 'image' ? (
                           <img
                             src={item.url}
                             alt={item.key}
                             className="library-item__media"
                             loading="lazy"
                           />
+                        ) : (
+                          <div className="library-item__model" aria-hidden="true">
+                            <Icon name="cube" size={32} />
+                          </div>
                         )}
 
                         {/* Type Badge */}
                         <span className="library-item__badge">
-                          <Icon name={item.mediaType === 'video' ? 'video' : 'image'} size={14} />
+                          <Icon
+                            name={item.mediaType === 'video' ? 'video' : item.mediaType === 'model' ? 'cube' : 'image'}
+                            size={14}
+                          />
                         </span>
 
                         {/* Selected Checkmark */}
@@ -386,7 +475,7 @@ export const MediaLibraryModal = ({
             <div className="library-selection__info">
               <strong>Selected:</strong> {selectedItem.key.split('/').pop()}
               <span className="library-selection__meta">
-                {formatSize(selectedItem.size)} • {selectedItem.mediaType}
+                {formatSize(selectedItem.size)} • {describeMediaType(selectedItem.mediaType)}
               </span>
             </div>
           </div>
@@ -405,9 +494,9 @@ export const MediaLibraryModal = ({
             type="button"
             className="btn btn--primary"
             onClick={handleConfirm}
-            disabled={!selectedItem}
+            disabled={!canConfirm}
           >
-            Select Media
+            {confirmLabel}
           </button>
         </div>
       </div>

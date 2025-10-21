@@ -1,12 +1,22 @@
 import { z } from 'zod';
 
+const urlOrRelativePath = z
+  .string()
+  .min(1)
+  .refine(
+    (value) => /^https?:\/\//.test(value) || value.startsWith('/') || value.startsWith('./'),
+    {
+      message: 'Must be an absolute URL or relative path'
+    }
+  );
+
 const focalPointSchema = z.object({
   x: z.number().min(0).max(100),
   y: z.number().min(0).max(100)
 });
 
 const backgroundSchema = z.object({
-  src: z.string().url(),
+  src: urlOrRelativePath,
   alt: z.string().min(1).max(200),
   mediaType: z.enum(['image', 'video']).optional(),
   isActive: z.boolean().optional().default(true),
@@ -14,18 +24,48 @@ const backgroundSchema = z.object({
   order: z.number().int().min(0).optional(),
   focalPoint: focalPointSchema.optional(),
   // Video-specific properties
-  fallbackImage: z.string().url().optional(),
+  fallbackImage: urlOrRelativePath.optional(),
   loop: z.boolean().optional().default(true),
   autoplay: z.boolean().optional().default(true),
   muted: z.boolean().optional().default(true)
 });
+
+const heroLogoSchema = z
+  .object({
+    src: urlOrRelativePath,
+    kind: z.enum(['image', 'video', 'model']).default('image'),
+    posterUrl: urlOrRelativePath.optional(),
+    source: z.enum(['remote', 'local']).optional()
+  })
+  .refine(
+    (value) => {
+      const srcExt = value.src.split('?')[0]?.split('.').pop()?.toLowerCase();
+      if (!srcExt) {
+        return true;
+      }
+
+      if (value.kind === 'image') {
+        return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'avif', 'heic', 'heif'].includes(srcExt);
+      }
+
+      if (value.kind === 'video') {
+        return ['mp4', 'webm', 'mov', 'm4v'].includes(srcExt);
+      }
+
+      return ['glb', 'gltf', 'gbl'].includes(srcExt);
+    },
+    {
+      message: 'Logo src extension does not match selected asset type'
+    }
+  );
 
 const heroSchema = z.object({
   name: z.string().min(1),
   tagline: z.string().min(1),
   words: z.array(z.string().min(1)).min(1),
   backgrounds: z.array(backgroundSchema).min(1),
-  logoUrl: z.string().url().optional()
+  logoUrl: urlOrRelativePath.optional(),
+  logo: heroLogoSchema.optional()
 });
 
 const eventSchema = z.object({
