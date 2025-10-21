@@ -4,6 +4,19 @@
  */
 export type BackgroundMediaType = 'image' | 'video';
 
+export type MediaType = 'image' | 'video' | 'model';
+
+export type HeroLogoKind = 'image' | 'video' | 'model';
+
+export type HeroLogoSource = 'remote' | 'local';
+
+export interface HeroLogoAsset {
+  src: string;
+  kind: HeroLogoKind;
+  posterUrl?: string;
+  source?: HeroLogoSource;
+}
+
 /**
  * Playback depth for parallax effect
  * - shallow: minimal movement (0.2x)
@@ -44,8 +57,9 @@ export interface HeroContent {
   tagline: string;
   words: string[];
   backgrounds: BackgroundImage[];
-  /** URL to logo image displayed beside the nightclub name */
+  /** Legacy logo URL maintained for backwards compatibility */
   logoUrl?: string;
+  logo?: HeroLogoAsset;
 }
 
 export interface EventContent {

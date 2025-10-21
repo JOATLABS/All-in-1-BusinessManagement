@@ -1,28 +1,64 @@
-import { useState, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { config } from '../config/api';
 import { useAuth } from '../auth/AuthContext';
-import type { BackgroundImage, BackgroundMediaType } from '../types/content';
+import type { MediaType } from '../types/content';
 import '../styles/components/upload-modal-mobile.css';
+
+const DEFAULT_ALLOWED_TYPES: MediaType[] = ['image', 'video'];
+
+const MIME_TYPES_BY_KIND: Record<MediaType, string[]> = {
+  image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/avif', 'image/heic', 'image/heif'],
+  video: ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'],
+  model: ['model/gltf-binary', 'model/gltf+json', 'model/gltf']
+};
+
+const ACCEPT_PATTERNS_BY_KIND: Record<MediaType, string[]> = {
+  image: ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif', '.heic', '.heif', 'image/*'],
+  video: ['.mp4', '.webm', '.mov', '.m4v', 'video/*'],
+  model: ['.glb', '.gltf', '.gbl', 'model/gltf-binary']
+};
+
+const MODEL_FILE_EXTENSIONS = ['.glb', '.gltf', '.gbl'];
+
+const mediaTypeErrorMessage =
+  'Invalid file type. Only common image formats (JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC), videos (MP4, WebM, MOV, M4V), and 3D ' +
+  'models (GLB/GLTF) are allowed.';
+
+const describeMediaType = (kind: MediaType): string => {
+  if (kind === 'model') {
+    return '3D model';
+  }
+
+  if (kind === 'video') {
+    return 'Video';
+  }
+
+  return 'Image';
+};
+
+export type UploadedMedia = {
+  url: string;
+  key: string;
+  mediaType: MediaType;
+  mimetype: string;
+  size: number;
+  folder: string;
+  originalFilename: string;
+  thumbnailUrl?: string;
+};
 
 interface MediaUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUploadSuccess: (media: BackgroundImage) => void;
+  onUploadSuccess: (media: UploadedMedia) => void;
   folder?: 'backgrounds' | 'events' | 'posters' | 'general';
+  allowedTypes?: MediaType[];
 }
 
 interface UploadResponse {
   message: string;
-  media: {
-    url: string;
-    key: string;
-    mediaType: BackgroundMediaType;
-    mimetype: string;
-    size: number;
-    folder: string;
-    originalFilename: string;
-  };
+  media: UploadedMedia;
 }
 
 /**
@@ -34,10 +70,18 @@ export const MediaUploadModal = ({
   isOpen,
   onClose,
   onUploadSuccess,
-  folder = 'backgrounds'
+  folder = 'backgrounds',
+  allowedTypes
 }: MediaUploadModalProps) => {
   const { token } = useAuth();
+  const allowedKinds = useMemo<MediaType[]>(() => {
+    const values = allowedTypes?.length ? allowedTypes : DEFAULT_ALLOWED_TYPES;
+    const unique = Array.from(new Set(values));
+    return (unique.length ? unique : DEFAULT_ALLOWED_TYPES) as MediaType[];
+  }, [allowedTypes]);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedKind, setSelectedKind] = useState<MediaType>(allowedKinds[0]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,30 +89,110 @@ export const MediaUploadModal = ({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!allowedKinds.includes(selectedKind)) {
+      setSelectedKind(allowedKinds[0]);
+    }
+  }, [allowedKinds, selectedKind]);
+
+  const allowedMimeTypes = useMemo(() => allowedKinds.flatMap((kind) => MIME_TYPES_BY_KIND[kind]), [allowedKinds]);
+  const acceptAttribute = useMemo(
+    () => allowedKinds.flatMap((kind) => ACCEPT_PATTERNS_BY_KIND[kind]).join(','),
+    [allowedKinds]
+  );
+  const hintLines = useMemo(() => {
+    const lines = allowedKinds.map((kind) => {
+      if (kind === 'image') {
+        return 'Images: JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC';
+      }
+
+      if (kind === 'video') {
+        return 'Videos: MP4, WebM, MOV, M4V';
+      }
+
+      return '3D: GLB (binary GLTF) or GLTF';
+    });
+
+    lines.push('Max 50MB per file');
+
+    return lines;
+  }, [allowedKinds]);
+
+  const determineKind = (file: File): MediaType => {
+    const type = file.type.toLowerCase();
+    const name = file.name.toLowerCase();
+
+    if (type.startsWith('video/')) {
+      return 'video';
+    }
+
+    if (type.startsWith('image/')) {
+      return 'image';
+    }
+
+    if (type.startsWith('model/')) {
+      return 'model';
+    }
+
+    if (MODEL_FILE_EXTENSIONS.some((ext) => name.endsWith(ext))) {
+      return 'model';
+    }
+
+    return 'image';
+  };
+
+  const resetSelection = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setSelectedKind(allowedKinds[0]);
+  };
+
   /**
    * Handle file selection
    */
   const handleFileSelect = (file: File) => {
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
-    if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Only images (JPEG, PNG, WebP, GIF) and videos (MP4, WebM) are allowed.');
+    const kind = determineKind(file);
+
+    if (!allowedKinds.includes(kind)) {
+      setError(mediaTypeErrorMessage);
       return;
     }
 
-    // Validate file size (50MB max)
+    if (kind === 'model') {
+      const lowerName = file.name.toLowerCase();
+      const hasValidExtension = MODEL_FILE_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
+      if (!hasValidExtension) {
+        setError('3D models must use the .glb or .gltf extension.');
+        return;
+      }
+    } else if (!allowedMimeTypes.includes(file.type)) {
+      setError(mediaTypeErrorMessage);
+      return;
+    }
+
     const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
       setError('File too large. Maximum size is 50MB.');
       return;
     }
 
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
     setSelectedFile(file);
+    setSelectedKind(kind);
     setError(null);
 
-    // Create preview
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
+    if (kind === 'image' || kind === 'video') {
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
+    } else {
+      setPreviewUrl(null);
+    }
   };
 
   /**
@@ -140,30 +264,10 @@ export const MediaUploadModal = ({
 
       const data: UploadResponse = await response.json();
 
-      // Create BackgroundImage object
-      const newBackground: BackgroundImage = {
-        src: data.media.url,
-        alt: selectedFile.name,
-        mediaType: data.media.mediaType,
-        isActive: true,
-        playbackDepth: 'medium',
-        focalPoint: { x: 50, y: 50 },
-        order: 0
-      };
-
-      // Handle video-specific settings
-      if (data.media.mediaType === 'video') {
-        newBackground.loop = true;
-        newBackground.autoplay = true;
-        newBackground.muted = true;
-      }
-
       setProgress(100);
 
-      // Call success callback
-      onUploadSuccess(newBackground);
+      onUploadSuccess(data.media);
 
-      // Close modal after short delay
       setTimeout(() => {
         handleClose();
       }, 500);
@@ -180,14 +284,11 @@ export const MediaUploadModal = ({
    * Clean up and close
    */
   const handleClose = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setSelectedFile(null);
-    setPreviewUrl(null);
+    resetSelection();
     setError(null);
     setProgress(0);
     setUploading(false);
+    setIsDragging(false);
     onClose();
   };
 
@@ -197,8 +298,6 @@ export const MediaUploadModal = ({
   const handleBrowseClick = () => {
     fileInputRef.current?.click();
   };
-
-  const mediaType = selectedFile?.type.startsWith('video/') ? 'video' : 'image';
 
   if (!isOpen) return null;
 
@@ -226,8 +325,12 @@ export const MediaUploadModal = ({
             <div className="upload-file-button__icon">📤</div>
             <p className="upload-file-button__text">Tap to select file</p>
             <p className="upload-file-button__hint">
-              Images: JPEG, PNG, WebP, GIF<br/>
-              Videos: MP4, WebM • Max 50MB
+              {hintLines.map((line, index) => (
+                <span key={`${line}-${index}`}>
+                  {line}
+                  {index < hintLines.length - 1 ? <br /> : null}
+                </span>
+              ))}
             </p>
           </button>
         )}
@@ -236,28 +339,35 @@ export const MediaUploadModal = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,image/*,video/*"
+          accept={acceptAttribute}
           onChange={handleInputChange}
           style={{ display: 'none' }}
         />
 
         {/* Preview (shows BELOW button) */}
-        {selectedFile && previewUrl && (
+        {selectedFile && (
           <div className="upload-preview-mobile">
             <div className="upload-preview-mobile__thumbnail">
-              {mediaType === 'video' ? (
+              {selectedKind === 'video' && previewUrl ? (
                 <video
                   src={previewUrl}
                   controls
                   muted
                   className="upload-preview-mobile__video"
                 />
-              ) : (
+              ) : selectedKind === 'image' && previewUrl ? (
                 <img
                   src={previewUrl}
                   alt="Upload preview"
                   className="upload-preview-mobile__image"
                 />
+              ) : (
+                <div className="upload-preview-mobile__model-hint" aria-hidden="true">
+                  <span className="upload-preview-mobile__model-icon" role="img" aria-hidden="true">
+                    🧊
+                  </span>
+                  <p>3D preview available after upload.</p>
+                </div>
               )}
             </div>
 
@@ -267,7 +377,7 @@ export const MediaUploadModal = ({
                   {selectedFile.name}
                 </p>
                 <p className="upload-preview-mobile__meta">
-                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {describeMediaType(selectedKind)}
                 </p>
               </div>
 
@@ -276,11 +386,7 @@ export const MediaUploadModal = ({
                   type="button"
                   className="btn btn--secondary"
                   style={{ minHeight: '44px', padding: '0 1rem' }}
-                  onClick={() => {
-                    if (previewUrl) URL.revokeObjectURL(previewUrl);
-                    setSelectedFile(null);
-                    setPreviewUrl(null);
-                  }}
+                  onClick={resetSelection}
                 >
                   Change
                 </button>

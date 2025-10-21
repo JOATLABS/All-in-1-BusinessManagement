@@ -11,7 +11,13 @@ const accountId = process.env.R2_ACCOUNT_ID;
 const accessKeyId = process.env.R2_ACCESS_KEY_ID;
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 const bucketName = process.env.R2_MEDIA_BUCKET;
-const publicHost = process.env.R2_MEDIA_PUBLIC_HOST;
+const rawPublicHost = process.env.R2_MEDIA_PUBLIC_HOST;
+
+const normalizePublicHost = (host: string): string => {
+  return host.replace(/^https?:\/\//, '').replace(/\/$/, '');
+};
+
+const publicHost = rawPublicHost ? normalizePublicHost(rawPublicHost) : undefined;
 
 // Fail fast if required environment variables are missing
 if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicHost) {
@@ -27,6 +33,7 @@ if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicHost
 const r2Client = new S3Client({
   region: 'auto',
   endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+  forcePathStyle: true,
   credentials: {
     accessKeyId,
     secretAccessKey
@@ -43,8 +50,17 @@ const getExtensionFromMimetype = (mimetype: string): string => {
     'image/png': 'png',
     'image/webp': 'webp',
     'image/gif': 'gif',
+    'image/svg+xml': 'svg',
+    'image/avif': 'avif',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
     'video/mp4': 'mp4',
-    'video/webm': 'webm'
+    'video/webm': 'webm',
+    'video/quicktime': 'mov',
+    'video/x-m4v': 'm4v',
+    'model/gltf-binary': 'glb',
+    'model/gltf+json': 'gltf',
+    'model/gltf': 'gltf'
   };
   return mimetypeMap[mimetype] || 'bin';
 };
@@ -52,15 +68,23 @@ const getExtensionFromMimetype = (mimetype: string): string => {
 /**
  * Determine media type from mimetype
  */
-const getMediaType = (mimetype: string): 'image' | 'video' => {
-  return mimetype.startsWith('video/') ? 'video' : 'image';
+const getMediaType = (mimetype: string): 'image' | 'video' | 'model' => {
+  if (mimetype.startsWith('video/')) {
+    return 'video';
+  }
+
+  if (mimetype.startsWith('model/')) {
+    return 'model';
+  }
+
+  return 'image';
 };
 
 /**
  * Media folder types for auto-organization
  * Single-tenant: organize files by purpose in the single bucket
  */
-export type MediaFolder = 'backgrounds' | 'events' | 'posters' | 'general';
+export type MediaFolder = 'backgrounds' | 'events' | 'posters' | 'general' | 'thumbnails';
 
 /**
  * Upload a file to Cloudflare R2 with automatic folder organization
@@ -70,13 +94,25 @@ export const uploadToR2 = async (
   buffer: Buffer,
   originalFilename: string,
   mimetype: string,
-  folder: MediaFolder = 'general'
-): Promise<{ url: string; key: string; mediaType: 'image' | 'video'; folder: MediaFolder }> => {
+  folder: MediaFolder = 'general',
+  options?: { key?: string }
+): Promise<{ url: string; key: string; mediaType: 'image' | 'video' | 'model'; folder: MediaFolder }> => {
   try {
-    const ext = getExtensionFromMimetype(mimetype);
+    let ext = getExtensionFromMimetype(mimetype);
+    if (ext === 'bin') {
+      const inferredExt = originalFilename.split('.').pop();
+      if (inferredExt) {
+        ext = inferredExt.toLowerCase();
+      }
+    }
+
+    if (ext === 'gbl') {
+      ext = 'glb';
+    }
+
     const filename = `${randomUUID()}.${ext}`;
     // Auto-create folder structure: folder/filename
-    const key = `${folder}/${filename}`;
+    const key = options?.key ?? `${folder}/${filename}`;
 
     const command = new PutObjectCommand({
       Bucket: bucketName,
@@ -86,6 +122,7 @@ export const uploadToR2 = async (
       Metadata: {
         originalFilename,
         folder,
+        mimetype,
         uploadedAt: new Date().toISOString()
       }
     });
@@ -112,7 +149,8 @@ export const listR2Files = async (): Promise<Array<{
   url: string;
   size: number;
   lastModified: Date;
-  mediaType: 'image' | 'video';
+  mediaType: 'image' | 'video' | 'model';
+  thumbnailUrl?: string;
 }>> => {
   try {
     const command = new ListObjectsV2Command({
@@ -125,18 +163,39 @@ export const listR2Files = async (): Promise<Array<{
       return [];
     }
 
-    return response.Contents.map((object) => {
+    const thumbnailIndex = new Map<string, string>();
+
+    for (const object of response.Contents) {
+      if (!object.Key) continue;
+      if (object.Key.startsWith('thumbnails/')) {
+        const basename = object.Key.split('/').pop()?.replace(/\.[^.]+$/, '');
+        if (basename) {
+          thumbnailIndex.set(basename, `https://${publicHost}/${object.Key}`);
+        }
+      }
+    }
+
+    return response.Contents.filter((object) => object.Key && !object.Key.startsWith('thumbnails/')).map((object) => {
       const key = object.Key!;
+      const basename = key.split('/').pop()?.replace(/\.[^.]+$/, '');
       const ext = key.split('.').pop()?.toLowerCase();
-      const videoExts = ['mp4', 'webm'];
-      const mediaType = videoExts.includes(ext || '') ? 'video' : 'image';
+      const videoExts = ['mp4', 'webm', 'mov', 'm4v'];
+      const modelExts = ['glb', 'gltf', 'gbl'];
+      let mediaType: 'image' | 'video' | 'model' = 'image';
+
+      if (ext && videoExts.includes(ext)) {
+        mediaType = 'video';
+      } else if (ext && modelExts.includes(ext)) {
+        mediaType = 'model';
+      }
 
       return {
         key,
         url: `https://${publicHost}/${key}`,
         size: object.Size || 0,
         lastModified: object.LastModified || new Date(),
-        mediaType
+        mediaType,
+        thumbnailUrl: basename ? thumbnailIndex.get(basename) : undefined
       };
     });
   } catch (error) {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { BackgroundImage, PlaybackDepth } from '../types/content';
-import { MediaUploadModal } from './MediaUploadModal';
+import type { BackgroundImage, BackgroundMediaType, PlaybackDepth } from '../types/content';
+import { MediaUploadModal, UploadedMedia } from './MediaUploadModal';
 import { MediaLibraryModal } from './MediaLibraryModal';
 import { Icon } from './Icon';
 
@@ -14,42 +14,117 @@ interface BackgroundMediaManagerProps {
  * Mobile-friendly, accessible media management with drag-and-drop
  * Following 2025 UX best practices
  */
+type BackgroundEntryInput = Partial<BackgroundImage> & { src: string; mediaType?: BackgroundMediaType };
+
+const createBackgroundEntry = (input: BackgroundEntryInput, order: number): BackgroundImage => {
+  const mediaType: BackgroundMediaType = input.mediaType === 'video' ? 'video' : 'image';
+  const src = typeof input.src === 'string' ? input.src.trim() : '';
+  const fallbackImage = input.fallbackImage?.trim() || undefined;
+  const focalPoint = input.focalPoint ?? { x: 50, y: 50 };
+
+  const entry: BackgroundImage = {
+    src,
+    alt: input.alt?.trim() || `Background ${order + 1}`,
+    mediaType,
+    isActive: input.isActive ?? true,
+    playbackDepth: input.playbackDepth ?? 'medium',
+    focalPoint,
+    order,
+    fallbackImage
+  };
+
+  if (mediaType === 'video') {
+    entry.loop = input.loop ?? true;
+    entry.autoplay = input.autoplay ?? true;
+    entry.muted = input.muted ?? true;
+  }
+
+  return entry;
+};
+
+const createBackgroundFromUpload = (media: UploadedMedia, order: number): BackgroundImage =>
+  createBackgroundEntry(
+    {
+      src: media.url,
+      alt: media.originalFilename,
+      mediaType: media.mediaType === 'video' ? 'video' : 'image',
+      fallbackImage: media.thumbnailUrl,
+      loop: media.mediaType === 'video' ? true : undefined,
+      autoplay: media.mediaType === 'video' ? true : undefined,
+      muted: media.mediaType === 'video' ? true : undefined
+    },
+    order
+  );
+
+const normaliseExistingBackground = (background: BackgroundImage, order: number): BackgroundImage =>
+  createBackgroundEntry(
+    {
+      ...background,
+      src: background.src,
+      alt: background.alt,
+      fallbackImage: background.fallbackImage,
+      loop: background.loop,
+      autoplay: background.autoplay,
+      muted: background.muted,
+      focalPoint: background.focalPoint,
+      playbackDepth: background.playbackDepth,
+      isActive: background.isActive,
+      mediaType: background.mediaType
+    },
+    order
+  );
+
+const reindexBackgrounds = (items: BackgroundImage[]): BackgroundImage[] =>
+  items.map((background, index) => ({ ...background, order: index }));
+
 export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMediaManagerProps) => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [libraryModalOpen, setLibraryModalOpen] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
 
+  const updateBackgrounds = (updater: (items: BackgroundImage[]) => BackgroundImage[]) => {
+    const updated = updater(backgrounds);
+    onChange(reindexBackgrounds(updated));
+  };
+
   /**
    * Toggle background active/inactive
    */
   const handleToggleActive = (index: number) => {
-    const updated = [...backgrounds];
-    updated[index] = {
-      ...updated[index],
-      isActive: !updated[index].isActive
-    };
-    onChange(updated);
+    updateBackgrounds((items) =>
+      items.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              isActive: !(item.isActive ?? true)
+            }
+          : item
+      )
+    );
   };
 
   /**
    * Update playback depth
    */
   const handleDepthChange = (index: number, depth: PlaybackDepth) => {
-    const updated = [...backgrounds];
-    updated[index] = {
-      ...updated[index],
-      playbackDepth: depth
-    };
-    onChange(updated);
+    updateBackgrounds((items) =>
+      items.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              playbackDepth: depth
+            }
+          : item
+      )
+    );
   };
 
   /**
    * Delete background
    */
   const handleDelete = (index: number) => {
-    const updated = backgrounds.filter((_, i) => i !== index);
-    onChange(updated);
+    updateBackgrounds((items) => items.filter((_, itemIndex) => itemIndex !== index));
   };
 
   /**
@@ -57,9 +132,11 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
    */
   const handleMoveUp = (index: number) => {
     if (index === 0) return;
-    const updated = [...backgrounds];
-    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-    onChange(updated);
+    updateBackgrounds((items) => {
+      const next = [...items];
+      [next[index - 1], next[index]] = [next[index], next[index - 1]];
+      return next;
+    });
   };
 
   /**
@@ -67,24 +144,33 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
    */
   const handleMoveDown = (index: number) => {
     if (index === backgrounds.length - 1) return;
-    const updated = [...backgrounds];
-    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-    onChange(updated);
+    updateBackgrounds((items) => {
+      const next = [...items];
+      [next[index], next[index + 1]] = [next[index + 1], next[index]];
+      return next;
+    });
   };
 
   /**
    * Update focal point
    */
   const handleFocalPointChange = (index: number, axis: 'x' | 'y', value: number) => {
-    const updated = [...backgrounds];
-    updated[index] = {
-      ...updated[index],
-      focalPoint: {
-        x: axis === 'x' ? value : updated[index].focalPoint?.x || 50,
-        y: axis === 'y' ? value : updated[index].focalPoint?.y || 50
-      }
-    };
-    onChange(updated);
+    updateBackgrounds((items) =>
+      items.map((item, itemIndex) => {
+        if (itemIndex !== index) {
+          return item;
+        }
+
+        const currentFocalPoint = item.focalPoint ?? { x: 50, y: 50 };
+        return {
+          ...item,
+          focalPoint: {
+            x: axis === 'x' ? value : currentFocalPoint.x,
+            y: axis === 'y' ? value : currentFocalPoint.y
+          }
+        };
+      })
+    );
   };
 
   /**
@@ -107,12 +193,13 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
     if (draggedIndex === null || draggedIndex === index) return;
 
     // Now we actually update the order
-    const updated = [...backgrounds];
-    const draggedItem = updated[draggedIndex];
-    updated.splice(draggedIndex, 1);
-    updated.splice(index, 0, draggedItem);
-
-    onChange(updated);
+    updateBackgrounds((items) => {
+      const next = [...items];
+      const draggedItem = next[draggedIndex];
+      next.splice(draggedIndex, 1);
+      next.splice(index, 0, draggedItem);
+      return next;
+    });
     setDraggedIndex(null);
     setDropTargetIndex(null);
   };
@@ -126,16 +213,20 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
    * Add new background from URL
    */
   const handleAddBackground = () => {
-    const newBackground: BackgroundImage = {
-      src: '',
-      alt: '',
-      mediaType: 'image',
-      isActive: true,
-      playbackDepth: 'medium',
-      order: backgrounds.length,
-      focalPoint: { x: 50, y: 50 }
-    };
-    onChange([...backgrounds, newBackground]);
+    updateBackgrounds((items) => [
+      ...items,
+      createBackgroundEntry(
+        {
+          src: '',
+          alt: '',
+          mediaType: 'image',
+          isActive: true,
+          playbackDepth: 'medium',
+          focalPoint: { x: 50, y: 50 }
+        },
+        items.length
+      )
+    ]);
   };
 
   return (
@@ -218,6 +309,7 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
                       loop
                       controls
                       preload="metadata"
+                      poster={background.fallbackImage}
                       className="bg-media-card__preview-media"
                     />
                   ) : (
@@ -357,9 +449,16 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
                     placeholder="Enter image or video URL"
                     value={background.src}
                     onChange={(e) => {
-                      const updated = [...backgrounds];
-                      updated[index] = { ...updated[index], src: e.target.value };
-                      onChange(updated);
+                      updateBackgrounds((items) =>
+                        items.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? {
+                                ...item,
+                                src: e.target.value
+                              }
+                            : item
+                        )
+                      );
                     }}
                   />
                 </div>
@@ -373,9 +472,11 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
       <MediaUploadModal
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
-        onUploadSuccess={(newBackground) => {
-          // Add uploaded media to backgrounds
-          onChange([...backgrounds, newBackground]);
+        onUploadSuccess={(uploadedMedia) => {
+          updateBackgrounds((items) => [
+            ...items,
+            createBackgroundFromUpload(uploadedMedia, items.length)
+          ]);
         }}
         folder="backgrounds"
       />
@@ -385,8 +486,10 @@ export const BackgroundMediaManager = ({ backgrounds, onChange }: BackgroundMedi
         isOpen={libraryModalOpen}
         onClose={() => setLibraryModalOpen(false)}
         onSelectMedia={(selectedBackground) => {
-          // Add selected media to backgrounds
-          onChange([...backgrounds, selectedBackground]);
+          updateBackgrounds((items) => [
+            ...items,
+            normaliseExistingBackground(selectedBackground, items.length)
+          ]);
         }}
         folder="backgrounds"
       />

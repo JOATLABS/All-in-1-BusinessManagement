@@ -4,6 +4,17 @@
  */
 export type BackgroundMediaType = 'image' | 'video';
 
+export type HeroLogoKind = 'image' | 'video' | 'model';
+
+export type HeroLogoSource = 'remote' | 'local';
+
+export interface HeroLogoAsset {
+  src: string;
+  kind: HeroLogoKind;
+  posterUrl?: string;
+  source?: HeroLogoSource;
+}
+
 /**
  * Playback depth for parallax effect
  */
@@ -31,6 +42,8 @@ export interface HeroContent {
   tagline: string;
   words: string[];
   backgrounds: BackgroundImage[];
+  logoUrl?: string;
+  logo?: HeroLogoAsset;
 }
 
 export interface EventContent {

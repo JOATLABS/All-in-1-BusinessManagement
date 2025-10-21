@@ -9,6 +9,7 @@ import { defaultSiteContent } from '../config/defaultSiteContent';
 import { useSiteContentContext } from '../content/SiteContentProvider';
 import { fetchEvents, type Event } from '../services/eventsService';
 import type { SiteContent } from '../types/content';
+import { HeroLogoModel } from '../components/HeroLogoModel';
 
 const primaryRangeFormatter = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
@@ -50,8 +51,13 @@ const HeroContent = ({ hero, isReady }: HeroContentProps) => {
   const [eventsLoading, setEventsLoading] = useState(true);
 
   const backgrounds = useMemo(() => {
-    // Filter to only show active backgrounds
-    const activeBackgrounds = hero.backgrounds.filter(bg => bg.isActive);
+    const activeBackgrounds = hero.backgrounds
+      .filter((background) => (background.isActive ?? true) && background.src)
+      .map((background) => ({
+        ...background,
+        mediaType: background.mediaType ?? 'image'
+      }));
+
     return activeBackgrounds.length ? activeBackgrounds : defaultSiteContent.hero.backgrounds;
   }, [hero.backgrounds]);
 
@@ -162,23 +168,116 @@ const HeroContent = ({ hero, isReady }: HeroContentProps) => {
   const activeWord = heroWords.length ? heroWords[wordIndex] : '';
   const heroClassName = `hero${isFlyerActive ? ' hero--flyer-active' : ''}`;
 
+  const renderLogo = (position: 'left' | 'right') => {
+    const logo = hero.logo;
+    if (!logo) {
+      const fallbackLogo = hero.logoUrl?.trim();
+      if (!fallbackLogo) {
+        return null;
+      }
+
+      return (
+        <img
+          key={`${fallbackLogo}-${position}`}
+          src={fallbackLogo}
+          alt=""
+          className={`hero__logo hero__logo--${position}`}
+          aria-hidden="true"
+          decoding="async"
+        />
+      );
+    }
+
+    const logoKey = `${logo.src}-${position}`;
+    const className = `hero__logo hero__logo--${position}`;
+
+    if (logo.kind === 'video') {
+      return (
+        <video
+          key={logoKey}
+          className={`${className} hero__logo--video`}
+          src={logo.src}
+          playsInline
+          muted
+          loop
+          autoPlay
+          preload="auto"
+          poster={logo.posterUrl}
+          aria-hidden="true"
+        />
+      );
+    }
+
+    if (logo.kind === 'model') {
+      return (
+        <HeroLogoModel
+          key={logoKey}
+          src={logo.src}
+          posterUrl={logo.posterUrl}
+          className={`${className} hero__logo--model`}
+        />
+      );
+    }
+
+    return (
+      <img
+        key={logoKey}
+        src={logo.src}
+        alt=""
+        className={className}
+        aria-hidden="true"
+        decoding="async"
+      />
+    );
+  };
+
   return (
     <section className={heroClassName} aria-labelledby="club-name" aria-busy={!isReady}>
       <div className="hero__media" aria-hidden="true">
         {backgrounds.map((background, index) => {
-          const backgroundPosition = background.focalPoint
+          const focalPoint = background.focalPoint
             ? `${background.focalPoint.x}% ${background.focalPoint.y}%`
-            : 'center';
+            : '50% 50%';
+          const isActiveLayer = index === backgroundIndex;
+          const key = `${background.src}-${index}`;
+
+          const layerProps = {
+            key,
+            className: 'hero__media-layer',
+            initial: { opacity: 0 },
+            animate: { opacity: isActiveLayer ? 1 : 0 },
+            transition: { duration: 1.8, ease: 'easeInOut' },
+            'aria-hidden': true,
+            role: 'presentation' as const,
+            'data-media-type': background.mediaType ?? 'image'
+          } as const;
+
+          if (background.mediaType === 'video') {
+            return (
+              <motion.div {...layerProps}>
+                <video
+                  className="hero__media-video"
+                  src={background.src}
+                  style={{ objectPosition: focalPoint }}
+                  loop={background.loop ?? true}
+                  muted={background.muted ?? true}
+                  autoPlay={background.autoplay ?? true}
+                  playsInline
+                  preload="metadata"
+                  poster={background.fallbackImage}
+                />
+              </motion.div>
+            );
+          }
 
           return (
             <motion.div
-              key={background.src}
-              className="hero__media-layer"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: index === backgroundIndex ? 1 : 0 }}
-              transition={{ duration: 1.8, ease: 'easeInOut' }}
-              style={{ backgroundImage: `url(${background.src})`, backgroundPosition }}
-              role="presentation"
+              {...layerProps}
+              style={{
+                backgroundImage: `url(${background.src})`,
+                backgroundPosition: focalPoint,
+                backgroundSize: 'cover'
+              }}
             />
           );
         })}
@@ -219,9 +318,9 @@ const HeroContent = ({ hero, isReady }: HeroContentProps) => {
 
       <div className="hero__title-wrap hero__layer">
         <h1 id="club-name" className="hero__title">
-          {hero.logoUrl && <img src={hero.logoUrl} alt="" className="hero__logo hero__logo--left" />}
-          <span>{hero.name}</span>
-          {hero.logoUrl && <img src={hero.logoUrl} alt="" className="hero__logo hero__logo--right" />}
+          {renderLogo('left')}
+          <span className="hero__title-text">{hero.name}</span>
+          {renderLogo('right')}
         </h1>
         <p className="hero__subtitle">{hero.tagline}</p>
       </div>
