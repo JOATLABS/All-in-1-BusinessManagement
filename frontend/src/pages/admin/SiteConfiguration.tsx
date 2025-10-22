@@ -577,50 +577,44 @@ export const SiteConfiguration = () => {
       .map((word) => word.trim())
       .filter(Boolean);
 
-    const heroBackgrounds = heroDraft.backgrounds
-      .map((background, index) => {
-        const src = background.src?.trim();
+    const heroBackgrounds = heroDraft.backgrounds.reduce<BackgroundImage[]>((acc, background, index) => {
+      const src = background.src?.trim();
 
-        if (!src) {
-          return null;
-        }
+      if (!src) {
+        return acc;
+      }
 
-        const mediaType: BackgroundImage['mediaType'] = background.mediaType === 'video' ? 'video' : 'image';
-        const focalPoint = background.focalPoint ?? { x: 50, y: 50 };
-        const fallbackImage = background.fallbackImage?.trim() || undefined;
-        const alt = background.alt?.trim() || `Background ${index + 1}`;
-        const playbackDepth = background.playbackDepth ?? 'medium';
-        const isActive = background.isActive ?? true;
+      const mediaType: BackgroundImage['mediaType'] = background.mediaType === 'video' ? 'video' : 'image';
+      const focalPoint = background.focalPoint ?? { x: 50, y: 50 };
+      const fallbackImage = background.fallbackImage?.trim() || undefined;
+      const alt = background.alt?.trim() || `Background ${index + 1}`;
+      const playbackDepth = background.playbackDepth ?? 'medium';
+      const isActive = background.isActive ?? true;
 
-        const base: BackgroundImage = {
-          ...background,
-          src,
-          alt,
-          mediaType,
-          focalPoint,
-          fallbackImage,
-          playbackDepth,
-          isActive,
-          order: index
-        };
+      const base: BackgroundImage = {
+        src,
+        alt,
+        mediaType,
+        focalPoint,
+        fallbackImage,
+        playbackDepth,
+        isActive,
+        order: index
+      };
 
-        if (mediaType === 'video') {
-          return {
-            ...base,
-            loop: background.loop ?? true,
-            autoplay: background.autoplay ?? true,
-            muted: background.muted ?? true
-          };
-        }
-
-        return {
+      if (mediaType === 'video') {
+        acc.push({
           ...base,
-          loop: undefined,
-          autoplay: undefined,
-          muted: undefined
-        };
-      })
-      .filter((background): background is BackgroundImage => Boolean(background));
+          loop: background.loop ?? true,
+          autoplay: background.autoplay ?? true,
+          muted: background.muted ?? true
+        });
+      } else {
+        acc.push(base);
+      }
+
+      return acc;
+    }, []);
 
     const cleanedLogo = (() => {
       if (!heroDraft.logo || !heroDraft.logo.src.trim()) {

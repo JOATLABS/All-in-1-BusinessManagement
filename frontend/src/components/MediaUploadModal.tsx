@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { config } from '../config/api';
 import { useAuth } from '../auth/AuthContext';
-import type { MediaType } from '../types/content';
+import type { BackgroundImage, MediaType } from '../types/content';
 import '../styles/components/upload-modal-mobile.css';
 
 const DEFAULT_ALLOWED_TYPES: MediaType[] = ['image', 'video'];
@@ -101,7 +101,7 @@ export const MediaUploadModal = ({
     [allowedKinds]
   );
   const hintLines = useMemo(() => {
-    const lines = allowedKinds.map((kind) => {
+    const lines: string[] = allowedKinds.map((kind) => {
       if (kind === 'image') {
         return 'Images: JPEG, PNG, WebP, GIF, SVG, AVIF, HEIC';
       }
@@ -265,10 +265,13 @@ export const MediaUploadModal = ({
       const data: UploadResponse = await response.json();
 
       // Create BackgroundImage object
+      const backgroundMediaType: BackgroundImage['mediaType'] =
+        data.media.mediaType === 'video' ? 'video' : 'image';
+
       const newBackground: BackgroundImage = {
         src: data.media.url,
         alt: selectedFile.name,
-        mediaType: data.media.mediaType,
+        mediaType: backgroundMediaType,
         isActive: true,
         playbackDepth: 'medium',
         focalPoint: { x: 50, y: 50 },
