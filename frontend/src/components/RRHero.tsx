@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import type { Group as ThreeGroup } from 'three';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import '../styles/glass.css';
+
+type ThreeModule = typeof import('three');
+type GLTFLoaderModule = typeof import('three/examples/jsm/loaders/GLTFLoader.js');
+type RoundedBoxGeometryModule = typeof import('three/examples/jsm/geometries/RoundedBoxGeometry.js');
 
 const isWebGLAvailable = () => {
   try {
@@ -48,25 +54,29 @@ export const RRHero = () => {
       }
 
       try {
-        const [{ WebGLRenderer, PerspectiveCamera, Scene, AmbientLight, DirectionalLight, Box3, Vector3, SRGBColorSpace, Mesh, MeshPhysicalMaterial, Group }, gltf, geometries] = await Promise.all([
-          import('three').then((m) => ({
-            WebGLRenderer: m.WebGLRenderer,
-            PerspectiveCamera: m.PerspectiveCamera,
-            Scene: m.Scene,
-            AmbientLight: m.AmbientLight,
-            DirectionalLight: m.DirectionalLight,
-            Box3: m.Box3,
-            Vector3: m.Vector3,
-            SRGBColorSpace: m.SRGBColorSpace,
-            Mesh: m.Mesh,
-            MeshPhysicalMaterial: m.MeshPhysicalMaterial,
-            Group: m.Group
-          })),
-          import('three/examples/jsm/loaders/GLTFLoader.js').then((m) => m),
-          import('three/examples/jsm/geometries/RoundedBoxGeometry.js').then((m) => m)
+        const [threeModule, gltfModule, geometriesModule] = await Promise.all([
+          import('three') as Promise<ThreeModule>,
+          import('three/examples/jsm/loaders/GLTFLoader.js') as Promise<GLTFLoaderModule>,
+          import('three/examples/jsm/geometries/RoundedBoxGeometry.js') as Promise<RoundedBoxGeometryModule>
         ]);
 
         if (!mounted || !containerRef.current) return;
+
+        const {
+          WebGLRenderer,
+          PerspectiveCamera,
+          Scene,
+          AmbientLight,
+          DirectionalLight,
+          Box3,
+          Vector3,
+          SRGBColorSpace,
+          Mesh,
+          MeshPhysicalMaterial,
+          Group
+        } = threeModule;
+        const { GLTFLoader } = gltfModule;
+        const { RoundedBoxGeometry } = geometriesModule;
 
         const container = containerRef.current;
         const scene = new Scene();
@@ -84,8 +94,8 @@ export const RRHero = () => {
         rim.position.set(-3, 1, -3);
         scene.add(ambient, key, rim);
 
-        let logo: any = null;
-        const loader = new gltf.GLTFLoader();
+        let logo: ThreeGroup | null = null;
+        const loader = new GLTFLoader();
 
         const resizeToText = () => {
           const h = Math.ceil((leftWordRef.current?.getBoundingClientRect().height ?? 64));
@@ -103,7 +113,7 @@ export const RRHero = () => {
           renderer.render(scene, camera);
         };
 
-        const onLoad = (gltfScene: any) => {
+        const onLoad = (gltfScene: GLTF) => {
           logo = gltfScene.scene;
           scene.add(logo);
           const box = new Box3().setFromObject(logo);
@@ -116,7 +126,6 @@ export const RRHero = () => {
           logo.position.sub(center.multiplyScalar(scale));
 
           try {
-            const { RoundedBoxGeometry } = geometries as any;
             const capHeight = size.y * scale;
             const plusSize = capHeight * 0.3;
             const thickness = plusSize * 0.22;
@@ -150,12 +159,15 @@ export const RRHero = () => {
             plus.position.z = plusDepth * 0.08; // cast faint edge shadow
 
             logo.add(plus);
-          } catch {}
+          } catch (error) {
+            console.warn('Unable to augment RR hero GLTF with plus mark', error);
+          }
           resizeToText();
           animate();
         };
 
-        const onError = () => {
+        const onError = (error: unknown) => {
+          console.error('Failed to load RR hero GLTF', error);
           setUseFallback(true);
         };
 
@@ -167,9 +179,12 @@ export const RRHero = () => {
           window.removeEventListener('resize', resizeToText);
           try {
             renderer.dispose();
-          } catch {}
+          } catch (error) {
+            console.warn('Failed to dispose RR hero renderer', error);
+          }
         };
-      } catch {
+      } catch (error) {
+        console.error('Failed to initialize RR hero scene', error);
         setUseFallback(true);
       }
     };
