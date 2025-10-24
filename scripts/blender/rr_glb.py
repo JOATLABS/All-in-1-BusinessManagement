@@ -1,4 +1,5 @@
 import bpy, os
+import bmesh
 from mathutils import Vector, Euler
 
 # ------------------ Config ------------------
@@ -64,8 +65,71 @@ mesh_all = bpy.context.active_object
 mesh_all.name = "RR_Mesh_Flat"
 
 # Separate loose parts (each letter should become its own object)
-bpy.ops.mesh.separate(type='LOOSE')
-parts = [o for o in bpy.context.scene.objects if o.type == 'MESH']
+def separate_loose_parts(obj):
+    mesh = obj.data
+
+    # Discover connected components using a non-operator API so we can split the mesh
+    bm_source = bmesh.new()
+    bm_source.from_mesh(mesh)
+    bm_source.verts.ensure_lookup_table()
+
+    visited = set()
+    components = []
+    for vert in bm_source.verts:
+        if vert.index in visited:
+            continue
+
+        stack = [vert]
+        component = set()
+        visited.add(vert.index)
+
+        while stack:
+            current = stack.pop()
+            component.add(current.index)
+            for edge in current.link_edges:
+                other = edge.other_vert(current)
+                if other.index not in visited:
+                    visited.add(other.index)
+                    stack.append(other)
+
+        components.append(component)
+
+    bm_source.free()
+
+    # Duplicate the object for each loose component, trimming unused verts
+    if not components:
+        return []
+
+    collections = obj.users_collection or [bpy.context.scene.collection]
+    parts = []
+    for idx, component in enumerate(components):
+        new_obj = obj.copy()
+        new_obj.data = obj.data.copy()
+        new_obj.name = f"{obj.name}_part_{idx}"
+        new_obj.data.name = f"{obj.data.name}_part_{idx}"
+
+        bm_part = bmesh.new()
+        bm_part.from_mesh(new_obj.data)
+        bm_part.verts.ensure_lookup_table()
+        verts_to_delete = [v for v in bm_part.verts if v.index not in component]
+        if verts_to_delete:
+            bmesh.ops.delete(bm_part, geom=verts_to_delete, context='VERTS')
+        bm_part.to_mesh(new_obj.data)
+        bm_part.free()
+
+        for col in collections:
+            col.objects.link(new_obj)
+        parts.append(new_obj)
+
+    # Remove the original object now that pieces exist
+    bpy.data.objects.remove(obj, do_unlink=True)
+    if mesh.users == 0:
+        bpy.data.meshes.remove(mesh)
+
+    return parts
+
+
+parts = separate_loose_parts(mesh_all)
 bpy.ops.object.select_all(action='DESELECT')
 for p in parts:
     p.select_set(True)
